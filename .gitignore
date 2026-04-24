@@ -1,33 +1,4 @@
-# Build directories
 /build/
 /cmake-build-*/
-
-# CMake generated files (in-source builds)
-/CMakeFiles/
-/CMakeCache.txt
-/cmake_install.cmake
-/CTestTestfile.cmake
-/Makefile
-/Testing/
-/compile_commands.json
-/*.ninja
-/.ninja_*
-
-# IDEs
 /.idea/
 /.vscode/
-
-# OS junk
-.DS_Store
-
-# Object files / libraries / executables
-*.o
-*.obj
-*.a
-*.lib
-*.so
-*.dylib
-*.dll
-*.exe
-benchmark
-benchmark_genetic
