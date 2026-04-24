@@ -1,0 +1,15 @@
+cmake-build-*/
+build/
+.idea/
+*.o
+*.out
+*.a
+*.so
+*.dylib
+*.exe
+benchmark
+benchmark_genetic
+dynamic
+task.md
+WORKLOAD_IDEAS_FROM_700.md
+3663338.3665827.pdf
