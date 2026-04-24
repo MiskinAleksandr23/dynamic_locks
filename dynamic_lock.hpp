@@ -10,29 +10,28 @@
 #include <thread>
 #include <vector>
 
-template<size_t kLockCnt, typename Mutex = std::mutex>
-class DynamicLock {
+template <size_t kLockCnt, typename Mutex = std::mutex> class DynamicLock {
 public:
   explicit DynamicLock(size_t array_size)
-    : array_size_(array_size),
-      block_size_(array_size == 0 ? 1 : 1 + ((array_size - 1) / kBlocks)),
-      total_lock_time_(std::chrono::nanoseconds(0)) {
+      : array_size_(array_size),
+        block_size_(array_size == 0 ? 1 : 1 + ((array_size - 1) / kBlocks)),
+        total_lock_time_(std::chrono::nanoseconds(0)) {
     partitions_.resize(kLockCnt + 1);
     for (size_t i = 0; i <= kLockCnt; ++i) {
       partitions_[i] = i * kBlocks / kLockCnt;
     }
     partitions_[kLockCnt] = kBlocks;
 
-    for (auto &value: stats_) {
+    for (auto &value : stats_) {
       value.store(0, std::memory_order_relaxed);
     }
-    for (auto &value: boundary_crossings_) {
+    for (auto &value : boundary_crossings_) {
       value.store(0, std::memory_order_relaxed);
     }
     last_stats_.fill(0);
   }
 
-  template<typename Func>
+  template <typename Func>
   void WriteQuery(size_t left, size_t right, Func &&func) {
     if (array_size_ == 0) {
       return;
@@ -46,7 +45,8 @@ public:
 
     const auto start = std::chrono::steady_clock::now();
 
-    const bool rebuilder_running = rebuilder_running_.load(std::memory_order_acquire);
+    const bool rebuilder_running =
+        rebuilder_running_.load(std::memory_order_acquire);
 
     if (rebuilder_running) {
       while (true) {
@@ -65,7 +65,7 @@ public:
 
     const auto [lock_start, lock_end] = FindLocksSegmentUnlocked(left, right);
 
-    std::vector<std::unique_lock<Mutex> > locks;
+    std::vector<std::unique_lock<Mutex>> locks;
     locks.reserve(lock_end - lock_start + 1);
     for (size_t lock_index = lock_start; lock_index <= lock_end; ++lock_index) {
       locks.emplace_back(locks_[lock_index]);
@@ -73,7 +73,8 @@ public:
 
     const auto lock_time = std::chrono::steady_clock::now() - start;
     auto current = total_lock_time_.load();
-    while (!total_lock_time_.compare_exchange_weak(current, current + lock_time)) {
+    while (
+        !total_lock_time_.compare_exchange_weak(current, current + lock_time)) {
     }
 
     ++operation_count_;
@@ -87,9 +88,9 @@ public:
     }
   }
 
-  void StartRebuilder(std::chrono::milliseconds interval =
-                          std::chrono::seconds(60),
-                      double change_threshold = 0.3) {
+  void
+  StartRebuilder(std::chrono::milliseconds interval = std::chrono::seconds(60),
+                 double change_threshold = 0.3) {
     if (rebuild_thread_.joinable()) {
       return;
     }
@@ -136,7 +137,8 @@ public:
     }
 
     const auto total = total_lock_time_.load();
-    return std::chrono::duration<double, std::milli>(total).count() / operations;
+    return std::chrono::duration<double, std::milli>(total).count() /
+           operations;
   }
 
   double GetTotalLockTimeMs() const {
@@ -169,6 +171,7 @@ public:
     return lock_end - lock_start + 1;
   }
   ~DynamicLock() { StopRebuilder(); }
+
 private:
   static constexpr size_t kBlocks = 1024;
   // Penalizes cuts that split observed range queries. Point queries do not
@@ -236,8 +239,8 @@ private:
       stats_[block].fetch_add(1, std::memory_order_relaxed);
     }
 
-    for (size_t boundary = left_block + 1; boundary <= right_block &&
-                                          boundary < kBlocks; ++boundary) {
+    for (size_t boundary = left_block + 1;
+         boundary <= right_block && boundary < kBlocks; ++boundary) {
       boundary_crossings_[boundary].fetch_add(1, std::memory_order_relaxed);
     }
   }
@@ -294,15 +297,13 @@ private:
     return diff / static_cast<double>(comparable_blocks) > threshold;
   }
 
-  std::vector<size_t> OptimizePartitions(
-      const std::vector<size_t> &prefix_sum,
-      const std::array<size_t, kBlocks> &boundary_crossings) {
+  std::vector<size_t>
+  OptimizePartitions(const std::vector<size_t> &prefix_sum,
+                     const std::array<size_t, kBlocks> &boundary_crossings) {
     const size_t inf = std::numeric_limits<size_t>::max();
 
-    std::vector dp(
-      kBlocks + 1, std::vector(kLockCnt + 1, inf));
-    std::vector split(
-      kBlocks + 1, std::vector<size_t>(kLockCnt + 1, 0));
+    std::vector dp(kBlocks + 1, std::vector(kLockCnt + 1, inf));
+    std::vector split(kBlocks + 1, std::vector<size_t>(kLockCnt + 1, 0));
 
     dp[0][0] = 0;
 
@@ -315,7 +316,8 @@ private:
 
           const size_t weight = prefix_sum[right] - prefix_sum[left];
           const size_t cut_penalty =
-              left == 0 ? 0 : kBoundaryCrossingPenalty * boundary_crossings[left];
+              left == 0 ? 0
+                        : kBoundaryCrossingPenalty * boundary_crossings[left];
           const size_t candidate =
               dp[left][locks - 1] + weight * weight + cut_penalty;
           if (candidate < dp[right][locks]) {
@@ -356,7 +358,8 @@ private:
     pause_queries_.store(true, std::memory_order_release);
     while (active_queries_.load(std::memory_order_acquire) != 0) {
       std::this_thread::yield();
-    } {
+    }
+    {
       std::lock_guard parts_lock(partitions_mutex_);
       std::lock_guard stats_lock(stats_mutex_);
 

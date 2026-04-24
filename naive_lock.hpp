@@ -6,16 +6,15 @@
 #include <mutex>
 #include <vector>
 
-template<size_t kLockCnt, typename Mutex = std::mutex>
-class NaiveLock {
+template <size_t kLockCnt, typename Mutex = std::mutex> class NaiveLock {
 public:
   explicit NaiveLock(size_t array_size)
-    : array_size_(array_size),
-      block_size_(array_size == 0 ? 1 : (array_size + kLockCnt - 1) / kLockCnt),
-      total_lock_time_(std::chrono::nanoseconds(0)) {
-  }
+      : array_size_(array_size),
+        block_size_(array_size == 0 ? 1
+                                    : (array_size + kLockCnt - 1) / kLockCnt),
+        total_lock_time_(std::chrono::nanoseconds(0)) {}
 
-  template<typename Func>
+  template <typename Func>
   void WriteQuery(size_t left, size_t right, Func &&func) {
     if (array_size_ == 0) {
       return;
@@ -31,29 +30,28 @@ public:
     const size_t first_lock = std::min(left / block_size_, kLockCnt - 1);
     const size_t last_lock = std::min(right / block_size_, kLockCnt - 1);
 
-    std::vector<std::unique_lock<Mutex> > locks;
+    std::vector<std::unique_lock<Mutex>> locks;
     locks.reserve(last_lock - first_lock + 1);
-    for (size_t lock_index = first_lock; lock_index <= last_lock; ++lock_index) {
+    for (size_t lock_index = first_lock; lock_index <= last_lock;
+         ++lock_index) {
       locks.emplace_back(locks_[lock_index]);
     }
 
     const auto lock_time = std::chrono::steady_clock::now() - start;
     auto current = total_lock_time_.load();
-    while (!total_lock_time_.compare_exchange_weak(current, current + lock_time)) {
+    while (
+        !total_lock_time_.compare_exchange_weak(current, current + lock_time)) {
     }
 
     ++operation_count_;
     func(left, right);
   }
 
-  void StartRebuilder(std::chrono::milliseconds, double) {
-  }
+  void StartRebuilder(std::chrono::milliseconds, double) {}
 
-  void StopRebuilder() {
-  }
+  void StopRebuilder() {}
 
-  void ForceSaveStats() {
-  }
+  void ForceSaveStats() {}
 
   double GetAvgLockTimeMs() const {
     const size_t operations = operation_count_.load();
@@ -62,7 +60,8 @@ public:
     }
 
     const auto total = total_lock_time_.load();
-    return std::chrono::duration<double, std::milli>(total).count() / operations;
+    return std::chrono::duration<double, std::milli>(total).count() /
+           operations;
   }
 
   double GetTotalLockTimeMs() const {

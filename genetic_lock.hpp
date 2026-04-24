@@ -11,26 +11,24 @@
 #include <utility>
 #include <vector>
 
-template<size_t kLockCnt, size_t kBlocks = 1024, typename Mutex = std::mutex>
+template <size_t kLockCnt, size_t kBlocks = 1024, typename Mutex = std::mutex>
 class GeneticLock {
 public:
   explicit GeneticLock(size_t array_size, uint64_t seed = 123,
                        size_t training_batch_size = 2048,
                        size_t history_limit = 12000,
-                       size_t population_size = 24,
-                       size_t elite_count = 4,
+                       size_t population_size = 24, size_t elite_count = 4,
                        size_t generation_count = 18)
-    : array_size_(array_size),
-      block_size_(array_size == 0 ? 1 : 1 + ((array_size - 1) / kBlocks)),
-      training_batch_size_(std::max(training_batch_size, size_t{1})),
-      partitioner_(array_size, seed, history_limit, population_size,
-                   elite_count, generation_count),
-      current_cuts_(partitioner_.PartitionCuts()),
-      total_lock_time_(std::chrono::nanoseconds(0)),
-      total_training_time_(std::chrono::nanoseconds(0)) {
-  }
+      : array_size_(array_size),
+        block_size_(array_size == 0 ? 1 : 1 + ((array_size - 1) / kBlocks)),
+        training_batch_size_(std::max(training_batch_size, size_t{1})),
+        partitioner_(array_size, seed, history_limit, population_size,
+                     elite_count, generation_count),
+        current_cuts_(partitioner_.PartitionCuts()),
+        total_lock_time_(std::chrono::nanoseconds(0)),
+        total_training_time_(std::chrono::nanoseconds(0)) {}
 
-  template<typename Func>
+  template <typename Func>
   void WriteQuery(size_t left, size_t right, Func &&func) {
     if (array_size_ == 0) {
       return;
@@ -50,12 +48,14 @@ public:
       if (guard_reconfiguration) {
         EnterPartitionRead();
       }
-      const auto [first_lock, last_lock] = FindLocksSegmentUnlocked(left, right);
+      const auto [first_lock, last_lock] =
+          FindLocksSegmentUnlocked(left, right);
       locked_mutexes = last_lock - first_lock + 1;
 
-      std::vector<std::unique_lock<Mutex> > locks;
+      std::vector<std::unique_lock<Mutex>> locks;
       locks.reserve(locked_mutexes);
-      for (size_t lock_index = first_lock; lock_index <= last_lock; ++lock_index) {
+      for (size_t lock_index = first_lock; lock_index <= last_lock;
+           ++lock_index) {
         locks.emplace_back(locks_[lock_index]);
       }
 
@@ -92,8 +92,7 @@ public:
     training_enabled_.store(false, std::memory_order_release);
   }
 
-  void ForceSaveStats() {
-  }
+  void ForceSaveStats() {}
 
   void SetTrainingEnabled(bool enabled) {
     training_enabled_.store(enabled, std::memory_order_release);

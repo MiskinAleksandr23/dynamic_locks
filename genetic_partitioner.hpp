@@ -18,33 +18,31 @@ struct PartitionMetrics {
   double fitness = 0.0;
 };
 
-template<size_t kLockCnt, size_t kBlocks = 1024>
-class GeneticPartitioner {
+template <size_t kLockCnt, size_t kBlocks = 1024> class GeneticPartitioner {
 public:
-  GeneticPartitioner(size_t array_size, uint64_t seed, size_t history_limit = 12000,
-                     size_t population_size = 48, size_t elite_count = 4,
-                     size_t generation_count = 36, size_t max_components = 4,
-                     double component_decay = 0.90,
+  GeneticPartitioner(size_t array_size, uint64_t seed,
+                     size_t history_limit = 12000, size_t population_size = 48,
+                     size_t elite_count = 4, size_t generation_count = 36,
+                     size_t max_components = 4, double component_decay = 0.90,
                      double component_learning_rate = 0.35,
                      double new_component_threshold = 0.55,
                      size_t max_cut_shift_per_batch =
                          std::max(size_t{1}, (kBlocks / kLockCnt) * size_t{4}))
-    : array_size_(array_size),
-      block_size_(array_size == 0 ? 1 : 1 + ((array_size - 1) / kBlocks)),
-      history_limit_(history_limit),
-      population_size_(std::max(population_size, size_t{1})),
-      elite_count_(std::max(size_t{1},
-                            std::min(elite_count, std::max(population_size, size_t{1})))),
-      generation_count_(std::max(generation_count, size_t{1})),
-      max_components_(std::max(max_components, size_t{1})),
-      component_query_limit_(std::max(history_limit, size_t{1})),
-      component_decay_(std::clamp(component_decay, 0.0, 1.0)),
-      component_learning_rate_(std::clamp(component_learning_rate, 0.0, 1.0)),
-      new_component_threshold_(std::max(0.0, new_component_threshold)),
-      max_cut_shift_per_batch_(std::max(max_cut_shift_per_batch, size_t{1})),
-      rng_(seed),
-      current_(MakeUniformChromosome()) {
-  }
+      : array_size_(array_size),
+        block_size_(array_size == 0 ? 1 : 1 + ((array_size - 1) / kBlocks)),
+        history_limit_(history_limit),
+        population_size_(std::max(population_size, size_t{1})),
+        elite_count_(std::max(
+            size_t{1},
+            std::min(elite_count, std::max(population_size, size_t{1})))),
+        generation_count_(std::max(generation_count, size_t{1})),
+        max_components_(std::max(max_components, size_t{1})),
+        component_query_limit_(std::max(history_limit, size_t{1})),
+        component_decay_(std::clamp(component_decay, 0.0, 1.0)),
+        component_learning_rate_(std::clamp(component_learning_rate, 0.0, 1.0)),
+        new_component_threshold_(std::max(0.0, new_component_threshold)),
+        max_cut_shift_per_batch_(std::max(max_cut_shift_per_batch, size_t{1})),
+        rng_(seed), current_(MakeUniformChromosome()) {}
 
   void ObserveBatch(const std::vector<Query> &batch) {
     if (batch.empty()) {
@@ -58,7 +56,8 @@ public:
     TrainOnActiveComponent();
   }
 
-  [[nodiscard]] PartitionMetrics EvaluateCurrent(const std::vector<Query> &queries) const {
+  [[nodiscard]] PartitionMetrics
+  EvaluateCurrent(const std::vector<Query> &queries) const {
     return Evaluate(current_.cuts, queries);
   }
 
@@ -119,9 +118,10 @@ private:
     return chromosome;
   }
 
-  Chromosome MakeProfileGuidedChromosome(const std::vector<double> &profile) const {
+  Chromosome
+  MakeProfileGuidedChromosome(const std::vector<double> &profile) const {
     double total_mass = 0.0;
-    for (double value: profile) {
+    for (double value : profile) {
       total_mass += value;
     }
     if (total_mass <= 0.0) {
@@ -139,8 +139,8 @@ private:
 
     size_t previous_cut = 0;
     for (size_t lock_index = 1; lock_index < kLockCnt; ++lock_index) {
-      const double target =
-          total_mass * static_cast<double>(lock_index) / static_cast<double>(kLockCnt);
+      const double target = total_mass * static_cast<double>(lock_index) /
+                            static_cast<double>(kLockCnt);
       size_t cut = previous_cut + 1;
       const size_t max_cut = kBlocks - (kLockCnt - lock_index);
       while (cut < max_cut && prefix[cut] < target) {
@@ -173,21 +173,25 @@ private:
     Chromosome chromosome;
     chromosome.cuts.reserve(kLockCnt + 1);
     chromosome.cuts.push_back(0);
-    chromosome.cuts.insert(chromosome.cuts.end(), internal.begin(), internal.end());
+    chromosome.cuts.insert(chromosome.cuts.end(), internal.begin(),
+                           internal.end());
     chromosome.cuts.push_back(kBlocks);
     return chromosome;
   }
 
-  Chromosome MakeChromosomeFromInternalCuts(const std::vector<size_t> &internal) const {
+  Chromosome
+  MakeChromosomeFromInternalCuts(const std::vector<size_t> &internal) const {
     Chromosome chromosome;
     chromosome.cuts.reserve(kLockCnt + 1);
     chromosome.cuts.push_back(0);
-    chromosome.cuts.insert(chromosome.cuts.end(), internal.begin(), internal.end());
+    chromosome.cuts.insert(chromosome.cuts.end(), internal.begin(),
+                           internal.end());
     chromosome.cuts.push_back(kBlocks);
     return chromosome;
   }
 
-  Chromosome MoveToward(const Chromosome &from, const Chromosome &target) const {
+  Chromosome MoveToward(const Chromosome &from,
+                        const Chromosome &target) const {
     if (from.cuts == target.cuts) {
       return from;
     }
@@ -199,13 +203,12 @@ private:
       const size_t target_cut = target.cuts[i];
 
       if (current_cut < target_cut) {
-        internal.push_back(std::min(current_cut + max_cut_shift_per_batch_,
-                                    target_cut));
+        internal.push_back(
+            std::min(current_cut + max_cut_shift_per_batch_, target_cut));
       } else {
-        const size_t lower =
-            current_cut > max_cut_shift_per_batch_
-              ? current_cut - max_cut_shift_per_batch_
-              : size_t{1};
+        const size_t lower = current_cut > max_cut_shift_per_batch_
+                                 ? current_cut - max_cut_shift_per_batch_
+                                 : size_t{1};
         internal.push_back(std::max(lower, target_cut));
       }
     }
@@ -214,7 +217,8 @@ private:
     return MakeChromosomeFromInternalCuts(internal);
   }
 
-  static size_t FindLockForBlock(const std::vector<size_t> &cuts, size_t block) {
+  static size_t FindLockForBlock(const std::vector<size_t> &cuts,
+                                 size_t block) {
     for (size_t i = 0; i < kLockCnt; ++i) {
       if (cuts[i] <= block && block < cuts[i + 1]) {
         return i;
@@ -288,7 +292,7 @@ private:
       const int shift = shift_dist(rng_);
       const int mutated = static_cast<int>(internal[index]) + shift;
       internal[index] = static_cast<size_t>(
-        std::clamp(mutated, 1, static_cast<int>(kBlocks - 1)));
+          std::clamp(mutated, 1, static_cast<int>(kBlocks - 1)));
     }
 
     std::sort(internal.begin(), internal.end());
@@ -297,7 +301,8 @@ private:
     chromosome.cuts.clear();
     chromosome.cuts.reserve(kLockCnt + 1);
     chromosome.cuts.push_back(0);
-    chromosome.cuts.insert(chromosome.cuts.end(), internal.begin(), internal.end());
+    chromosome.cuts.insert(chromosome.cuts.end(), internal.begin(),
+                           internal.end());
     chromosome.cuts.push_back(kBlocks);
   }
 
@@ -310,7 +315,7 @@ private:
     std::vector<uint64_t> block_hits(kBlocks, 0);
     uint64_t total_locks = 0;
 
-    for (const Query &query: queries) {
+    for (const Query &query : queries) {
       const size_t left_block = PositionToBlock(query.left);
       const size_t right_block = PositionToBlock(query.right);
 
@@ -326,7 +331,8 @@ private:
     uint64_t contention_score = 0;
     for (size_t lock_index = 0; lock_index < kLockCnt; ++lock_index) {
       uint64_t load = 0;
-      for (size_t block = cuts[lock_index]; block < cuts[lock_index + 1]; ++block) {
+      for (size_t block = cuts[lock_index]; block < cuts[lock_index + 1];
+           ++block) {
         load += block_hits[block];
       }
       contention_score += load * load;
@@ -340,11 +346,12 @@ private:
     return {contention_score, avg_mutexes, fitness};
   }
 
-  std::vector<double> BuildBlockProfile(const std::vector<Query> &queries) const {
+  std::vector<double>
+  BuildBlockProfile(const std::vector<Query> &queries) const {
     std::vector<double> profile(kBlocks, 0.0);
     double total_hits = 0.0;
 
-    for (const Query &query: queries) {
+    for (const Query &query : queries) {
       const size_t left_block = PositionToBlock(query.left);
       const size_t right_block = PositionToBlock(query.right);
       for (size_t block = left_block; block <= right_block; ++block) {
@@ -357,7 +364,7 @@ private:
       return profile;
     }
 
-    for (double &value: profile) {
+    for (double &value : profile) {
       value /= total_hits;
     }
     return profile;
@@ -373,13 +380,14 @@ private:
   }
 
   void DecayComponentMasses() {
-    for (WorkloadComponent &component: components_) {
+    for (WorkloadComponent &component : components_) {
       component.mass *= component_decay_;
     }
   }
 
-  void AppendQueries(WorkloadComponent &component, const std::vector<Query> &batch) {
-    for (const Query &query: batch) {
+  void AppendQueries(WorkloadComponent &component,
+                     const std::vector<Query> &batch) {
+    for (const Query &query : batch) {
       component.queries.push_back(query);
     }
     while (component.queries.size() > component_query_limit_) {
@@ -472,12 +480,13 @@ private:
     }
 
     const WorkloadComponent &component = components_[active_component_];
-    return std::vector<Query>(component.queries.begin(), component.queries.end());
+    return std::vector<Query>(component.queries.begin(),
+                              component.queries.end());
   }
 
   void EvaluatePopulation(std::vector<Chromosome> &population,
                           const std::vector<Query> &queries) const {
-    for (Chromosome &chromosome: population) {
+    for (Chromosome &chromosome : population) {
       chromosome.metrics = Evaluate(chromosome.cuts, queries);
     }
   }
@@ -506,8 +515,9 @@ private:
   void SeedPopulation(std::vector<Chromosome> &population) {
     population.push_back(current_);
 
-    const WorkloadComponent *active =
-        active_component_ < components_.size() ? &components_[active_component_] : nullptr;
+    const WorkloadComponent *active = active_component_ < components_.size()
+                                          ? &components_[active_component_]
+                                          : nullptr;
 
     if (active != nullptr && active->has_best_partition &&
         active->best_partition.cuts != current_.cuts &&
@@ -518,7 +528,8 @@ private:
     if (active != nullptr && population.size() < population_size_) {
       Chromosome guided = MakeProfileGuidedChromosome(active->centroid);
       if (guided.cuts != current_.cuts &&
-          (!active->has_best_partition || guided.cuts != active->best_partition.cuts)) {
+          (!active->has_best_partition ||
+           guided.cuts != active->best_partition.cuts)) {
         population.push_back(std::move(guided));
       }
     }
@@ -526,7 +537,7 @@ private:
     if (population.size() < population_size_) {
       Chromosome uniform = MakeUniformChromosome();
       bool duplicate = false;
-      for (const Chromosome &chromosome: population) {
+      for (const Chromosome &chromosome : population) {
         if (chromosome.cuts == uniform.cuts) {
           duplicate = true;
           break;
