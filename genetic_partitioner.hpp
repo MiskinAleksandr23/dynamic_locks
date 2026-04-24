@@ -9,7 +9,6 @@
 #include <deque>
 #include <limits>
 #include <random>
-#include <utility>
 #include <vector>
 
 struct PartitionMetrics {
@@ -61,7 +60,7 @@ public:
     return Evaluate(current_.cuts, queries);
   }
 
-  size_t CountLocksForRange(size_t left, size_t right) const {
+  [[nodiscard]] size_t CountLocksForRange(size_t left, size_t right) const {
     if (array_size_ == 0) {
       return 0;
     }
@@ -121,7 +120,7 @@ private:
   Chromosome
   MakeProfileGuidedChromosome(const std::vector<double> &profile) const {
     double total_mass = 0.0;
-    for (double value : profile) {
+    for (const double value : profile) {
       total_mass += value;
     }
     if (total_mass <= 0.0) {
@@ -227,7 +226,7 @@ private:
     return kLockCnt - 1;
   }
 
-  size_t PositionToBlock(size_t position) const {
+  [[nodiscard]] size_t PositionToBlock(size_t position) const {
     return std::min(position / block_size_, kBlocks - 1);
   }
 
@@ -295,7 +294,7 @@ private:
           std::clamp(mutated, 1, static_cast<int>(kBlocks - 1)));
     }
 
-    std::sort(internal.begin(), internal.end());
+    std::ranges::sort(internal);
     RepairInternalCuts(internal);
 
     chromosome.cuts.clear();
@@ -306,8 +305,9 @@ private:
     chromosome.cuts.push_back(kBlocks);
   }
 
-  PartitionMetrics Evaluate(const std::vector<size_t> &cuts,
-                            const std::vector<Query> &queries) const {
+  [[nodiscard]] PartitionMetrics
+  Evaluate(const std::vector<size_t> &cuts,
+           const std::vector<Query> &queries) const {
     if (queries.empty()) {
       return {};
     }
@@ -320,7 +320,7 @@ private:
       const size_t right_block = PositionToBlock(query.right);
 
       for (size_t block = left_block; block <= right_block; ++block) {
-        block_hits[block]++;
+        ++block_hits[block];
       }
 
       const size_t first_lock = FindLockForBlock(cuts, left_block);
@@ -346,7 +346,7 @@ private:
     return {contention_score, avg_mutexes, fitness};
   }
 
-  std::vector<double>
+  [[nodiscard]] std::vector<double>
   BuildBlockProfile(const std::vector<Query> &queries) const {
     std::vector<double> profile(kBlocks, 0.0);
     double total_hits = 0.0;
@@ -474,7 +474,7 @@ private:
     }
   }
 
-  std::vector<Query> BuildActiveQueries() const {
+  [[nodiscard]] std::vector<Query> BuildActiveQueries() const {
     if (active_component_ >= components_.size()) {
       return {};
     }

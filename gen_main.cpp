@@ -400,11 +400,12 @@ void PrintShiftTimeline(const ShiftTestResult &result) {
 
 void PrintRecallTest(const RecallTestResult &result) {
   std::cout << "recall test\n";
-  for (const Snapshot &snapshot : result.timeline) {
-    std::cout << "  " << snapshot.label << ": ";
-    PrintMetrics(snapshot.metrics);
-    std::cout << ", hot locks left " << snapshot.left_hot_locks << ", right "
-              << snapshot.right_hot_locks << '\n';
+  for (const auto &[label, metrics, left_hot_locks, right_hot_locks] :
+       result.timeline) {
+    std::cout << "  " << label << ": ";
+    PrintMetrics(metrics);
+    std::cout << ", hot locks left " << left_hot_locks << ", right "
+              << right_hot_locks << '\n';
   }
   std::cout << "  result: " << (result.passed ? "OK" : "FAILED") << "\n\n";
 }
