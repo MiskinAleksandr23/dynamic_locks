@@ -1,15 +1,33 @@
-cmake-build-*/
-build/
-.idea/
+# Build directories
+/build/
+/cmake-build-*/
+
+# CMake generated files (in-source builds)
+/CMakeFiles/
+/CMakeCache.txt
+/cmake_install.cmake
+/CTestTestfile.cmake
+/Makefile
+/Testing/
+/compile_commands.json
+/*.ninja
+/.ninja_*
+
+# IDEs
+/.idea/
+/.vscode/
+
+# OS junk
+.DS_Store
+
+# Object files / libraries / executables
 *.o
-*.out
+*.obj
 *.a
+*.lib
 *.so
 *.dylib
+*.dll
 *.exe
 benchmark
 benchmark_genetic
-dynamic
-task.md
-WORKLOAD_IDEAS_FROM_700.md
-3663338.3665827.pdf
