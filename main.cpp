@@ -2,6 +2,7 @@
 #include "genetic_lock.hpp"
 #include "naive_lock.hpp"
 #include "request_workload.hpp"
+#include "spinlock.hpp"
 
 #include <algorithm>
 #include <barrier>
@@ -10,6 +11,7 @@
 #include <cstdint>
 #include <iomanip>
 #include <iostream>
+#include <stdexcept>
 #include <random>
 #include <string>
 #include <thread>
@@ -47,6 +49,7 @@ enum class QueryPattern {
   kHotWindowRandomRange,
   kUniformRandomRange
 };
+
 enum class QueryBody { kRealWork, kLockOnly };
 
 struct PhaseInput {
@@ -305,7 +308,9 @@ PhaseRunStats RunPhase(Lock &lock, std::vector<int> &data,
 
 template <typename Lock> void WaitForBackgroundRebuild(Lock &, double &) {}
 
-void WaitForBackgroundRebuild(DynamicLock<kLockCount> &, double &seconds) {
+template <typename Mutex>
+void WaitForBackgroundRebuild(DynamicLock<kLockCount, Mutex> &,
+                              double &seconds) {
   const auto start = std::chrono::steady_clock::now();
   std::this_thread::sleep_for(kDynamicRebuildInterval * 3);
   seconds +=
@@ -330,8 +335,8 @@ double RunSetup(Lock &lock, std::vector<int> &data,
 
   for (size_t phase_index = 0; phase_index < scenario.setup_phases.size();
        ++phase_index) {
-    const PhaseInput &phase = scenario.setup_phases[phase_index];
-    seconds += RunPhase(lock, data, phase.queries, body).seconds;
+    const auto &[_, queries] = scenario.setup_phases[phase_index];
+    seconds += RunPhase(lock, data, queries, body).seconds;
 
     if (phase_index == 0) {
       lock.ForceSaveStats();
@@ -373,7 +378,6 @@ ImplementationResult RunImplementation(const std::string &name,
                                        LockFactory factory) {
   ImplementationResult result;
   result.name = name;
-
   {
     auto lock = factory();
     std::vector<int> data = MakeInitialData();
@@ -394,7 +398,6 @@ ImplementationResult RunImplementation(const std::string &name,
     result.avg_mutexes_per_query =
         AverageMutexesForQueries(lock, scenario.measured_phase.queries);
   }
-
   {
     auto lock = factory();
     std::vector<int> data = MakeInitialData();
@@ -456,13 +459,17 @@ void PrintScenario(const ScenarioInput &scenario,
   std::cout << '\n';
 }
 
-void RunScenario(const ScenarioInput &scenario) {
+template <typename Lock = std::mutex>
+std::vector<ImplementationResult>
+RunScenarioResults(const ScenarioInput &scenario) {
   uint64_t genetic_seed = 500;
 
-  auto naive_factory = [] { return NaiveLock<kLockCount>(kArraySize); };
-  auto dynamic_factory = [] { return DynamicLock<kLockCount>(kArraySize); };
+  auto naive_factory = [] { return NaiveLock<kLockCount, Lock>(kArraySize); };
+  auto dynamic_factory = [] {
+    return DynamicLock<kLockCount, Lock>(kArraySize);
+  };
   auto genetic_factory = [&genetic_seed] {
-    return GeneticLock<kLockCount, kBlocks>(
+    return GeneticLock<kLockCount, kBlocks, Lock>(
         kArraySize, genetic_seed++, kGeneticTrainingBatchSize,
         kGeneticHistoryLimit, kGeneticPopulationSize, kGeneticEliteCount,
         kGeneticGenerationCount);
@@ -473,7 +480,71 @@ void RunScenario(const ScenarioInput &scenario) {
   results.push_back(RunImplementation("dynamic", scenario, dynamic_factory));
   results.push_back(RunImplementation("genetic", scenario, genetic_factory));
 
+  return results;
+}
+
+template <typename Lock = std::mutex>
+std::vector<ImplementationResult> RunScenario(const ScenarioInput &scenario) {
+  std::vector<ImplementationResult> results = RunScenarioResults<Lock>(scenario);
   PrintScenario(scenario, results);
+  return results;
+}
+
+const ImplementationResult &
+FindResult(const std::vector<ImplementationResult> &results,
+           const std::string &name) {
+  const auto it =
+      std::find_if(results.begin(), results.end(),
+                   [&](const ImplementationResult &result) {
+                     return result.name == name;
+                   });
+  if (it == results.end()) {
+    throw std::logic_error("missing benchmark result: " + name);
+  }
+  return *it;
+}
+
+double SafeSpeedup(double baseline_seconds, double measured_seconds) {
+  return measured_seconds > 0.0 ? baseline_seconds / measured_seconds : 0.0;
+}
+
+void PrintPointSpinComparison(
+    const ScenarioInput &scenario,
+    const std::vector<ImplementationResult> &mutex_results,
+    const std::vector<ImplementationResult> &spin_results) {
+  const ImplementationResult &spin_naive = FindResult(spin_results, "naive");
+
+  std::cout << "point lock primitive comparison: " << scenario.name << '\n';
+  std::cout << "  spin naive baseline: body_s=" << std::fixed
+            << std::setprecision(3) << spin_naive.body_seconds
+            << ", lock_only_s=" << spin_naive.lock_only_seconds << "\n\n";
+  std::cout << "  impl       spin_body_s  spin_x  spin_lock_only_s  spin_lock_x"
+            << "  mutex_body_s  mutex_lock_only_s  spin_vs_mutex_body"
+            << "  spin_vs_mutex_lock\n";
+
+  for (const std::string &name : {"dynamic", "genetic"}) {
+    const ImplementationResult &spin_result = FindResult(spin_results, name);
+    const ImplementationResult &mutex_result = FindResult(mutex_results, name);
+
+    std::cout << "  " << std::left << std::setw(10) << name << std::right
+              << std::fixed << std::setprecision(3) << std::setw(12)
+              << spin_result.body_seconds << std::setw(8)
+              << SafeSpeedup(spin_naive.body_seconds,
+                             spin_result.body_seconds)
+              << std::setw(18) << spin_result.lock_only_seconds
+              << std::setw(13)
+              << SafeSpeedup(spin_naive.lock_only_seconds,
+                             spin_result.lock_only_seconds)
+              << std::setw(14) << mutex_result.body_seconds << std::setw(19)
+              << mutex_result.lock_only_seconds << std::setw(20)
+              << SafeSpeedup(mutex_result.body_seconds,
+                             spin_result.body_seconds)
+              << std::setw(20)
+              << SafeSpeedup(mutex_result.lock_only_seconds,
+                             spin_result.lock_only_seconds)
+              << '\n';
+  }
+  std::cout << '\n';
 }
 } // namespace
 
@@ -492,10 +563,25 @@ int main() {
   std::cout
       << "  body_x and lock_x are speedups over naive in the same scenario\n\n";
 
-  RunScenario(MakeShiftScenario());
-  RunScenario(MakeRandomScenario());
+  const ScenarioInput shift_point = MakeShiftScenario();
+  const ScenarioInput random_point = MakeRandomScenario();
+
+  const std::vector<ImplementationResult> shift_mutex_results =
+      RunScenario(shift_point);
+  const std::vector<ImplementationResult> random_mutex_results =
+      RunScenario(random_point);
   RunScenario(MakeShiftRandomRangeScenario());
   RunScenario(MakeRandomRangeScenario());
+
+  const std::vector<ImplementationResult> shift_spin_results =
+      RunScenarioResults<spinlock>(shift_point);
+  const std::vector<ImplementationResult> random_spin_results =
+      RunScenarioResults<spinlock>(random_point);
+
+  PrintPointSpinComparison(shift_point, shift_mutex_results,
+                           shift_spin_results);
+  PrintPointSpinComparison(random_point, random_mutex_results,
+                           random_spin_results);
 
   return 0;
 }

@@ -239,6 +239,7 @@ private:
                           std::chrono::nanoseconds delta) {
     auto current = target.load(std::memory_order_relaxed);
     while (!target.compare_exchange_weak(current, current + delta,
+                                         std::memory_order_relaxed,
                                          std::memory_order_relaxed)) {
     }
   }
