@@ -1,6 +1,6 @@
 #pragma once
 
-#include "request_workload.hpp"
+#include "common/request_workload.hpp"
 
 #include <algorithm>
 #include <cmath>

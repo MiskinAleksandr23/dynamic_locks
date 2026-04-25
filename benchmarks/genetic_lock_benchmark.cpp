@@ -6,10 +6,10 @@
  *
  */
 
-#include "genetic_lock.hpp"
-#include "genetic_partitioner.hpp"
-#include "naive_lock.hpp"
-#include "request_workload.hpp"
+#include "common/naive_lock.hpp"
+#include "common/request_workload.hpp"
+#include "genetic/genetic_lock.hpp"
+#include "genetic/genetic_partitioner.hpp"
 
 #include <algorithm>
 #include <barrier>

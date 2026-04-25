@@ -1,4 +1,4 @@
-#include "spinlock.hpp"
+#include "common/spinlock.hpp"
 
 #include <thread>
 

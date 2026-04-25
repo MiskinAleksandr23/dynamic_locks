@@ -1,8 +1,8 @@
-#include "dynamic_lock.hpp"
-#include "genetic_lock.hpp"
-#include "naive_lock.hpp"
-#include "request_workload.hpp"
-#include "spinlock.hpp"
+#include "common/naive_lock.hpp"
+#include "common/request_workload.hpp"
+#include "common/spinlock.hpp"
+#include "dynamic/dynamic_lock.hpp"
+#include "genetic/genetic_lock.hpp"
 
 #include <algorithm>
 #include <barrier>

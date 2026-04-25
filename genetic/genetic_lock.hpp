@@ -1,6 +1,6 @@
 #pragma once
 
-#include "genetic_partitioner.hpp"
+#include "genetic/genetic_partitioner.hpp"
 
 #include <algorithm>
 #include <array>
