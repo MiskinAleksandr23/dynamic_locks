@@ -5,9 +5,8 @@
 void spinlock::lock() {
   bool expected = false;
 
-  while (!locked_.compare_exchange_weak(expected, true,
-                                        std::memory_order_acquire,
-                                        std::memory_order_relaxed)) {
+  while (!locked_.compare_exchange_weak(
+      expected, true, std::memory_order_acquire, std::memory_order_relaxed)) {
     while (locked_.load(std::memory_order_relaxed)) {
       std::this_thread::yield();
     }

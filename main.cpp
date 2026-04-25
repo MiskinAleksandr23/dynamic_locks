@@ -9,10 +9,9 @@
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
-#include <iomanip>
-#include <iostream>
-#include <stdexcept>
+#include <print>
 #include <random>
+#include <stdexcept>
 #include <string>
 #include <thread>
 #include <vector>
@@ -418,21 +417,20 @@ void PrintScenario(const ScenarioInput &scenario,
                    const std::vector<ImplementationResult> &results) {
   const ImplementationResult &baseline = results.front();
 
-  std::cout << "scenario: " << scenario.name << '\n';
-  std::cout << "  " << scenario.description << '\n';
-  std::cout << "  setup queries: ";
+  std::println("scenario: {}", scenario.name);
+  std::println("  {}", scenario.description);
+  std::print("  setup queries: ");
   for (size_t i = 0; i < scenario.setup_phases.size(); ++i) {
     if (i != 0) {
-      std::cout << " + ";
+      std::print(" + ");
     }
-    std::cout << scenario.setup_phases[i].queries.size();
+    std::print("{}", scenario.setup_phases[i].queries.size());
   }
-  std::cout << ", measured queries: " << scenario.measured_phase.queries.size()
-            << "\n\n";
+  std::print(", measured queries: {}\n\n",
+             scenario.measured_phase.queries.size());
 
-  std::cout
-      << "  impl       setup_s  body_s  body_x  lock_only_s  lock_x"
-      << "  avg_lock_us  lock_sum_s  avg_mutex  hot(L/R)  rebuild/train\n";
+  std::println("  impl       setup_s  body_s  body_x  lock_only_s  lock_x"
+               "  avg_lock_us  lock_sum_s  avg_mutex  hot(L/R)  rebuild/train");
 
   for (const ImplementationResult &result : results) {
     const double body_speedup =
@@ -443,20 +441,15 @@ void PrintScenario(const ScenarioInput &scenario,
             ? baseline.lock_only_seconds / result.lock_only_seconds
             : 0.0;
 
-    std::cout << "  " << std::left << std::setw(10) << result.name << std::right
-              << std::fixed << std::setprecision(3) << std::setw(8)
-              << result.setup_seconds << std::setw(8) << result.body_seconds
-              << std::setw(8) << body_speedup << std::setw(13)
-              << result.lock_only_seconds << std::setw(8) << lock_speedup
-              << std::setw(13) << std::setprecision(2) << result.avg_lock_us
-              << std::setw(12) << std::setprecision(3)
-              << result.measured_lock_total_seconds << std::setw(11)
-              << std::setprecision(2) << result.avg_mutexes_per_query
-              << std::setw(5) << result.left_hot_locks << '/' << std::setw(2)
-              << result.right_hot_locks << std::setw(10)
-              << result.reconfigurations << '\n';
+    std::println("  {:<10}{:>8.3f}{:>8.3f}{:>8.3f}{:>13.3f}{:>8.3f}{:>13.2f}"
+                 "{:>12.3f}{:>11.2f}{:>5}/{:>2}{:>10}",
+                 result.name, result.setup_seconds, result.body_seconds,
+                 body_speedup, result.lock_only_seconds, lock_speedup,
+                 result.avg_lock_us, result.measured_lock_total_seconds,
+                 result.avg_mutexes_per_query, result.left_hot_locks,
+                 result.right_hot_locks, result.reconfigurations);
   }
-  std::cout << '\n';
+  std::println("");
 }
 
 template <typename Lock = std::mutex>
@@ -485,7 +478,8 @@ RunScenarioResults(const ScenarioInput &scenario) {
 
 template <typename Lock = std::mutex>
 std::vector<ImplementationResult> RunScenario(const ScenarioInput &scenario) {
-  std::vector<ImplementationResult> results = RunScenarioResults<Lock>(scenario);
+  std::vector<ImplementationResult> results =
+      RunScenarioResults<Lock>(scenario);
   PrintScenario(scenario, results);
   return results;
 }
@@ -493,11 +487,9 @@ std::vector<ImplementationResult> RunScenario(const ScenarioInput &scenario) {
 const ImplementationResult &
 FindResult(const std::vector<ImplementationResult> &results,
            const std::string &name) {
-  const auto it =
-      std::find_if(results.begin(), results.end(),
-                   [&](const ImplementationResult &result) {
-                     return result.name == name;
-                   });
+  const auto it = std::find_if(
+      results.begin(), results.end(),
+      [&](const ImplementationResult &result) { return result.name == name; });
   if (it == results.end()) {
     throw std::logic_error("missing benchmark result: " + name);
   }
@@ -514,54 +506,48 @@ void PrintPointSpinComparison(
     const std::vector<ImplementationResult> &spin_results) {
   const ImplementationResult &spin_naive = FindResult(spin_results, "naive");
 
-  std::cout << "point lock primitive comparison: " << scenario.name << '\n';
-  std::cout << "  spin naive baseline: body_s=" << std::fixed
-            << std::setprecision(3) << spin_naive.body_seconds
-            << ", lock_only_s=" << spin_naive.lock_only_seconds << "\n\n";
-  std::cout << "  impl       spin_body_s  spin_x  spin_lock_only_s  spin_lock_x"
-            << "  mutex_body_s  mutex_lock_only_s  spin_vs_mutex_body"
-            << "  spin_vs_mutex_lock\n";
+  std::println("point lock primitive comparison: {}", scenario.name);
+  std::print("  spin naive baseline: body_s={:.3f}, lock_only_s={:.3f}\n\n",
+             spin_naive.body_seconds, spin_naive.lock_only_seconds);
+  std::println("  impl       spin_body_s  spin_x  spin_lock_only_s  spin_lock_x"
+               "  mutex_body_s  mutex_lock_only_s  spin_vs_mutex_body"
+               "  spin_vs_mutex_lock");
 
   for (const std::string &name : {"dynamic", "genetic"}) {
     const ImplementationResult &spin_result = FindResult(spin_results, name);
     const ImplementationResult &mutex_result = FindResult(mutex_results, name);
 
-    std::cout << "  " << std::left << std::setw(10) << name << std::right
-              << std::fixed << std::setprecision(3) << std::setw(12)
-              << spin_result.body_seconds << std::setw(8)
-              << SafeSpeedup(spin_naive.body_seconds,
-                             spin_result.body_seconds)
-              << std::setw(18) << spin_result.lock_only_seconds
-              << std::setw(13)
-              << SafeSpeedup(spin_naive.lock_only_seconds,
-                             spin_result.lock_only_seconds)
-              << std::setw(14) << mutex_result.body_seconds << std::setw(19)
-              << mutex_result.lock_only_seconds << std::setw(20)
-              << SafeSpeedup(mutex_result.body_seconds,
-                             spin_result.body_seconds)
-              << std::setw(20)
-              << SafeSpeedup(mutex_result.lock_only_seconds,
-                             spin_result.lock_only_seconds)
-              << '\n';
+    std::println(
+        "  {:<10}{:>12.3f}{:>8.3f}{:>18.3f}{:>13.3f}{:>14.3f}{:>19.3f}"
+        "{:>20.3f}{:>20.3f}",
+        name, spin_result.body_seconds,
+        SafeSpeedup(spin_naive.body_seconds, spin_result.body_seconds),
+        spin_result.lock_only_seconds,
+        SafeSpeedup(spin_naive.lock_only_seconds,
+                    spin_result.lock_only_seconds),
+        mutex_result.body_seconds, mutex_result.lock_only_seconds,
+        SafeSpeedup(mutex_result.body_seconds, spin_result.body_seconds),
+        SafeSpeedup(mutex_result.lock_only_seconds,
+                    spin_result.lock_only_seconds));
   }
-  std::cout << '\n';
+  std::println("");
 }
 } // namespace
 
 int main() {
-  std::cout << "dynamic lock comparison benchmark\n";
-  std::cout << "  array size: " << kArraySize << '\n';
-  std::cout << "  mutexes: " << kLockCount << ", fine blocks: " << kBlocks
-            << ", fine block size: " << kBlockSize << '\n';
-  std::cout << "  threads: " << kThreadCount << '\n';
-  std::cout << "  point query length: " << kPointQueryLength << '\n';
-  std::cout << "  random range max length: " << kRandomRangeMaxLength << '\n';
-  std::cout << "  hot window size: " << kHotWindowSize << '\n';
-  std::cout << "  body_s: final measured phase with sum+single update\n";
-  std::cout
-      << "  lock_only_s: same final coordinates after same setup, empty body\n";
-  std::cout
-      << "  body_x and lock_x are speedups over naive in the same scenario\n\n";
+  std::println("dynamic lock comparison benchmark");
+  std::println("  array size: {}", kArraySize);
+  std::println("  mutexes: {}, fine blocks: {}, fine block size: {}",
+               kLockCount, kBlocks, kBlockSize);
+  std::println("  threads: {}", kThreadCount);
+  std::println("  point query length: {}", kPointQueryLength);
+  std::println("  random range max length: {}", kRandomRangeMaxLength);
+  std::println("  hot window size: {}", kHotWindowSize);
+  std::println("  body_s: final measured phase with sum+single update");
+  std::println(
+      "  lock_only_s: same final coordinates after same setup, empty body");
+  std::print(
+      "  body_x and lock_x are speedups over naive in the same scenario\n\n");
 
   const ScenarioInput shift_point = MakeShiftScenario();
   const ScenarioInput random_point = MakeRandomScenario();

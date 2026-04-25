@@ -16,8 +16,7 @@
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
-#include <iomanip>
-#include <iostream>
+#include <print>
 #include <string>
 #include <thread>
 #include <vector>
@@ -368,68 +367,66 @@ LockBenchmarkComparison RunPureLockBenchmark() {
 }
 
 void PrintMetrics(const PartitionMetrics &metrics) {
-  std::cout << "fitness " << std::fixed << std::setprecision(0)
-            << metrics.fitness << ", contention " << metrics.contention_score
-            << ", avg mutexes/query " << std::setprecision(2)
-            << metrics.avg_mutexes_per_query;
+  std::print("fitness {:.0f}, contention {}, avg mutexes/query {:.2f}",
+             metrics.fitness, metrics.contention_score,
+             metrics.avg_mutexes_per_query);
 }
 
 void PrintImprovementTest(const ImprovementTestResult &result) {
-  std::cout << "improvement test\n";
-  std::cout << "  before: ";
+  std::println("improvement test");
+  std::print("  before: ");
   PrintMetrics(result.initial_metrics);
-  std::cout << '\n';
-  std::cout << "  after:  ";
+  std::println("");
+  std::print("  after:  ");
   PrintMetrics(result.final_metrics);
-  std::cout << '\n';
-  std::cout << "  hot locks after training: left " << result.left_hot_locks
-            << ", right " << result.right_hot_locks << '\n';
-  std::cout << "  result: " << (result.passed ? "OK" : "FAILED") << "\n\n";
+  std::println("");
+  std::println("  hot locks after training: left {}, right {}",
+               result.left_hot_locks, result.right_hot_locks);
+  std::print("  result: {}\n\n", result.passed ? "OK" : "FAILED");
 }
 
 void PrintShiftTimeline(const ShiftTestResult &result) {
-  std::cout << "shift test\n";
+  std::println("shift test");
   for (const Snapshot &snapshot : result.timeline) {
-    std::cout << "  " << snapshot.label << ": ";
+    std::print("  {}: ", snapshot.label);
     PrintMetrics(snapshot.metrics);
-    std::cout << ", hot locks left " << snapshot.left_hot_locks << ", right "
-              << snapshot.right_hot_locks << '\n';
+    std::println(", hot locks left {}, right {}", snapshot.left_hot_locks,
+                 snapshot.right_hot_locks);
   }
-  std::cout << "  result: " << (result.passed ? "OK" : "FAILED") << "\n\n";
+  std::print("  result: {}\n\n", result.passed ? "OK" : "FAILED");
 }
 
 void PrintRecallTest(const RecallTestResult &result) {
-  std::cout << "recall test\n";
+  std::println("recall test");
   for (const auto &[label, metrics, left_hot_locks, right_hot_locks] :
        result.timeline) {
-    std::cout << "  " << label << ": ";
+    std::print("  {}: ", label);
     PrintMetrics(metrics);
-    std::cout << ", hot locks left " << left_hot_locks << ", right "
-              << right_hot_locks << '\n';
+    std::println(", hot locks left {}, right {}", left_hot_locks,
+                 right_hot_locks);
   }
-  std::cout << "  result: " << (result.passed ? "OK" : "FAILED") << "\n\n";
+  std::print("  result: {}\n\n", result.passed ? "OK" : "FAILED");
 }
 
 void PrintLockBenchmarkRun(const LockBenchmarkRun &run) {
   const double qps =
       run.seconds > 0.0 ? static_cast<double>(run.queries) / run.seconds : 0.0;
-  std::cout << "  " << run.name << ": " << std::fixed << std::setprecision(3)
-            << run.seconds << " s, " << std::setprecision(0) << qps
-            << " qps, avg mutexes/query " << std::setprecision(2)
-            << run.avg_mutexes_per_query << ", avg lock wait "
-            << std::setprecision(4) << run.avg_lock_ms << " ms";
+  std::print("  {}: {:.3f} s, {:.0f} qps, avg mutexes/query {:.2f}, "
+             "avg lock wait {:.4f} ms",
+             run.name, run.seconds, qps, run.avg_mutexes_per_query,
+             run.avg_lock_ms);
 
   if (run.trainings > 0) {
-    std::cout << ", trainings " << run.trainings << ", avg train "
-              << std::setprecision(2) << run.avg_training_ms << " ms";
+    std::print(", trainings {}, avg train {:.2f} ms", run.trainings,
+               run.avg_training_ms);
   }
 
-  std::cout << ", hot locks left " << run.left_hot_locks << ", right "
-            << run.right_hot_locks << '\n';
+  std::println(", hot locks left {}, right {}", run.left_hot_locks,
+               run.right_hot_locks);
 }
 
 void PrintLockBenchmark(const LockBenchmarkComparison &comparison) {
-  std::cout << comparison.title << '\n';
+  std::println("{}", comparison.title);
   PrintLockBenchmarkRun(comparison.naive);
   PrintLockBenchmarkRun(comparison.genetic);
 
@@ -448,43 +445,40 @@ void PrintLockBenchmark(const LockBenchmarkComparison &comparison) {
           ? comparison.naive.seconds / comparison.genetic.seconds
           : 0.0;
 
-  std::cout << "  qps ratio genetic/naive: " << std::fixed
-            << std::setprecision(3) << speedup << "x\n";
-  std::cout << "  wall-time ratio naive/genetic: " << std::setprecision(3)
-            << wall_time_ratio << "x\n\n";
+  std::println("  qps ratio genetic/naive: {:.3f}x", speedup);
+  std::print("  wall-time ratio naive/genetic: {:.3f}x\n\n", wall_time_ratio);
 }
 } // namespace
 
 int main() {
-  std::cout << "simple genetic partition demo\n";
-  std::cout << "  requests: sum on range + apply f(int)->int to one element\n";
-  std::cout << "  chromosome: partition boundaries between 1024 fine-grained "
-               "blocks\n";
-  std::cout << "  mutation: shift a few boundaries by several blocks\n";
-  std::cout << "  fitness = contention_score + 5000 * avg_mutexes_per_query\n";
-  std::cout << "  contention_score = sum(load_i^2), load_i = recent queries on "
-               "mutex i\n";
-  std::cout
-      << "  online learning: batches are clustered into workload modes,\n";
-  std::cout
-      << "  each mode keeps its own history and remembered best partition\n\n";
+  std::println("simple genetic partition demo");
+  std::println("  requests: sum on range + apply f(int)->int to one element");
+  std::println(
+      "  chromosome: partition boundaries between 1024 fine-grained blocks");
+  std::println("  mutation: shift a few boundaries by several blocks");
+  std::println("  fitness = contention_score + 5000 * avg_mutexes_per_query");
+  std::println(
+      "  contention_score = sum(load_i^2), load_i = recent queries on mutex i");
+  std::println("  online learning: batches are clustered into workload modes,");
+  std::print(
+      "  each mode keeps its own history and remembered best partition\n\n");
 
-  std::cout << "config\n";
-  std::cout << "  array size: " << kArraySize << '\n';
-  std::cout << "  mutexes: " << kLockCount << '\n';
-  std::cout << "  fine blocks: " << kBlocks << '\n';
-  std::cout << "  hot window size: " << kHotWindowSize << '\n';
-  std::cout << "  query length: " << kQueryLength << '\n';
-  std::cout << "  batch size: " << kBatchSize << '\n';
-  std::cout << "  epochs per side: " << kEpochsPerSide << '\n';
-  std::cout << "  recall return epochs: " << kRecallReturnEpochs << '\n';
-  std::cout << "  population size: " << kPopulationSize << '\n';
-  std::cout << "  generations: " << kGenerationCount << "\n\n";
-  std::cout << "benchmark config\n";
-  std::cout << "  threads: " << kThreadCount << '\n';
-  std::cout << "  online training batch: " << kOnlineTrainingBatchSize << '\n';
-  std::cout << "  online phase queries: " << kOnlinePhaseQueries << '\n';
-  std::cout << "  pure lock queries: " << kPureLockQueries << "\n\n";
+  std::println("config");
+  std::println("  array size: {}", kArraySize);
+  std::println("  mutexes: {}", kLockCount);
+  std::println("  fine blocks: {}", kBlocks);
+  std::println("  hot window size: {}", kHotWindowSize);
+  std::println("  query length: {}", kQueryLength);
+  std::println("  batch size: {}", kBatchSize);
+  std::println("  epochs per side: {}", kEpochsPerSide);
+  std::println("  recall return epochs: {}", kRecallReturnEpochs);
+  std::println("  population size: {}", kPopulationSize);
+  std::print("  generations: {}\n\n", kGenerationCount);
+  std::println("benchmark config");
+  std::println("  threads: {}", kThreadCount);
+  std::println("  online training batch: {}", kOnlineTrainingBatchSize);
+  std::println("  online phase queries: {}", kOnlinePhaseQueries);
+  std::print("  pure lock queries: {}\n\n", kPureLockQueries);
 
   const ImprovementTestResult improvement = RunImprovementTest();
   const ShiftTestResult shift = RunShiftTest();
@@ -499,8 +493,8 @@ int main() {
   PrintLockBenchmark(pure_lock_benchmark);
 
   const bool passed = improvement.passed && shift.passed && recall.passed;
-  std::cout << "summary\n";
-  std::cout << "  overall: " << (passed ? "OK" : "FAILED") << '\n';
+  std::println("summary");
+  std::println("  overall: {}", passed ? "OK" : "FAILED");
 
   return passed ? 0 : 1;
 }

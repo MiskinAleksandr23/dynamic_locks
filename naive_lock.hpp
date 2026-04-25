@@ -38,9 +38,9 @@ public:
 
     const auto lock_time = std::chrono::steady_clock::now() - start;
     auto current = total_lock_time_.load(std::memory_order_relaxed);
-    while (!total_lock_time_.compare_exchange_weak(
-        current, current + lock_time, std::memory_order_relaxed,
-        std::memory_order_relaxed)) {
+    while (!total_lock_time_.compare_exchange_weak(current, current + lock_time,
+                                                   std::memory_order_relaxed,
+                                                   std::memory_order_relaxed)) {
     }
 
     ++operation_count_;
