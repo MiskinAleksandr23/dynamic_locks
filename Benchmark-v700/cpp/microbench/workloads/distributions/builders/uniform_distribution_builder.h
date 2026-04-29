@@ -1,0 +1,37 @@
+//
+// Created by Ravil Galiev on 30.08.2022.
+//
+#pragma once
+
+#include <cassert>
+#include "random_xoshiro256p.h"
+#include "workloads/distributions/distribution_builder.h"
+#include "workloads/distributions/impls/uniform_distribution.h"
+#include "globals_extern.h"
+
+namespace microbench::workload {
+
+struct UniformDistributionBuilder : public MutableDistributionBuilder {
+    UniformDistribution* build(Random64& rng, size_t range) override {
+        return new UniformDistribution(rng, range);
+    }
+
+    UniformDistribution* build(Random64& rng) override {
+        return new UniformDistribution(rng);
+    }
+
+    void to_json(nlohmann::json& j) const override {
+        j["ClassName"] = "UniformDistributionBuilder";
+    }
+
+    void from_json(const nlohmann::json& j) override {
+    }
+
+    std::string to_string(size_t indents = 1) override {
+        return indented_title_with_str_data("Type", "Uniform", indents);
+    }
+
+    ~UniformDistributionBuilder() override = default;
+};
+
+}  // namespace microbench::workload

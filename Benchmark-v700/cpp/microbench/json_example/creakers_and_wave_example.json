@@ -1,0 +1,82 @@
+{
+    "prefill": {
+        "numThreads": 1,
+        "stopCondition": {
+            "ClassName": "OperationCounter",
+            "commonOperationLimit": 614
+        },
+        "threadLoopBuilders": [
+            {
+                "quantity": 1,
+                "threadLoopBuilder": {
+                    "ClassName": "PrefillInsertThreadLoopBuilder",
+                    "argsGeneratorBuilder": {
+                        "ClassName": "CreakersAndWavePrefillArgsGeneratorBuilder",
+                        "creakersSize": 0.1,
+                        "dataMapBuilder": {
+                            "ClassName": "IdDataMapBuilder",
+                            "id": 1
+                        },
+                        "waveSize": 0.2
+                    },
+                    "numberOfAttempts": 10000000
+                }
+            }
+        ]
+    },
+    "range": 2048,
+    "test": {
+        "numThreads": 8,
+        "stopCondition": {
+            "ClassName": "Timer",
+            "workTime": 10000
+        },
+        "threadLoopBuilders": [
+            {
+                "pin": [
+                    -1,
+                    -1,
+                    0,
+                    0,
+                    1,
+                    2,
+                    3,
+                    3
+                ],
+                "quantity": 8,
+                "threadLoopBuilder": {
+                    "ClassName": "DefaultThreadLoopBuilder",
+                    "argsGeneratorBuilder": {
+                        "ClassName": "CreakersAndWaveArgsGeneratorBuilder",
+                        "creakersDistBuilder": {
+                            "ClassName": "UniformDistributionBuilder"
+                        },
+                        "creakersRatio": 0.2,
+                        "creakersSize": 0.1,
+                        "dataMapBuilder": {
+                            "ClassName": "IdDataMapBuilder",
+                            "id": 1
+                        },
+                        "waveDistBuilder": {
+                            "ClassName": "ZipfianDistributionBuilder",
+                            "alpha": 1.0
+                        },
+                        "waveSize": 0.2
+                    },
+                    "parameters": {
+                        "insertRatio": 0.1,
+                        "removeRatio": 0.1,
+                        "rqRatio": 0.0
+                    }
+                }
+            }
+        ]
+    },
+    "warmUp": {
+        "numThreads": 0,
+        "stopCondition": {
+            "ClassName": "Timer",
+            "workTime": 5000
+        }
+    }
+}

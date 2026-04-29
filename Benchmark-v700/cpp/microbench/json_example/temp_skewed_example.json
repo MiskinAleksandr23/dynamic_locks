@@ -1,0 +1,158 @@
+{
+    "prefill": {
+        "numThreads": 1,
+        "stopCondition": {
+            "ClassName": "OperationCounter",
+            "commonOperationLimit": 1024
+        },
+        "threadLoopBuilders": [
+            {
+                "quantity": 1,
+                "threadLoopBuilder": {
+                    "ClassName": "PrefillInsertThreadLoopBuilder",
+                    "argsGeneratorBuilder": {
+                        "ClassName": "DefaultArgsGeneratorBuilder",
+                        "dataMapBuilder": {
+                            "ClassName": "IdDataMapBuilder",
+                            "id": 3
+                        },
+                        "distributionBuilder": {
+                            "ClassName": "UniformDistributionBuilder"
+                        }
+                    },
+                    "numberOfAttempts": 10000000
+                }
+            }
+        ]
+    },
+    "range": 2048,
+    "test": {
+        "numThreads": 8,
+        "stopCondition": {
+            "ClassName": "Timer",
+            "workTime": 10000
+        },
+        "threadLoopBuilders": [
+            {
+                "pin": [
+                    -1,
+                    -1,
+                    0,
+                    0,
+                    1,
+                    2,
+                    3,
+                    3
+                ],
+                "quantity": 8,
+                "threadLoopBuilder": {
+                    "ClassName": "DefaultThreadLoopBuilder",
+                    "argsGeneratorBuilder": {
+                        "ClassName": "TemporarySkewedArgsGeneratorBuilder",
+                        "dataMapBuilder": {
+                            "ClassName": "ArrayDataMapBuilder",
+                            "id": 0
+                        },
+                        "defaultHotTime": -1,
+                        "defaultRelaxTime": -1,
+                        "hotDistBuilders": [
+                            {
+                                "ClassName": "SkewedUniformDistributionBuilder",
+                                "coldDistBuilder": {
+                                    "ClassName": "UniformDistributionBuilder"
+                                },
+                                "hotDistBuilder": {
+                                    "ClassName": "UniformDistributionBuilder"
+                                },
+                                "hotRatio": 0.8,
+                                "hotSize": 0.1
+                            },
+                            {
+                                "ClassName": "SkewedUniformDistributionBuilder",
+                                "coldDistBuilder": {
+                                    "ClassName": "UniformDistributionBuilder"
+                                },
+                                "hotDistBuilder": {
+                                    "ClassName": "UniformDistributionBuilder"
+                                },
+                                "hotRatio": 0.7,
+                                "hotSize": 0.2
+                            },
+                            {
+                                "ClassName": "SkewedUniformDistributionBuilder",
+                                "coldDistBuilder": {
+                                    "ClassName": "UniformDistributionBuilder"
+                                },
+                                "hotDistBuilder": {
+                                    "ClassName": "UniformDistributionBuilder"
+                                },
+                                "hotRatio": 0.6,
+                                "hotSize": 0.3
+                            },
+                            {
+                                "ClassName": "SkewedUniformDistributionBuilder",
+                                "coldDistBuilder": {
+                                    "ClassName": "UniformDistributionBuilder"
+                                },
+                                "hotDistBuilder": {
+                                    "ClassName": "UniformDistributionBuilder"
+                                },
+                                "hotRatio": 0.6,
+                                "hotSize": 0.4
+                            },
+                            {
+                                "ClassName": "SkewedUniformDistributionBuilder",
+                                "coldDistBuilder": {
+                                    "ClassName": "UniformDistributionBuilder"
+                                },
+                                "hotDistBuilder": {
+                                    "ClassName": "UniformDistributionBuilder"
+                                },
+                                "hotRatio": 0.7,
+                                "hotSize": 0.5
+                            }
+                        ],
+                        "hotTimes": [
+                            1,
+                            2,
+                            3,
+                            4,
+                            5
+                        ],
+                        "manualSettingSetBegins": true,
+                        "relaxDistBuilder": {
+                            "ClassName": "UniformDistributionBuilder"
+                        },
+                        "relaxTimes": [
+                            1,
+                            2,
+                            3,
+                            4,
+                            5
+                        ],
+                        "setBegins": [
+                            0.0,
+                            0.1,
+                            0.2,
+                            0.3,
+                            0.05
+                        ],
+                        "setNumber": 5
+                    },
+                    "parameters": {
+                        "insertRatio": 0.1,
+                        "removeRatio": 0.1,
+                        "rqRatio": 0.0
+                    }
+                }
+            }
+        ]
+    },
+    "warmUp": {
+        "numThreads": 0,
+        "stopCondition": {
+            "ClassName": "Timer",
+            "workTime": 5000
+        }
+    }
+}
