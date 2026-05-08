@@ -14,11 +14,15 @@ namespace microbench::workload {
 std::map<size_t, DataMapBuilder*> data_map_builders;
 
 DataMapBuilder* get_data_map_from_json(const nlohmann::json& j) {
-    size_t id = j["id"];
+    const bool has_id = j.contains("id") && j["id"].is_number_integer();
+    size_t id = 0;
+    if (has_id) {
+        id = j["id"].get<size_t>();
 
-    auto data_maps_builder_by_id = data_map_builders.find(id);
-    if (data_maps_builder_by_id != data_map_builders.end()) {
-        return data_maps_builder_by_id->second;
+        auto data_maps_builder_by_id = data_map_builders.find(id);
+        if (data_maps_builder_by_id != data_map_builders.end()) {
+            return data_maps_builder_by_id->second;
+        }
     }
 
     std::string class_name = j["ClassName"];
@@ -33,6 +37,9 @@ DataMapBuilder* get_data_map_from_json(const nlohmann::json& j) {
     }
 
     data_map_builder->from_json(j);
+    if (!has_id) {
+        id = data_map_builder->id;
+    }
     data_map_builders.insert({id, data_map_builder});
     DataMapBuilder::id_counter = std::max(DataMapBuilder::id_counter, id + 1);
     return data_map_builder;

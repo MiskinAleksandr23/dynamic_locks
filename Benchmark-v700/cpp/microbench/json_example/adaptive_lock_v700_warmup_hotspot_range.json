@@ -1,0 +1,88 @@
+{
+    "range": 1048576,
+    "prefill": {
+        "numThreads": 0,
+        "stopCondition": {
+            "ClassName": "OperationCounter",
+            "commonOperationLimit": 0
+        }
+    },
+    "warmUp": {
+        "numThreads": 8,
+        "stopCondition": {
+            "ClassName": "OperationCounter",
+            "commonOperationLimit": 10000000
+        },
+        "threadLoopBuilders": [
+            {
+                "quantity": 8,
+                "threadLoopBuilder": {
+                    "ClassName": "DefaultThreadLoopBuilder",
+                    "argsGeneratorBuilder": {
+                        "ClassName": "RangeQueryArgsGeneratorBuilder",
+                        "interval": 8,
+                        "distributionBuilder": {
+                            "ClassName": "SkewedUniformDistributionBuilder",
+                            "coldDistBuilder": {
+                                "ClassName": "UniformDistributionBuilder"
+                            },
+                            "hotDistBuilder": {
+                                "ClassName": "UniformDistributionBuilder"
+                            },
+                            "hotRatio": 0.99,
+                            "hotSize": 0.015625
+                        },
+                        "dataMapBuilder": {
+                            "ClassName": "IdDataMapBuilder",
+                            "id": 211
+                        }
+                    },
+                    "parameters": {
+                        "insertRatio": 0.0,
+                        "removeRatio": 0.0,
+                        "rqRatio": 1.0
+                    }
+                }
+            }
+        ]
+    },
+    "test": {
+        "numThreads": 8,
+        "stopCondition": {
+            "ClassName": "OperationCounter",
+            "commonOperationLimit": 20000000
+        },
+        "threadLoopBuilders": [
+            {
+                "quantity": 8,
+                "threadLoopBuilder": {
+                    "ClassName": "DefaultThreadLoopBuilder",
+                    "argsGeneratorBuilder": {
+                        "ClassName": "RangeQueryArgsGeneratorBuilder",
+                        "interval": 8,
+                        "distributionBuilder": {
+                            "ClassName": "SkewedUniformDistributionBuilder",
+                            "coldDistBuilder": {
+                                "ClassName": "UniformDistributionBuilder"
+                            },
+                            "hotDistBuilder": {
+                                "ClassName": "UniformDistributionBuilder"
+                            },
+                            "hotRatio": 0.99,
+                            "hotSize": 0.015625
+                        },
+                        "dataMapBuilder": {
+                            "ClassName": "IdDataMapBuilder",
+                            "id": 212
+                        }
+                    },
+                    "parameters": {
+                        "insertRatio": 0.0,
+                        "removeRatio": 0.0,
+                        "rqRatio": 1.0
+                    }
+                }
+            }
+        ]
+    }
+}

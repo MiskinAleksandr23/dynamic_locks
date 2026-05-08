@@ -82,6 +82,12 @@ template <typename T>
 struct HasFlushTraining<T, std::void_t<decltype(std::declval<T&>().FlushTraining())>>
     : std::true_type {};
 
+template <typename T, typename = void>
+struct HasRebuildNow : std::false_type {};
+
+template <typename T>
+struct HasRebuildNow<T, std::void_t<decltype(std::declval<T&>().RebuildNow())>> : std::true_type {};
+
 template <typename K, typename V, typename LockKind>
 class AdapterImpl {
 public:
@@ -92,6 +98,8 @@ public:
           key_max_(key_max),
           array_size_(ComputeArraySize(key_min, key_max)),
           data_(array_size_, 0),
+          present_(array_size_, 0),
+          stored_keys_(array_size_, key_min),
           thread_checksums_(std::max(num_threads, 1), 0),
           lock_(LockTraits<LockKind>::Create(array_size_)) {
         lock_->StartRebuilder(kDynamicRebuildInterval, kDynamicRebuildThreshold);
@@ -114,29 +122,71 @@ public:
 
     void warmupEnd() {
         FlushIfSupported();
-        lock_->ForceSaveStats();
+        RebuildNowIfSupported();
+        lock_->StopRebuilder();
         lock_->ResetRuntimeStats();
         range_queries_.store(0, std::memory_order_relaxed);
     }
 
-    V insert(const int, const K&, const V& val) {
-        return val;
+    V insert(const int, const K& key, const V&) {
+        const size_t index = ToIndex(key);
+        V previous = no_value_;
+        lock_->WriteQuery(index, index, [&](size_t, size_t) {
+            if (present_[index]) {
+                previous = ValueForIndex(index);
+            }
+            present_[index] = 1;
+            stored_keys_[index] = key;
+            data_[index] = static_cast<uint64_t>(key);
+        });
+        return previous;
     }
 
-    V insertIfAbsent(const int, const K&, const V& val) {
-        return val;
+    V insertIfAbsent(const int, const K& key, const V&) {
+        const size_t index = ToIndex(key);
+        V previous = no_value_;
+        lock_->WriteQuery(index, index, [&](size_t, size_t) {
+            if (present_[index]) {
+                previous = ValueForIndex(index);
+                return;
+            }
+            present_[index] = 1;
+            stored_keys_[index] = key;
+            data_[index] = static_cast<uint64_t>(key);
+        });
+        return previous;
     }
 
-    V erase(const int, const K&) {
-        return no_value_;
+    V erase(const int, const K& key) {
+        const size_t index = ToIndex(key);
+        V previous = no_value_;
+        lock_->WriteQuery(index, index, [&](size_t, size_t) {
+            if (!present_[index]) {
+                return;
+            }
+            previous = ValueForIndex(index);
+            present_[index] = 0;
+            data_[index] = 0;
+        });
+        return previous;
     }
 
-    V find(const int, const K&) {
-        return no_value_;
+    V find(const int, const K& key) {
+        const size_t index = ToIndex(key);
+        V value = no_value_;
+        lock_->WriteQuery(index, index, [&](size_t, size_t) {
+            if (present_[index]) {
+                value = ValueForIndex(index);
+            }
+        });
+        return value;
     }
 
-    bool contains(const int, const K&) {
-        return false;
+    bool contains(const int, const K& key) {
+        const size_t index = ToIndex(key);
+        bool value = false;
+        lock_->WriteQuery(index, index, [&](size_t, size_t) { value = present_[index] != 0; });
+        return value;
     }
 
     int rangeQuery(const int tid, const K& lo, const K& hi, K* const, V* const) {
@@ -214,11 +264,27 @@ private:
         }
     }
 
+    void RebuildNowIfSupported() {
+        if constexpr (HasRebuildNow<typename LockTraits<LockKind>::Lock>::value) {
+            lock_->RebuildNow();
+        }
+    }
+
+    V ValueForIndex(size_t index) const {
+        if constexpr (std::is_pointer_v<V>) {
+            return reinterpret_cast<V>(const_cast<K*>(&stored_keys_[index]));
+        } else {
+            return static_cast<V>(stored_keys_[index]);
+        }
+    }
+
     const V no_value_;
     const K key_min_;
     const K key_max_;
     const size_t array_size_;
     std::vector<uint64_t> data_;
+    std::vector<uint8_t> present_;
+    std::vector<K> stored_keys_;
     std::vector<uint64_t> thread_checksums_;
     std::unique_ptr<typename LockTraits<LockKind>::Lock> lock_;
     std::atomic<uint64_t> range_queries_{0};

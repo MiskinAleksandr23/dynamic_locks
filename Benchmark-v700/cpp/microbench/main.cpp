@@ -399,6 +399,7 @@ void run(globals_t* g) {
                    << " updates; total_prefilling_elapsed_ms=" << elapsed_millis << " ms)"
                    << std::endl)
         std::cout << "warm up millis=" << elapsed_millis << std::endl;
+        g->dsAdapter->warmupEnd();
         GSTATS_CLEAR_ALL;
     } else {
         COUTATOMIC(to_string_stage("Without WarmUp stage"))
