@@ -9,6 +9,7 @@
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
+#include <cstdlib>
 #include <print>
 #include <random>
 #include <stdexcept>
@@ -24,6 +25,10 @@ constexpr size_t kArraySize = kBlocks * kBlockSize;
 constexpr size_t kHotWindowSize = kArraySize / kLockCount;
 constexpr size_t kPointQueryLength = 1;
 constexpr size_t kRandomRangeMaxLength = 65'536;
+constexpr size_t kSmallHotWindowSize = 1024;
+constexpr size_t kSmallRangeMaxLength = 8;
+constexpr size_t kMovingWindowSize = 4 * kBlockSize;
+constexpr size_t kMovingWindowStops = 8;
 
 const size_t kThreadCount = std::max(1u, std::thread::hardware_concurrency());
 
@@ -33,6 +38,9 @@ constexpr size_t kMeasuredQueries = 1'200'000;
 constexpr size_t kRandomRangeWarmupQueries = 16'000;
 constexpr size_t kRandomRangeAdaptQueries = 48'000;
 constexpr size_t kRandomRangeMeasuredQueries = 40'000;
+constexpr size_t kMovingWindowWarmupQueries = 128'000;
+constexpr size_t kMovingWindowAdaptQueriesPerStop = 192'000;
+constexpr size_t kMovingWindowMeasuredQueriesPerStop = 700'000;
 constexpr auto kDynamicRebuildInterval = std::chrono::milliseconds(100);
 constexpr double kDynamicRebuildThreshold = 2.0;
 
@@ -56,11 +64,19 @@ struct PhaseInput {
   std::vector<Query> queries;
 };
 
+struct TimedPhaseInput {
+  std::string name;
+  std::vector<Query> adapt_queries;
+  std::vector<Query> measure_queries;
+  double adapt_seconds = 0.0;
+};
+
 struct ScenarioInput {
   std::string name;
   std::string description;
   std::vector<PhaseInput> setup_phases;
   PhaseInput measured_phase;
+  std::vector<TimedPhaseInput> timed_phases;
   bool wait_for_background_rebuild = false;
 };
 
@@ -185,6 +201,92 @@ std::vector<Query> BuildQueries(size_t count, QueryPattern pattern,
   return queries;
 }
 
+std::vector<Query>
+BuildMultiWindowQueries(size_t count, const std::vector<size_t> &window_begins,
+                        size_t window_size, size_t max_query_length,
+                        uint64_t seed) {
+  if (window_begins.empty()) {
+    throw std::invalid_argument("window_begins must be non-empty");
+  }
+
+  std::mt19937_64 rng(seed);
+  std::uniform_int_distribution<size_t> window_dist(0,
+                                                    window_begins.size() - 1);
+  std::vector<Query> queries;
+  queries.reserve(count);
+
+  for (size_t i = 0; i < count; ++i) {
+    const size_t window_begin = window_begins[window_dist(rng)];
+    queries.push_back(MakeWindowRandomRangeQuery(rng, window_begin, window_size,
+                                                 max_query_length));
+  }
+
+  return queries;
+}
+
+std::vector<size_t> MakeClusteredSmallWindowBegins() {
+  return {0, 4 * kBlockSize, 8 * kBlockSize, 12 * kBlockSize};
+}
+
+std::vector<size_t> MakeMovingWindowBegins() {
+  std::vector<size_t> begins;
+  begins.reserve(2 * kMovingWindowStops - 2);
+
+  const size_t max_begin = kArraySize - kMovingWindowSize;
+  for (size_t stop = 0; stop < kMovingWindowStops; ++stop) {
+    begins.push_back(max_begin * stop / (kMovingWindowStops - 1));
+  }
+  for (size_t stop = kMovingWindowStops - 1; stop-- > 1;) {
+    begins.push_back(max_begin * stop / (kMovingWindowStops - 1));
+  }
+
+  return begins;
+}
+
+double ReadEnvDouble(const char *name, double default_value) {
+  const char *value = std::getenv(name);
+  if (value == nullptr) {
+    return default_value;
+  }
+
+  char *end = nullptr;
+  const double parsed = std::strtod(value, &end);
+  if (end == value || parsed < 0.0) {
+    return default_value;
+  }
+  return parsed;
+}
+
+double MovingWindowAdaptSecondsPerStop() {
+  static const double seconds_per_direction =
+      ReadEnvDouble("DYNAMIC_LOCK_MOVING_SECONDS_PER_DIRECTION", 0.0);
+  if (seconds_per_direction <= 0.0) {
+    return 0.0;
+  }
+  return seconds_per_direction / static_cast<double>(kMovingWindowStops);
+}
+
+std::vector<TimedPhaseInput> BuildMovingWindowPhases(uint64_t seed) {
+  const std::vector<size_t> begins = MakeMovingWindowBegins();
+  const double adapt_seconds_per_stop = MovingWindowAdaptSecondsPerStop();
+  std::vector<TimedPhaseInput> phases;
+  phases.reserve(begins.size());
+
+  for (size_t i = 0; i < begins.size(); ++i) {
+    phases.push_back(
+        {"window stop " + std::to_string(i),
+         BuildMultiWindowQueries(kMovingWindowAdaptQueriesPerStop, {begins[i]},
+                                 kMovingWindowSize, kSmallRangeMaxLength,
+                                 seed + 2 * i),
+         BuildMultiWindowQueries(kMovingWindowMeasuredQueriesPerStop,
+                                 {begins[i]}, kMovingWindowSize,
+                                 kSmallRangeMaxLength, seed + 2 * i + 1),
+         adapt_seconds_per_stop});
+  }
+
+  return phases;
+}
+
 ScenarioInput MakeShiftScenario() {
   return {"shift_hotspot_point",
           "right warmup, then left hotspot; final queries are point updates",
@@ -197,7 +299,42 @@ ScenarioInput MakeShiftScenario() {
           {"measure left hotspot",
            BuildQueries(kMeasuredQueries, QueryPattern::kHotWindow,
                         TrafficSide::kLeft, kPointQueryLength, 13)},
+          {},
           true};
+}
+
+ScenarioInput MakeClusteredSmallWindowsScenario() {
+  const std::vector<size_t> window_begins = MakeClusteredSmallWindowBegins();
+  return {
+      "clustered_small_hot_windows",
+      "four 1,024-element hot windows inside one coarse naive partition; "
+      "final ranges have random length from 1 to 8",
+      {{"warmup clustered small windows",
+        BuildMultiWindowQueries(kWarmupQueries, window_begins,
+                                kSmallHotWindowSize, kSmallRangeMaxLength, 51)},
+       {"adapt clustered small windows",
+        BuildMultiWindowQueries(kAdaptQueries, window_begins,
+                                kSmallHotWindowSize, kSmallRangeMaxLength,
+                                52)}},
+      {"measure clustered small windows",
+       BuildMultiWindowQueries(kMeasuredQueries, window_begins,
+                               kSmallHotWindowSize, kSmallRangeMaxLength, 53)},
+      {},
+      true};
+}
+
+ScenarioInput MakeMovingWindowScenario() {
+  return {
+      "moving_small_window",
+      "4,096-element hot window moves left-to-right and back; each stop "
+      "runs long enough for online repartitioning attempts",
+      {{"warmup first moving window",
+        BuildMultiWindowQueries(kMovingWindowWarmupQueries, {0},
+                                kMovingWindowSize, kSmallRangeMaxLength, 61)}},
+      {},
+      BuildMovingWindowPhases(62),
+      true,
+  };
 }
 
 ScenarioInput MakeRandomScenario() {
@@ -209,6 +346,7 @@ ScenarioInput MakeRandomScenario() {
           {"measure uniform random",
            BuildQueries(kMeasuredQueries, QueryPattern::kUniform,
                         TrafficSide::kLeft, kPointQueryLength, 22)},
+          {},
           false};
 }
 
@@ -227,6 +365,7 @@ ScenarioInput MakeShiftRandomRangeScenario() {
            BuildQueries(kRandomRangeMeasuredQueries,
                         QueryPattern::kHotWindowRandomRange, TrafficSide::kLeft,
                         kRandomRangeMaxLength, 33)},
+          {},
           true};
 }
 
@@ -241,6 +380,7 @@ ScenarioInput MakeRandomRangeScenario() {
            BuildQueries(kRandomRangeMeasuredQueries,
                         QueryPattern::kUniformRandomRange, TrafficSide::kLeft,
                         kRandomRangeMaxLength, 42)},
+          {},
           false};
 }
 
@@ -371,6 +511,89 @@ double AverageMutexesForQueries(const Lock &lock,
   return static_cast<double>(total_mutexes) / static_cast<double>(samples);
 }
 
+template <typename Lock> double ForceImmediateAdaptation(Lock &lock) {
+  const auto start = std::chrono::steady_clock::now();
+  if constexpr (requires { lock.RebuildNow(); }) {
+    lock.RebuildNow();
+  }
+  if constexpr (requires { lock.FlushTraining(); }) {
+    lock.FlushTraining();
+  }
+  return std::chrono::duration<double>(std::chrono::steady_clock::now() - start)
+      .count();
+}
+
+struct MeasurementStats {
+  double seconds = 0.0;
+  uint64_t queries = 0;
+  double lock_total_ms = 0.0;
+  double mutex_query_sum = 0.0;
+};
+
+void AddMeasurement(MeasurementStats &total, const MeasurementStats &part) {
+  total.seconds += part.seconds;
+  total.queries += part.queries;
+  total.lock_total_ms += part.lock_total_ms;
+  total.mutex_query_sum += part.mutex_query_sum;
+}
+
+template <typename Lock>
+MeasurementStats RunMeasuredQueries(Lock &lock, std::vector<int> &data,
+                                    const std::vector<Query> &queries,
+                                    QueryBody body) {
+  lock.ResetRuntimeStats();
+  const PhaseRunStats measured = RunPhase(lock, data, queries, body);
+
+  MeasurementStats stats;
+  stats.seconds = measured.seconds;
+  stats.queries = measured.queries;
+  stats.lock_total_ms = lock.GetTotalLockTimeMs();
+  stats.mutex_query_sum = AverageMutexesForQueries(lock, queries) *
+                          static_cast<double>(measured.queries);
+  return stats;
+}
+
+template <typename Lock>
+double RunAdaptQueries(Lock &lock, std::vector<int> &data,
+                       const TimedPhaseInput &phase, QueryBody body) {
+  if (phase.adapt_seconds <= 0.0) {
+    return RunPhase(lock, data, phase.adapt_queries, body).seconds;
+  }
+
+  const auto start = std::chrono::steady_clock::now();
+  const auto deadline =
+      start + std::chrono::duration<double>(phase.adapt_seconds);
+  do {
+    RunPhase(lock, data, phase.adapt_queries, body);
+  } while (std::chrono::steady_clock::now() < deadline);
+
+  return std::chrono::duration<double>(std::chrono::steady_clock::now() - start)
+      .count();
+}
+
+template <typename Lock>
+MeasurementStats RunTimedMeasurements(Lock &lock, std::vector<int> &data,
+                                      const ScenarioInput &scenario,
+                                      QueryBody body, double &setup_seconds) {
+  if (scenario.timed_phases.empty()) {
+    return RunMeasuredQueries(lock, data, scenario.measured_phase.queries,
+                              body);
+  }
+
+  MeasurementStats total;
+  for (const TimedPhaseInput &phase : scenario.timed_phases) {
+    lock.StartRebuilder(kDynamicRebuildInterval, kDynamicRebuildThreshold);
+    setup_seconds += RunAdaptQueries(lock, data, phase, body);
+    setup_seconds += ForceImmediateAdaptation(lock);
+    lock.StopRebuilder();
+
+    AddMeasurement(total,
+                   RunMeasuredQueries(lock, data, phase.measure_queries, body));
+  }
+
+  return total;
+}
+
 template <typename LockFactory>
 ImplementationResult RunImplementation(const std::string &name,
                                        const ScenarioInput &scenario,
@@ -382,32 +605,45 @@ ImplementationResult RunImplementation(const std::string &name,
     std::vector<int> data = MakeInitialData();
 
     result.setup_seconds = RunSetup(lock, data, scenario, QueryBody::kRealWork);
-    result.reconfigurations = lock.GetRebuildCount();
+    const size_t setup_reconfigurations = lock.GetRebuildCount();
+
+    const size_t reconfigurations_after_reset = lock.GetRebuildCount();
+    const MeasurementStats measured = RunTimedMeasurements(
+        lock, data, scenario, QueryBody::kRealWork, result.setup_seconds);
+
+    result.body_seconds = measured.seconds;
+    result.body_queries = measured.queries;
+    result.avg_lock_us = measured.queries == 0
+                             ? 0.0
+                             : measured.lock_total_ms * 1000.0 /
+                                   static_cast<double>(measured.queries);
+    result.measured_lock_total_seconds = measured.lock_total_ms / 1000.0;
+    result.avg_mutexes_per_query =
+        measured.queries == 0
+            ? 0.0
+            : measured.mutex_query_sum / static_cast<double>(measured.queries);
+    result.reconfigurations =
+        setup_reconfigurations +
+        (lock.GetRebuildCount() - reconfigurations_after_reset);
     result.left_hot_locks = lock.CountLocksForRange(0, kHotWindowSize - 1);
     result.right_hot_locks =
         lock.CountLocksForRange(kArraySize - kHotWindowSize, kArraySize - 1);
-
-    lock.ResetRuntimeStats();
-    const PhaseRunStats measured = RunPhase(
-        lock, data, scenario.measured_phase.queries, QueryBody::kRealWork);
-    result.body_seconds = measured.seconds;
-    result.body_queries = measured.queries;
-    result.avg_lock_us = lock.GetAvgLockTimeMs() * 1000.0;
-    result.measured_lock_total_seconds = lock.GetTotalLockTimeMs() / 1000.0;
-    result.avg_mutexes_per_query =
-        AverageMutexesForQueries(lock, scenario.measured_phase.queries);
   }
   {
     auto lock = factory();
     std::vector<int> data = MakeInitialData();
 
     RunSetup(lock, data, scenario, QueryBody::kLockOnly);
-    lock.ResetRuntimeStats();
-    const PhaseRunStats measured = RunPhase(
-        lock, data, scenario.measured_phase.queries, QueryBody::kLockOnly);
+    double ignored_setup_seconds = 0.0;
+    const MeasurementStats measured = RunTimedMeasurements(
+        lock, data, scenario, QueryBody::kLockOnly, ignored_setup_seconds);
+
     result.lock_only_seconds = measured.seconds;
     result.lock_only_queries = measured.queries;
-    result.lock_only_avg_lock_us = lock.GetAvgLockTimeMs() * 1000.0;
+    result.lock_only_avg_lock_us =
+        measured.queries == 0 ? 0.0
+                              : measured.lock_total_ms * 1000.0 /
+                                    static_cast<double>(measured.queries);
   }
 
   return result;
@@ -416,6 +652,14 @@ ImplementationResult RunImplementation(const std::string &name,
 void PrintScenario(const ScenarioInput &scenario,
                    const std::vector<ImplementationResult> &results) {
   const ImplementationResult &baseline = results.front();
+  uint64_t timed_adapt_queries = 0;
+  uint64_t measured_queries = scenario.measured_phase.queries.size();
+  double timed_adapt_seconds = 0.0;
+  for (const TimedPhaseInput &phase : scenario.timed_phases) {
+    timed_adapt_queries += phase.adapt_queries.size();
+    measured_queries += phase.measure_queries.size();
+    timed_adapt_seconds += phase.adapt_seconds;
+  }
 
   std::println("scenario: {}", scenario.name);
   std::println("  {}", scenario.description);
@@ -426,8 +670,18 @@ void PrintScenario(const ScenarioInput &scenario,
     }
     std::print("{}", scenario.setup_phases[i].queries.size());
   }
-  std::print(", measured queries: {}\n\n",
-             scenario.measured_phase.queries.size());
+  if (timed_adapt_queries != 0) {
+    std::print(" + {} per-stop adapt", timed_adapt_queries);
+    if (timed_adapt_seconds > 0.0) {
+      std::print(" (time-capped to {:.1f}s total per round trip)",
+                 timed_adapt_seconds);
+    }
+  }
+  std::print(", measured queries: {}\n\n", measured_queries);
+  if (!scenario.timed_phases.empty()) {
+    std::println("  moving scenario: each window stop is adapted, rebuilt, "
+                 "then measured with online adaptation disabled\n");
+  }
 
   std::println("  impl       setup_s  body_s  body_x  lock_only_s  lock_x"
                "  avg_lock_us  lock_sum_s  avg_mutex  hot(L/R)  rebuild/train");
@@ -543,6 +797,10 @@ int main() {
   std::println("  point query length: {}", kPointQueryLength);
   std::println("  random range max length: {}", kRandomRangeMaxLength);
   std::println("  hot window size: {}", kHotWindowSize);
+  std::println("  small hot window size: {}", kSmallHotWindowSize);
+  std::println("  small range max length: {}", kSmallRangeMaxLength);
+  std::println("  moving window size: {}", kMovingWindowSize);
+  std::println("  moving window stops: {}", 2 * kMovingWindowStops - 2);
   std::println("  body_s: final measured phase with sum+single update");
   std::println(
       "  lock_only_s: same final coordinates after same setup, empty body");
@@ -550,10 +808,15 @@ int main() {
       "  body_x and lock_x are speedups over naive in the same scenario\n\n");
 
   const ScenarioInput shift_point = MakeShiftScenario();
+  const ScenarioInput clustered_small_windows =
+      MakeClusteredSmallWindowsScenario();
+  const ScenarioInput moving_window = MakeMovingWindowScenario();
   const ScenarioInput random_point = MakeRandomScenario();
 
   const std::vector<ImplementationResult> shift_mutex_results =
       RunScenario(shift_point);
+  RunScenario(clustered_small_windows);
+  RunScenario(moving_window);
   const std::vector<ImplementationResult> random_mutex_results =
       RunScenario(random_point);
   RunScenario(MakeShiftRandomRangeScenario());

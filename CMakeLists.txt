@@ -4,6 +4,8 @@ project(DynamicLockBenchmark)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+option(BUILD_BENCHMARK_V700 "Build vendored Benchmark-v700 framework" OFF)
+
 add_executable(adaptive_lock_benchmark
         benchmarks/adaptive_lock_benchmark.cpp
         common/spinlock.cpp)
@@ -19,3 +21,7 @@ target_include_directories(genetic_lock_benchmark PRIVATE ${CMAKE_CURRENT_SOURCE
 target_compile_features(genetic_lock_benchmark PRIVATE cxx_std_23)
 target_compile_options(genetic_lock_benchmark PRIVATE -O3 -pthread)
 target_link_libraries(genetic_lock_benchmark PRIVATE pthread)
+
+if (BUILD_BENCHMARK_V700)
+        add_subdirectory(Benchmark-v700/cpp Benchmark-v700-build EXCLUDE_FROM_ALL)
+endif ()

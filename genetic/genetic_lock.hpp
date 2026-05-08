@@ -26,7 +26,9 @@ public:
                      elite_count, generation_count),
         current_cuts_(partitioner_.PartitionCuts()),
         total_lock_time_(std::chrono::nanoseconds(0)),
-        total_training_time_(std::chrono::nanoseconds(0)) {}
+        total_training_time_(std::chrono::nanoseconds(0)) {
+    RefreshBlockToLock();
+  }
 
   template <typename Func>
   void WriteQuery(size_t left, size_t right, Func &&func) {
@@ -109,11 +111,8 @@ public:
 
   void ResetRuntimeStats() {
     operation_count_.store(0, std::memory_order_relaxed);
-    training_count_.store(0, std::memory_order_relaxed);
     total_lock_time_.store(std::chrono::nanoseconds(0),
                            std::memory_order_relaxed);
-    total_training_time_.store(std::chrono::nanoseconds(0),
-                               std::memory_order_relaxed);
   }
 
   double GetAvgLockTimeMs() const {
@@ -200,6 +199,7 @@ private:
   std::array<Mutex, kLockCnt> locks_;
   GeneticPartitioner<kLockCnt, kBlocks> partitioner_;
   std::vector<size_t> current_cuts_;
+  std::array<size_t, kBlocks> block_to_lock_{};
 
   std::mutex pending_mutex_;
   std::vector<Query> pending_queries_;
@@ -217,13 +217,19 @@ private:
     return std::min(position / block_size_, kBlocks - 1);
   }
 
-  size_t FindLockForBlockUnlocked(size_t block) const {
-    for (size_t i = 0; i < kLockCnt; ++i) {
-      if (current_cuts_[i] <= block && block < current_cuts_[i + 1]) {
-        return i;
+  void RefreshBlockToLock() {
+    size_t lock_index = 0;
+    for (size_t block = 0; block < kBlocks; ++block) {
+      while (lock_index + 1 < kLockCnt &&
+             block >= current_cuts_[lock_index + 1]) {
+        ++lock_index;
       }
+      block_to_lock_[block] = lock_index;
     }
-    return kLockCnt - 1;
+  }
+
+  size_t FindLockForBlockUnlocked(size_t block) const {
+    return block_to_lock_[block];
   }
 
   std::pair<size_t, size_t> FindLocksSegmentUnlocked(size_t left,
@@ -296,6 +302,7 @@ private:
       }
     }
     current_cuts_ = std::move(next_cuts);
+    RefreshBlockToLock();
     pause_queries_.store(false, std::memory_order_release);
 
     AddDuration(total_training_time_, std::chrono::steady_clock::now() - start);

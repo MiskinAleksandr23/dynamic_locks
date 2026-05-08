@@ -21,6 +21,7 @@ public:
       partitions_[i] = i * kBlocks / kLockCnt;
     }
     partitions_[kLockCnt] = kBlocks;
+    RefreshBlockToLock();
 
     for (auto &value : stats_) {
       value.store(0, std::memory_order_relaxed);
@@ -131,6 +132,18 @@ public:
     }
   }
 
+  void RebuildNow() {
+    const auto current_stats = SnapshotStats();
+    const size_t total_ops =
+        std::accumulate(current_stats.begin(), current_stats.end(), size_t{0});
+    if (total_ops == 0) {
+      return;
+    }
+
+    RebuildPartitions();
+    ++rebuild_count_;
+  }
+
   double GetAvgLockTimeMs() const {
     const size_t operations = operation_count_.load();
     if (operations == 0) {
@@ -183,6 +196,7 @@ private:
   const size_t block_size_;
 
   std::array<Mutex, kLockCnt> locks_;
+  std::array<size_t, kBlocks> block_to_lock_{};
   std::array<std::atomic<size_t>, kBlocks> stats_;
   std::array<std::atomic<size_t>, kBlocks> boundary_crossings_;
   std::array<size_t, kBlocks> last_stats_{};
@@ -207,28 +221,22 @@ private:
     return std::min(pos / block_size_, kBlocks - 1);
   }
 
+  void RefreshBlockToLock() {
+    size_t lock_index = 0;
+    for (size_t block = 0; block < kBlocks; ++block) {
+      while (lock_index + 1 < kLockCnt &&
+             block >= partitions_[lock_index + 1]) {
+        ++lock_index;
+      }
+      block_to_lock_[block] = lock_index;
+    }
+  }
+
   std::pair<size_t, size_t> FindLocksSegmentUnlocked(size_t left,
                                                      size_t right) const {
     const size_t left_block = PositionToBlock(left);
     const size_t right_block = PositionToBlock(right);
-
-    size_t lock_start = 0;
-    for (size_t i = 0; i < kLockCnt; ++i) {
-      if (partitions_[i] <= left_block && left_block < partitions_[i + 1]) {
-        lock_start = i;
-        break;
-      }
-    }
-
-    size_t lock_end = lock_start;
-    for (size_t i = lock_start; i < kLockCnt; ++i) {
-      if (partitions_[i] <= right_block && right_block < partitions_[i + 1]) {
-        lock_end = i;
-        break;
-      }
-    }
-
-    return {lock_start, lock_end};
+    return {block_to_lock_[left_block], block_to_lock_[right_block]};
   }
 
   void UpdateStats(size_t left, size_t right) {
@@ -365,6 +373,7 @@ private:
       std::lock_guard stats_lock(stats_mutex_);
 
       partitions_ = std::move(new_partitions);
+      RefreshBlockToLock();
       last_stats_ = current_stats;
       for (size_t i = 0; i < kBlocks; ++i) {
         stats_[i].store(0, std::memory_order_relaxed);

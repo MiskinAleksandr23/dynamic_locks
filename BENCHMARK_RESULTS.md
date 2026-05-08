@@ -2,6 +2,9 @@
 
 Snapshot from `./cmake-build-release/adaptive_lock_benchmark`.
 
+`Benchmark-v700` is vendored, but the top-level build does not build it unless
+`-DBUILD_BENCHMARK_V700=ON` is passed.
+
 ## Configuration
 
 | Parameter | Value |
@@ -13,96 +16,136 @@ Snapshot from `./cmake-build-release/adaptive_lock_benchmark`.
 | Point query length | 1 |
 | Random range max length | 65,536 |
 | Hot window size | 16,384 |
-| Main tables lock primitive | `std::mutex` |
+| Small hot window size | 1,024 |
+| Small range max length | 8 |
+| Moving window size | 4,096 |
+| Moving window stops | 14 |
+| Main lock primitive | `std::mutex` |
+
+For a slow server run of the moving-window scenario, set:
+
+```bash
+DYNAMIC_LOCK_MOVING_SECONDS_PER_DIRECTION=300 ./cmake-build-release/adaptive_lock_benchmark
+```
+
+That keeps each moving-window direction slow enough for online repartitioning.
+The local snapshot below uses the faster default fixed-query adaptation.
 
 ## Column Meaning
 
 | Column | Meaning |
 |---|---|
-| Setup time | Time spent on warmup/adaptation phases before final measurement |
-| Measured request time | Final phase with real request body: lock, read/sum range, update one element, unlock |
+| Setup time | Warmup/adaptation time before measured requests |
+| Measured request time | Final measured phase with real body: lock, sum range, update one element, unlock |
 | Request speedup | Speedup over naive fixed partitioning in the same scenario |
-| Empty critical section time | Final phase with the same request coordinates, but empty body inside the lock |
+| Empty critical section time | Same coordinates, but empty body inside the lock |
 | Empty-body speedup | Speedup over naive fixed partitioning for empty critical section |
 | Avg lock wait | Average measured time from entering `WriteQuery` to locks acquired |
-| Total lock wait | Sum of measured lock acquisition time across all worker threads |
-| Avg mutexes/query | Average number of mutexes acquired by one measured query |
-| Hot locks L/R | Number of mutexes covering left/right hot window after setup |
-| Rebuild/train | Number of dynamic rebuilds or genetic training batches |
+| Total lock wait | Sum of measured lock acquisition time across workers |
+| Avg mutexes/query | Average number of mutexes acquired per measured query |
+| Hot locks L/R | Number of mutexes covering left/right 16,384-element hot window after setup |
+| Rebuild/train | Dynamic rebuilds or genetic training batches |
 
 ## Scenario: Shifted Hotspot, Point Queries
 
-Right-side warmup, then workload shifts to the left hot window. Final measured requests are point updates inside the left hot window.
+Right-side warmup, then final point requests in the left hot window.
 
 Setup queries: `64,000 + 192,000`. Measured queries: `1,200,000`.
 
 | Implementation | Setup time, s | Measured request time, s | Request speedup | Empty critical section time, s | Empty-body speedup | Avg lock wait, us | Total lock wait, s | Avg mutexes/query | Hot locks L/R | Rebuild/train |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| Naive fixed | 0.062 | 0.280 | 1.000x | 0.187 | 1.000x | 1.69 | 2.025 | 1.00 | 1 / 1 | 0 |
-| Dynamic DP | 0.376 | 0.177 | 1.581x | 0.159 | 1.174x | 1.11 | 1.334 | 1.00 | 16 / 1 | 1 |
-| Genetic | 0.734 | 0.149 | 1.888x | 0.138 | 1.355x | 0.94 | 1.131 | 1.00 | 16 / 1 | 7 |
+| Naive fixed | 0.054 | 0.245 | 1.000x | 0.177 | 1.000x | 1.42 | 1.708 | 1.00 | 1 / 1 | 0 |
+| Dynamic DP | 0.365 | 0.161 | 1.521x | 0.155 | 1.141x | 1.04 | 1.251 | 1.00 | 16 / 1 | 1 |
+| Genetic | 0.708 | 0.149 | 1.641x | 0.142 | 1.246x | 0.95 | 1.144 | 1.00 | 16 / 1 | 7 |
 
-Result: both adaptive implementations split the left hot window across 16 mutexes. This is beneficial for point requests because each measured query still acquires one mutex, but contention is spread across the hot window. Genetic has higher setup cost, but the fastest final phase after convergence.
+## Scenario: Clustered Small Hot Windows
 
-### Dynamic DP: `std::mutex` vs `spinlock`
+Four 1,024-element hot windows inside one coarse naive partition. Requests are
+small random ranges of length `1..8`.
 
-Same shifted-hotspot point scenario, only for `Dynamic DP`. Values above `1.0x` in the last two columns mean `spinlock` is faster than `std::mutex`.
+Setup queries: `64,000 + 192,000`. Measured queries: `1,200,000`.
 
-| Lock primitive | Measured request time, s | Empty critical section time, s | Measured speed vs `std::mutex` | Empty speed vs `std::mutex` |
-|---|---:|---:|---:|---:|
-| `std::mutex` | 0.177 | 0.159 | 1.000x | 1.000x |
-| `alignas(64) spinlock` | 0.254 | 0.248 | 0.699x | 0.642x |
+| Implementation | Setup time, s | Measured request time, s | Request speedup | Empty critical section time, s | Empty-body speedup | Avg lock wait, us | Total lock wait, s | Avg mutexes/query | Hot locks L/R | Rebuild/train |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| Naive fixed | 0.052 | 0.251 | 1.000x | 0.179 | 1.000x | 1.45 | 1.742 | 1.00 | 1 / 1 | 0 |
+| Dynamic DP | 0.374 | 0.214 | 1.169x | 0.184 | 0.974x | 1.41 | 1.686 | 1.00 | 16 / 1 | 1 |
+| Genetic | 0.294 | 0.199 | 1.259x | 0.167 | 1.076x | 1.31 | 1.569 | 1.00 | 12 / 1 | 7 |
 
-Result: in this point-query case the simple yielding spinlock is slower than `std::mutex` for `Dynamic DP`, even with cache-line alignment.
+Result: both adaptive variants benefit from splitting one overloaded naive
+partition into several hot sub-partitions. Empty-body speedups are smaller
+because the request body is intentionally tiny.
+
+## Scenario: Moving Small Window
+
+A 4,096-element window moves left-to-right and back. For each stop, the
+benchmark adapts/rebuilds first, then measures with online adaptation disabled.
+This checks whether the learned layout is useful after the window has moved
+slowly enough to converge.
+
+Setup queries: `128,000 + 2,688,000 per-stop adapt`. Measured queries:
+`9,800,000`.
+
+| Implementation | Setup time, s | Measured request time, s | Request speedup | Empty critical section time, s | Empty-body speedup | Avg lock wait, us | Total lock wait, s | Avg mutexes/query | Hot locks L/R | Rebuild/train |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| Naive fixed | 0.575 | 2.003 | 1.000x | 1.445 | 1.000x | 1.41 | 13.851 | 1.00 | 1 / 1 | 0 |
+| Dynamic DP | 1.386 | 1.690 | 1.186x | 1.392 | 1.038x | 1.35 | 13.183 | 1.00 | 16 / 1 | 14 |
+| Genetic | 4.228 | 1.729 | 1.159x | 1.364 | 1.060x | 1.34 | 13.149 | 1.00 | 1 / 1 | 66 |
+
+Result: after fixing runtime lookup to O(1), the moving-window case shows a
+measured win for both adaptive implementations. The setup cost is intentionally
+higher because every window stop gets its own adaptation phase.
 
 ## Scenario: Uniform Random, Point Queries
 
-Warmup and final measured requests are uniformly random point updates over the whole array.
+Uniform random point updates over the whole array.
 
 Setup queries: `64,000`. Measured queries: `1,200,000`.
 
 | Implementation | Setup time, s | Measured request time, s | Request speedup | Empty critical section time, s | Empty-body speedup | Avg lock wait, us | Total lock wait, s | Avg mutexes/query | Hot locks L/R | Rebuild/train |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| Naive fixed | 0.007 | 0.132 | 1.000x | 0.129 | 1.000x | 0.70 | 0.836 | 1.00 | 1 / 1 | 0 |
-| Dynamic DP | 0.013 | 0.149 | 0.888x | 0.147 | 0.881x | 0.78 | 0.938 | 1.00 | 1 / 1 | 0 |
-| Genetic | 0.410 | 0.154 | 0.862x | 0.155 | 0.833x | 0.79 | 0.946 | 1.00 | 1 / 2 | 3 |
-
-Result: adaptive partitioning does not help on uniform random point requests. There is no stable hotspot to exploit, so the extra adaptation/runtime overhead dominates.
+| Naive fixed | 0.007 | 0.129 | 1.000x | 0.127 | 1.000x | 0.69 | 0.824 | 1.00 | 1 / 1 | 0 |
+| Dynamic DP | 0.011 | 0.146 | 0.883x | 0.146 | 0.871x | 0.76 | 0.909 | 1.00 | 1 / 1 | 0 |
+| Genetic | 0.425 | 0.141 | 0.915x | 0.138 | 0.921x | 0.72 | 0.868 | 1.00 | 1 / 1 | 3 |
 
 ## Scenario: Shifted Hotspot, Random-Length Ranges
 
-Right-side warmup, then workload shifts to the left hot window. Final measured requests are ranges inside the left hot window. Range length is random; because the hot window is `16,384` elements, lengths are effectively capped by that window even though the global max is `65,536`.
+Right-side warmup, then left hot-window random-length ranges.
 
 Setup queries: `16,000 + 48,000`. Measured queries: `40,000`.
 
 | Implementation | Setup time, s | Measured request time, s | Request speedup | Empty critical section time, s | Empty-body speedup | Avg lock wait, us | Total lock wait, s | Avg mutexes/query | Hot locks L/R | Rebuild/train |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| Naive fixed | 0.088 | 0.054 | 1.000x | 0.006 | 1.000x | 10.55 | 0.422 | 1.00 | 1 / 1 | 0 |
-| Dynamic DP | 0.414 | 0.087 | 0.625x | 0.011 | 0.579x | 18.15 | 0.726 | 1.00 | 1 / 1 | 1 |
-| Genetic | 0.652 | 0.045 | 1.211x | 0.015 | 0.421x | 10.85 | 0.434 | 1.23 | 2 / 1 | 4 |
-
-Result: this case shows the range-query tradeoff. Naive and Dynamic DP keep the left hot window coarse, so measured range requests acquire one mutex on average. Genetic uses a slightly finer split (`2 / 1` hot locks), which raises average mutexes per query to `1.23`, but it still has the fastest measured request time in this run. For empty critical sections, all adaptive variants remain slower than naive because setup/adaptation and multi-lock overhead are not offset by useful work.
+| Naive fixed | 0.089 | 0.058 | 1.000x | 0.006 | 1.000x | 11.52 | 0.461 | 1.00 | 1 / 1 | 0 |
+| Dynamic DP | 0.422 | 0.077 | 0.762x | 0.011 | 0.509x | 15.49 | 0.620 | 1.00 | 1 / 1 | 1 |
+| Genetic | 0.649 | 0.046 | 1.281x | 0.014 | 0.404x | 11.08 | 0.443 | 1.23 | 2 / 1 | 4 |
 
 ## Scenario: Uniform Random, Random-Length Ranges
 
-Warmup and final measured requests are uniformly random ranges over the whole array with random length from `1` to `65,536`.
+Uniform random ranges over the whole array.
 
 Setup queries: `16,000`. Measured queries: `40,000`.
 
 | Implementation | Setup time, s | Measured request time, s | Request speedup | Empty critical section time, s | Empty-body speedup | Avg lock wait, us | Total lock wait, s | Avg mutexes/query | Hot locks L/R | Rebuild/train |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| Naive fixed | 0.015 | 0.037 | 1.000x | 0.012 | 1.000x | 7.35 | 0.294 | 2.99 | 1 / 1 | 0 |
-| Dynamic DP | 0.016 | 0.043 | 0.851x | 0.016 | 0.700x | 8.75 | 0.350 | 2.99 | 1 / 1 | 0 |
-| Genetic | 0.382 | 0.039 | 0.941x | 0.013 | 0.871x | 7.80 | 0.312 | 3.03 | 1 / 1 | 2 |
+| Naive fixed | 0.016 | 0.038 | 1.000x | 0.011 | 1.000x | 7.50 | 0.300 | 2.99 | 1 / 1 | 0 |
+| Dynamic DP | 0.015 | 0.041 | 0.912x | 0.016 | 0.697x | 8.21 | 0.328 | 2.99 | 1 / 1 | 0 |
+| Genetic | 0.398 | 0.039 | 0.958x | 0.012 | 0.938x | 7.88 | 0.315 | 3.03 | 1 / 1 | 2 |
 
-Result: this scenario explicitly exercises multi-mutex requests. All implementations acquire about `3` mutexes per query on average. Since the distribution is uniform, adaptive partitioning has no stable hotspot to exploit; differences are mostly runtime overhead and benchmark noise.
+## Implementation Notes
+
+The moving-window case exposed a real runtime issue: both adaptive lock
+implementations used a linear scan through partition cuts to map a block to a
+mutex. That was cheap for left-side hotspots, but expensive when the hot window
+moved across the whole array. The lock implementations now maintain an O(1)
+`block -> mutex` lookup table and rebuild it whenever partitions change.
 
 ## Takeaways
 
 | Case | Best final measured time | Comment |
 |---|---|---|
-| Shifted hotspot, point queries | Genetic, 1.888x over naive | Hot window is split into 16 locks and each point query still takes one mutex |
-| Uniform random, point queries | Naive | No concentrated hotspot |
-| Shifted hotspot, random-length ranges | Genetic, 1.211x over naive | Range-aware DP keeps the hot window coarse; genetic is still fastest on body time in this run |
-| Uniform random, random-length ranges | Naive | Multi-mutex requests are visible, but no adaptive strategy has structure to exploit |
-| Dynamic DP point queries with spinlock | `std::mutex` is faster | Current spinlock is not a drop-in improvement for this adaptive hot path |
+| Shifted hotspot, point queries | Genetic, 1.641x over naive | Both adaptive variants split the hot region into 16 locks |
+| Clustered small hot windows | Genetic, 1.259x over naive | Matches the “several hot intervals” idea from the paper |
+| Moving small window | Dynamic DP, 1.186x over naive | Slow per-stop adaptation lets the window repartition before measurement |
+| Uniform random, point queries | Naive | No stable locality to exploit |
+| Shifted hotspot, random ranges | Genetic, 1.281x over naive | Dynamic keeps ranges coarse; genetic is faster on body time here |
+| Uniform random, random ranges | Naive | Multi-mutex requests exist, but no exploitable structure |
