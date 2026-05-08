@@ -25,7 +25,7 @@ constexpr size_t kArraySize = kBlocks * kBlockSize;
 constexpr size_t kHotWindowSize = kArraySize / kLockCount;
 constexpr size_t kPointQueryLength = 1;
 constexpr size_t kRandomRangeMaxLength = 65'536;
-constexpr size_t kSmallHotWindowSize = 1024;
+constexpr size_t kClusteredHotWindowSize = kHotWindowSize;
 constexpr size_t kSmallRangeMaxLength = 8;
 constexpr size_t kMovingWindowSize = 4 * kBlockSize;
 constexpr size_t kMovingWindowStops = 8;
@@ -41,6 +41,9 @@ constexpr size_t kRandomRangeMeasuredQueries = 40'000;
 constexpr size_t kMovingWindowWarmupQueries = 128'000;
 constexpr size_t kMovingWindowAdaptQueriesPerStop = 192'000;
 constexpr size_t kMovingWindowMeasuredQueriesPerStop = 700'000;
+constexpr size_t kChurnChanges = 5;
+constexpr size_t kChurnAdaptQueries = 96'000;
+constexpr size_t kChurnMeasuredQueries = 200'000;
 constexpr auto kDynamicRebuildInterval = std::chrono::milliseconds(100);
 constexpr double kDynamicRebuildThreshold = 2.0;
 
@@ -224,8 +227,50 @@ BuildMultiWindowQueries(size_t count, const std::vector<size_t> &window_begins,
   return queries;
 }
 
-std::vector<size_t> MakeClusteredSmallWindowBegins() {
-  return {0, 4 * kBlockSize, 8 * kBlockSize, 12 * kBlockSize};
+std::vector<size_t> MakeClusteredWindowBegins(size_t cluster_count) {
+  if (cluster_count == 0 || cluster_count > 16) {
+    throw std::invalid_argument("cluster_count must be in [1, 16]");
+  }
+  const size_t gap = kClusteredHotWindowSize;
+  std::vector<size_t> begins;
+  begins.reserve(cluster_count);
+  for (size_t i = 0; i < cluster_count; ++i) {
+    begins.push_back((2 * i + 1) * gap);
+  }
+  return begins;
+}
+
+std::vector<size_t> MakeClusteredWindowPool() {
+  std::vector<size_t> begins;
+  const size_t step = 2 * kClusteredHotWindowSize;
+  for (size_t begin = kClusteredHotWindowSize;
+       begin + kClusteredHotWindowSize <= kArraySize; begin += step) {
+    begins.push_back(begin);
+  }
+  return begins;
+}
+
+std::vector<size_t> MakeChurnedClusteredWindowBegins(size_t cluster_count,
+                                                     size_t change_index) {
+  std::vector<size_t> active = MakeClusteredWindowBegins(cluster_count);
+  const std::vector<size_t> pool = MakeClusteredWindowPool();
+  const size_t replacements = std::max(size_t{1}, cluster_count / 2);
+  size_t cursor = cluster_count;
+
+  for (size_t change = 0; change < change_index; ++change) {
+    for (size_t index = 0; index < replacements; ++index) {
+      const size_t slot = (change * replacements + index) % cluster_count;
+      while (std::find(active.begin(), active.end(), pool[cursor]) !=
+             active.end()) {
+        cursor = (cursor + 1) % pool.size();
+      }
+      active[slot] = pool[cursor];
+      cursor = (cursor + 1) % pool.size();
+    }
+  }
+
+  std::sort(active.begin(), active.end());
+  return active;
 }
 
 std::vector<size_t> MakeMovingWindowBegins() {
@@ -303,23 +348,58 @@ ScenarioInput MakeShiftScenario() {
           true};
 }
 
-ScenarioInput MakeClusteredSmallWindowsScenario() {
-  const std::vector<size_t> window_begins = MakeClusteredSmallWindowBegins();
+ScenarioInput MakeClusteredWindowsScenario(size_t cluster_count,
+                                           uint64_t seed_base) {
+  const std::vector<size_t> window_begins =
+      MakeClusteredWindowBegins(cluster_count);
+  return {"clustered_" + std::to_string(cluster_count) + "_hot_windows",
+          std::to_string(cluster_count) +
+              " 16,384-element hot windows; final requests are point updates",
+          {{"warmup clustered small windows",
+            BuildMultiWindowQueries(kWarmupQueries, window_begins,
+                                    kClusteredHotWindowSize, kPointQueryLength,
+                                    seed_base)},
+           {"adapt clustered small windows",
+            BuildMultiWindowQueries(kAdaptQueries, window_begins,
+                                    kClusteredHotWindowSize, kPointQueryLength,
+                                    seed_base + 1)}},
+          {"measure clustered small windows",
+           BuildMultiWindowQueries(kMeasuredQueries, window_begins,
+                                   kClusteredHotWindowSize, kPointQueryLength,
+                                   seed_base + 2)},
+          {},
+          true};
+}
+
+ScenarioInput MakeClusteredChurnScenario(size_t cluster_count,
+                                         uint64_t seed_base) {
+  std::vector<TimedPhaseInput> phases;
+  phases.reserve(kChurnChanges);
+  for (size_t change = 1; change <= kChurnChanges; ++change) {
+    const std::vector<size_t> window_begins =
+        MakeChurnedClusteredWindowBegins(cluster_count, change);
+    phases.push_back(
+        {"churn change " + std::to_string(change),
+         BuildMultiWindowQueries(kChurnAdaptQueries, window_begins,
+                                 kClusteredHotWindowSize, kPointQueryLength,
+                                 seed_base + 10 * change),
+         BuildMultiWindowQueries(kChurnMeasuredQueries, window_begins,
+                                 kClusteredHotWindowSize, kPointQueryLength,
+                                 seed_base + 10 * change + 1),
+         0.0});
+  }
+
   return {
-      "clustered_small_hot_windows",
-      "four 1,024-element hot windows inside one coarse naive partition; "
-      "final ranges have random length from 1 to 8",
-      {{"warmup clustered small windows",
-        BuildMultiWindowQueries(kWarmupQueries, window_begins,
-                                kSmallHotWindowSize, kSmallRangeMaxLength, 51)},
-       {"adapt clustered small windows",
-        BuildMultiWindowQueries(kAdaptQueries, window_begins,
-                                kSmallHotWindowSize, kSmallRangeMaxLength,
-                                52)}},
-      {"measure clustered small windows",
-       BuildMultiWindowQueries(kMeasuredQueries, window_begins,
-                               kSmallHotWindowSize, kSmallRangeMaxLength, 53)},
+      "clustered_churn_" + std::to_string(cluster_count) + "_hot_windows",
+      std::to_string(cluster_count) +
+          " compact hot windows; five phases replace half of the active "
+          "windows before measuring point requests",
+      {{"warmup initial clustered windows",
+        BuildMultiWindowQueries(
+            kWarmupQueries, MakeChurnedClusteredWindowBegins(cluster_count, 0),
+            kClusteredHotWindowSize, kPointQueryLength, seed_base)}},
       {},
+      std::move(phases),
       true};
 }
 
@@ -671,16 +751,16 @@ void PrintScenario(const ScenarioInput &scenario,
     std::print("{}", scenario.setup_phases[i].queries.size());
   }
   if (timed_adapt_queries != 0) {
-    std::print(" + {} per-stop adapt", timed_adapt_queries);
+    std::print(" + {} timed adapt", timed_adapt_queries);
     if (timed_adapt_seconds > 0.0) {
-      std::print(" (time-capped to {:.1f}s total per round trip)",
+      std::print(" (time-capped to {:.1f}s total across timed phases)",
                  timed_adapt_seconds);
     }
   }
   std::print(", measured queries: {}\n\n", measured_queries);
   if (!scenario.timed_phases.empty()) {
-    std::println("  moving scenario: each window stop is adapted, rebuilt, "
-                 "then measured with online adaptation disabled\n");
+    std::println("  timed scenario: each phase is adapted, rebuilt, then "
+                 "measured with online adaptation disabled\n");
   }
 
   std::println("  impl       setup_s  body_s  body_x  lock_only_s  lock_x"
@@ -736,6 +816,11 @@ std::vector<ImplementationResult> RunScenario(const ScenarioInput &scenario) {
       RunScenarioResults<Lock>(scenario);
   PrintScenario(scenario, results);
   return results;
+}
+
+bool ShouldRunScenario(const ScenarioInput &scenario) {
+  const char *filter = std::getenv("DYNAMIC_LOCK_SCENARIO");
+  return filter == nullptr || scenario.name.find(filter) != std::string::npos;
 }
 
 const ImplementationResult &
@@ -797,7 +882,7 @@ int main() {
   std::println("  point query length: {}", kPointQueryLength);
   std::println("  random range max length: {}", kRandomRangeMaxLength);
   std::println("  hot window size: {}", kHotWindowSize);
-  std::println("  small hot window size: {}", kSmallHotWindowSize);
+  std::println("  clustered hot window size: {}", kClusteredHotWindowSize);
   std::println("  small range max length: {}", kSmallRangeMaxLength);
   std::println("  moving window size: {}", kMovingWindowSize);
   std::println("  moving window stops: {}", 2 * kMovingWindowStops - 2);
@@ -808,19 +893,40 @@ int main() {
       "  body_x and lock_x are speedups over naive in the same scenario\n\n");
 
   const ScenarioInput shift_point = MakeShiftScenario();
-  const ScenarioInput clustered_small_windows =
-      MakeClusteredSmallWindowsScenario();
+  const ScenarioInput clustered_2_windows = MakeClusteredWindowsScenario(2, 51);
+  const ScenarioInput clustered_4_windows = MakeClusteredWindowsScenario(4, 61);
+  const ScenarioInput clustered_churn_2_windows =
+      MakeClusteredChurnScenario(2, 71);
+  const ScenarioInput clustered_churn_4_windows =
+      MakeClusteredChurnScenario(4, 91);
   const ScenarioInput moving_window = MakeMovingWindowScenario();
   const ScenarioInput random_point = MakeRandomScenario();
+  const bool has_scenario_filter =
+      std::getenv("DYNAMIC_LOCK_SCENARIO") != nullptr;
+
+  const auto run_if_selected =
+      [](const ScenarioInput &scenario) -> std::vector<ImplementationResult> {
+    if (ShouldRunScenario(scenario)) {
+      return RunScenario(scenario);
+    }
+    return {};
+  };
 
   const std::vector<ImplementationResult> shift_mutex_results =
-      RunScenario(shift_point);
-  RunScenario(clustered_small_windows);
-  RunScenario(moving_window);
+      run_if_selected(shift_point);
+  run_if_selected(clustered_2_windows);
+  run_if_selected(clustered_4_windows);
+  run_if_selected(clustered_churn_2_windows);
+  run_if_selected(clustered_churn_4_windows);
+  run_if_selected(moving_window);
   const std::vector<ImplementationResult> random_mutex_results =
-      RunScenario(random_point);
-  RunScenario(MakeShiftRandomRangeScenario());
-  RunScenario(MakeRandomRangeScenario());
+      run_if_selected(random_point);
+  run_if_selected(MakeShiftRandomRangeScenario());
+  run_if_selected(MakeRandomRangeScenario());
+
+  if (has_scenario_filter) {
+    return 0;
+  }
 
   const std::vector<ImplementationResult> shift_spin_results =
       RunScenarioResults<spinlock>(shift_point);

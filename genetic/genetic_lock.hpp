@@ -42,7 +42,6 @@ public:
       std::swap(left, right);
     }
 
-    size_t locked_mutexes = 0;
     {
       const auto start = std::chrono::steady_clock::now();
       const bool guard_reconfiguration =
@@ -52,21 +51,26 @@ public:
       }
       const auto [first_lock, last_lock] =
           FindLocksSegmentUnlocked(left, right);
-      locked_mutexes = last_lock - first_lock + 1;
 
-      std::vector<std::unique_lock<Mutex>> locks;
-      locks.reserve(locked_mutexes);
-      for (size_t lock_index = first_lock; lock_index <= last_lock;
-           ++lock_index) {
-        locks.emplace_back(locks_[lock_index]);
-      }
+      if (first_lock == last_lock) {
+        std::lock_guard guard(locks_[first_lock]);
+        AddDuration(total_lock_time_, std::chrono::steady_clock::now() - start);
+        operation_count_.fetch_add(1, std::memory_order_relaxed);
 
-      AddDuration(total_lock_time_, std::chrono::steady_clock::now() - start);
-      operation_count_.fetch_add(1, std::memory_order_relaxed);
+        func(left, right);
+        if (guard_reconfiguration) {
+          LeavePartitionRead();
+        }
+      } else {
+        RangeLockGuard guard(locks_, first_lock, last_lock);
 
-      func(left, right);
-      if (guard_reconfiguration) {
-        LeavePartitionRead();
+        AddDuration(total_lock_time_, std::chrono::steady_clock::now() - start);
+        operation_count_.fetch_add(1, std::memory_order_relaxed);
+
+        func(left, right);
+        if (guard_reconfiguration) {
+          LeavePartitionRead();
+        }
       }
     }
 
@@ -216,6 +220,40 @@ private:
   size_t PositionToBlock(size_t position) const {
     return std::min(position / block_size_, kBlocks - 1);
   }
+
+  class RangeLockGuard {
+  public:
+    RangeLockGuard(std::array<Mutex, kLockCnt> &locks, size_t first,
+                   size_t last)
+        : locks_(locks), first_(first) {
+      try {
+        for (size_t index = first; index <= last; ++index) {
+          locks_[index].lock();
+          ++locked_count_;
+        }
+      } catch (...) {
+        UnlockAll();
+        throw;
+      }
+    }
+
+    RangeLockGuard(const RangeLockGuard &) = delete;
+    RangeLockGuard &operator=(const RangeLockGuard &) = delete;
+
+    ~RangeLockGuard() { UnlockAll(); }
+
+  private:
+    std::array<Mutex, kLockCnt> &locks_;
+    size_t first_;
+    size_t locked_count_ = 0;
+
+    void UnlockAll() {
+      while (locked_count_ > 0) {
+        --locked_count_;
+        locks_[first_ + locked_count_].unlock();
+      }
+    }
+  };
 
   void RefreshBlockToLock() {
     size_t lock_index = 0;

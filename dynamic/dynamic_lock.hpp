@@ -66,19 +66,24 @@ public:
 
     const auto [lock_start, lock_end] = FindLocksSegmentUnlocked(left, right);
 
-    std::vector<std::unique_lock<Mutex>> locks;
-    locks.reserve(lock_end - lock_start + 1);
-    for (size_t lock_index = lock_start; lock_index <= lock_end; ++lock_index) {
-      locks.emplace_back(locks_[lock_index]);
+    if (lock_start == lock_end) {
+      std::lock_guard guard(locks_[lock_start]);
+      AddDuration(total_lock_time_, std::chrono::steady_clock::now() - start);
+      ++operation_count_;
+      if (collect_stats_.load(std::memory_order_relaxed)) {
+        UpdateStats(left, right);
+      }
+      func(left, right);
+
+      if (rebuilder_running) {
+        active_queries_.fetch_sub(1, std::memory_order_acq_rel);
+      }
+      return;
     }
 
-    const auto lock_time = std::chrono::steady_clock::now() - start;
-    auto current = total_lock_time_.load(std::memory_order_relaxed);
-    while (!total_lock_time_.compare_exchange_weak(current, current + lock_time,
-                                                   std::memory_order_relaxed,
-                                                   std::memory_order_relaxed)) {
-    }
+    RangeLockGuard guard(locks_, lock_start, lock_end);
 
+    AddDuration(total_lock_time_, std::chrono::steady_clock::now() - start);
     ++operation_count_;
     if (collect_stats_.load(std::memory_order_relaxed)) {
       UpdateStats(left, right);
@@ -219,6 +224,49 @@ private:
 
   size_t PositionToBlock(size_t pos) const {
     return std::min(pos / block_size_, kBlocks - 1);
+  }
+
+  class RangeLockGuard {
+  public:
+    RangeLockGuard(std::array<Mutex, kLockCnt> &locks, size_t first,
+                   size_t last)
+        : locks_(locks), first_(first) {
+      try {
+        for (size_t index = first; index <= last; ++index) {
+          locks_[index].lock();
+          ++locked_count_;
+        }
+      } catch (...) {
+        UnlockAll();
+        throw;
+      }
+    }
+
+    RangeLockGuard(const RangeLockGuard &) = delete;
+    RangeLockGuard &operator=(const RangeLockGuard &) = delete;
+
+    ~RangeLockGuard() { UnlockAll(); }
+
+  private:
+    std::array<Mutex, kLockCnt> &locks_;
+    size_t first_;
+    size_t locked_count_ = 0;
+
+    void UnlockAll() {
+      while (locked_count_ > 0) {
+        --locked_count_;
+        locks_[first_ + locked_count_].unlock();
+      }
+    }
+  };
+
+  static void AddDuration(std::atomic<std::chrono::nanoseconds> &target,
+                          std::chrono::nanoseconds delta) {
+    auto current = target.load(std::memory_order_relaxed);
+    while (!target.compare_exchange_weak(current, current + delta,
+                                         std::memory_order_relaxed,
+                                         std::memory_order_relaxed)) {
+    }
   }
 
   void RefreshBlockToLock() {
