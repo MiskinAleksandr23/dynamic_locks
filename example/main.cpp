@@ -10,14 +10,16 @@ int main() {
     DynamicLock<kLocks> dynamic_lock(kLockSize);
 
     ThreadPoll.reserve(kThreadCnt);
-    std::vector<int> data(kLockSize, 0);
+    std::vector data(kLockSize, 0);
+
+    auto AddOneToPoint = [&data](int left, int) {
+        ++data[left];
+    };
 
     for (int idx = 0; idx < kThreadCnt; ++idx) {
-        ThreadPoll.emplace_back([&dynamic_lock, &data]() {
+        ThreadPoll.emplace_back([&dynamic_lock, &AddOneToPoint] {
             for (int i = 0; i < kLockSize; ++i) {
-                dynamic_lock.WriteQuery(i, i + 1, [&data](int left, int) {
-                    ++data[left];
-                });
+                dynamic_lock.WriteQuery(i, i + 1, AddOneToPoint);
             }
         });
     }
