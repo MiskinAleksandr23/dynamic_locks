@@ -1,11 +1,11 @@
 # Dynamic Lock Benchmark Results
 
-Snapshot from `./cmake-build-release/adaptive_lock_benchmark`.
+Snapshots from `adaptive_lock_benchmark` on ARM/macOS and x86/Linux.
 
 `Benchmark-v700` is vendored, but the top-level build does not build it unless
 `-DBUILD_BENCHMARK_V700=ON` is passed.
 
-## Configuration
+## ARM/macOS Configuration
 
 | Parameter | Value |
 |---|---:|
@@ -66,6 +66,8 @@ DYNAMIC_LOCK_QUERY_DIVISOR=10 ./cmake-build-release/adaptive_lock_benchmark
 Raw benchmark output names: `body_s` is "Measured request time",
 `body_x` is "Request speedup", `lock_only_s` is "Empty critical section time",
 and `lock_x` is "Empty-body speedup".
+
+## ARM/macOS Results
 
 ## Scenario: Shifted Hotspot, Point Queries
 
@@ -210,7 +212,7 @@ request. Single-mutex requests use a direct `std::lock_guard`; multi-mutex
 requests use a small range guard that locks consecutive mutexes in increasing
 order and unlocks them in reverse order.
 
-## Takeaways
+## ARM/macOS Takeaways
 
 | Case | Best final measured time | Comment |
 |---|---|---|
@@ -223,3 +225,134 @@ order and unlocks them in reverse order.
 | Uniform random, point queries | Naive | No stable locality to exploit |
 | Shifted hotspot, random ranges | Genetic, 1.025x over naive | Adaptive splitting increases mutexes per range and hurts empty-body time |
 | Uniform random, random ranges | Genetic, 1.004x over naive | Effectively parity; no stable locality to exploit |
+
+## x86/Linux Server Configuration
+
+Run command:
+
+```bash
+DYNAMIC_LOCK_QUERY_DIVISOR=10 ./build/adaptive_lock_benchmark
+```
+
+| Parameter | Value |
+|---|---:|
+| Array size | 1,048,576 |
+| Mutexes | 64 |
+| Fine blocks | 1,024 |
+| Threads | 8 |
+| Point query length | 1 |
+| Random range max length | 65,536 |
+| Hot window size | 16,384 |
+| Clustered hot window size | 16,384 |
+| Clustered churn changes | 5 |
+| Small range max length | 8 |
+| Moving window size | 16,384 |
+| Moving window stops | 14 |
+| Query divisor | 10 |
+| Main lock primitive | `std::mutex` |
+
+## x86/Linux Server Results
+
+### Scenario: Shifted Hotspot, Point Queries
+
+Setup queries: `640,000 + 1,920,000`. Measured queries: `12,000,000`.
+
+| Implementation | Setup time, s | Measured request time, s | Request speedup | Empty critical section time, s | Empty-body speedup | Avg lock wait, us | Total lock wait, s | Avg mutexes/query | Hot locks L/R | Rebuild/train |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| Naive fixed | 1.489 | 6.841 | 1.000x | 5.169 | 1.000x | 2.98 | 35.815 | 1.00 | 1 / 1 | 0 |
+| Dynamic DP | 1.268 | 2.146 | 3.188x | 1.403 | 3.683x | 0.74 | 8.860 | 1.00 | 16 / 1 | 2 |
+| Genetic | 4.492 | 2.688 | 2.545x | 2.199 | 2.350x | 0.91 | 10.938 | 1.00 | 16 / 1 | 24 |
+
+### Scenario: Clustered 2 Hot Windows
+
+Setup queries: `640,000 + 1,920,000`. Measured queries: `12,000,000`.
+
+| Implementation | Setup time, s | Measured request time, s | Request speedup | Empty critical section time, s | Empty-body speedup | Avg lock wait, us | Total lock wait, s | Avg mutexes/query | Hot locks L/R | Rebuild/train |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| Naive fixed | 1.143 | 5.186 | 1.000x | 3.280 | 1.000x | 2.25 | 27.033 | 1.00 | 1 / 1 | 0 |
+| Dynamic DP | 1.505 | 1.961 | 2.645x | 1.450 | 2.263x | 0.62 | 7.403 | 1.00 | 16 / 1 | 1 |
+| Genetic | 4.706 | 2.396 | 2.164x | 1.773 | 1.850x | 0.70 | 8.405 | 1.00 | 2 / 1 | 24 |
+
+### Scenario: Clustered 4 Hot Windows
+
+Setup queries: `640,000 + 1,920,000`. Measured queries: `12,000,000`.
+
+| Implementation | Setup time, s | Measured request time, s | Request speedup | Empty critical section time, s | Empty-body speedup | Avg lock wait, us | Total lock wait, s | Avg mutexes/query | Hot locks L/R | Rebuild/train |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| Naive fixed | 0.772 | 3.218 | 1.000x | 2.676 | 1.000x | 1.29 | 15.476 | 1.00 | 1 / 1 | 0 |
+| Dynamic DP | 1.252 | 1.790 | 1.797x | 1.340 | 1.997x | 0.50 | 5.997 | 1.00 | 1 / 1 | 1 |
+| Genetic | 4.562 | 2.353 | 1.368x | 1.779 | 1.505x | 0.59 | 7.084 | 1.00 | 1 / 1 | 17 |
+
+### Scenario: Clustered Churn, 2 Hot Windows
+
+Setup queries: `640,000 + 4,800,000 timed adapt`. Measured queries: `10,000,000`.
+
+| Implementation | Setup time, s | Measured request time, s | Request speedup | Empty critical section time, s | Empty-body speedup | Avg lock wait, us | Total lock wait, s | Avg mutexes/query | Hot locks L/R | Rebuild/train |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| Naive fixed | 2.384 | 4.359 | 1.000x | 2.405 | 1.000x | 2.26 | 22.619 | 1.00 | 1 / 1 | 0 |
+| Dynamic DP | 2.507 | 1.463 | 2.980x | 1.320 | 1.823x | 0.55 | 5.539 | 1.00 | 16 / 1 | 10 |
+| Genetic | 11.577 | 2.040 | 2.137x | 1.991 | 1.208x | 0.74 | 7.405 | 1.00 | 1 / 1 | 59 |
+
+### Scenario: Clustered Churn, 4 Hot Windows
+
+Setup queries: `640,000 + 4,800,000 timed adapt`. Measured queries: `10,000,000`.
+
+| Implementation | Setup time, s | Measured request time, s | Request speedup | Empty critical section time, s | Empty-body speedup | Avg lock wait, us | Total lock wait, s | Avg mutexes/query | Hot locks L/R | Rebuild/train |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| Naive fixed | 1.711 | 3.036 | 1.000x | 1.969 | 1.000x | 1.45 | 14.510 | 1.00 | 1 / 1 | 0 |
+| Dynamic DP | 2.436 | 1.128 | 2.692x | 1.077 | 1.829x | 0.38 | 3.808 | 1.00 | 1 / 1 | 10 |
+| Genetic | 12.577 | 1.827 | 1.662x | 1.537 | 1.281x | 0.59 | 5.950 | 1.00 | 1 / 1 | 48 |
+
+### Scenario: Moving Small Window
+
+Setup queries: `1,280,000 + 26,880,000 timed adapt`. Measured queries: `98,000,000`.
+
+| Implementation | Setup time, s | Measured request time, s | Request speedup | Empty critical section time, s | Empty-body speedup | Avg lock wait, us | Total lock wait, s | Avg mutexes/query | Hot locks L/R | Rebuild/train |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| Naive fixed | 17.198 | 65.031 | 1.000x | 39.264 | 1.000x | 3.57 | 350.169 | 1.00 | 1 / 1 | 0 |
+| Dynamic DP | 12.994 | 18.024 | 3.608x | 16.539 | 2.374x | 0.78 | 76.413 | 1.00 | 16 / 1 | 40 |
+| Genetic | 31.178 | 23.601 | 2.755x | 20.757 | 1.892x | 0.97 | 95.273 | 1.00 | 1 / 1 | 220 |
+
+### Scenario: Uniform Random, Point Queries
+
+Setup queries: `640,000`. Measured queries: `12,000,000`.
+
+| Implementation | Setup time, s | Measured request time, s | Request speedup | Empty critical section time, s | Empty-body speedup | Avg lock wait, us | Total lock wait, s | Avg mutexes/query | Hot locks L/R | Rebuild/train |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| Naive fixed | 0.085 | 1.805 | 1.000x | 1.286 | 1.000x | 0.54 | 6.457 | 1.00 | 1 / 1 | 0 |
+| Dynamic DP | 0.109 | 1.616 | 1.117x | 1.560 | 0.825x | 0.47 | 5.622 | 1.00 | 1 / 1 | 0 |
+| Genetic | 1.698 | 2.421 | 0.746x | 2.213 | 0.581x | 0.64 | 7.672 | 1.00 | 1 / 2 | 7 |
+
+### Scenario: Shifted Hotspot, Random-Length Ranges
+
+Setup queries: `160,000 + 480,000`. Measured queries: `400,000`.
+
+| Implementation | Setup time, s | Measured request time, s | Request speedup | Empty critical section time, s | Empty-body speedup | Avg lock wait, us | Total lock wait, s | Avg mutexes/query | Hot locks L/R | Rebuild/train |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| Naive fixed | 2.200 | 1.121 | 1.000x | 0.110 | 1.000x | 17.31 | 6.925 | 1.00 | 1 / 1 | 0 |
+| Dynamic DP | 2.097 | 1.205 | 0.930x | 0.184 | 0.596x | 19.24 | 7.697 | 1.00 | 1 / 1 | 3 |
+| Genetic | 3.777 | 1.249 | 0.897x | 0.218 | 0.504x | 22.02 | 8.809 | 8.96 | 16 / 1 | 14 |
+
+### Scenario: Uniform Random, Random-Length Ranges
+
+Setup queries: `160,000`. Measured queries: `400,000`.
+
+| Implementation | Setup time, s | Measured request time, s | Request speedup | Empty critical section time, s | Empty-body speedup | Avg lock wait, us | Total lock wait, s | Avg mutexes/query | Hot locks L/R | Rebuild/train |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| Naive fixed | 0.433 | 1.098 | 1.000x | 0.250 | 1.000x | 13.47 | 5.386 | 3.00 | 1 / 1 | 0 |
+| Dynamic DP | 0.533 | 1.291 | 0.851x | 0.232 | 1.077x | 14.71 | 5.885 | 3.00 | 1 / 1 | 0 |
+| Genetic | 1.541 | 1.141 | 0.962x | 0.320 | 0.781x | 14.20 | 5.679 | 3.03 | 1 / 1 | 4 |
+
+## x86/Linux Server Takeaways
+
+| Case | Best final measured time | Comment |
+|---|---|---|
+| Shifted hotspot, point queries | Dynamic DP, 3.188x over naive | Server shows much higher mutex contention than ARM/macOS |
+| Clustered 2 hot windows | Dynamic DP, 2.645x over naive | Adaptive splitting strongly reduces contention |
+| Clustered 4 hot windows | Dynamic DP, 1.797x over naive | More hot windows dilute contention, but Dynamic still wins |
+| Clustered churn, 2 hot windows | Dynamic DP, 2.980x over naive | Dynamic adapts cheaply across changing windows |
+| Clustered churn, 4 hot windows | Dynamic DP, 2.692x over naive | Churn workload remains favorable on x86 |
+| Moving small window | Dynamic DP, 3.608x over naive | Strongest x86 result; 16-page moving window has enough structure |
+| Uniform random, point queries | Dynamic DP, 1.117x over naive | Small positive result on this server, unlike ARM/macOS |
+| Shifted hotspot, random ranges | Naive | Adaptive layouts hurt range-lock count or overhead here |
+| Uniform random, random ranges | Naive | No stable locality to exploit |
