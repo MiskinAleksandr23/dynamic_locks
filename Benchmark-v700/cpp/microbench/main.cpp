@@ -330,6 +330,7 @@ void run(globals_t* g) {
 
     // create the actual data structure
     create_data_structure(g);
+    g->dsAdapter->printObjectSizes();
 
     INIT_ALL;
 
@@ -711,9 +712,6 @@ int main(int argc, char** argv) {
     globals_t* g = new globals_t(bench_parameters);
 
     g->programExecutionStartTime = std::chrono::high_resolution_clock::now();
-
-    // print object sizes, to help debugging/sanity checking memory layouts
-    g->dsAdapter->printObjectSizes();
 
     /******************************************************************************
      * Perform the actual creation of all GSTATS global statistics trackers that

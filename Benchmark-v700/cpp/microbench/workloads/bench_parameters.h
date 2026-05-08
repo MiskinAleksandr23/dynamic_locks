@@ -43,22 +43,22 @@ struct BenchParameters {
     }
 
     BenchParameters& set_range(size_t range) {
-        range = range;
+        this->range = range;
         return *this;
     }
 
     BenchParameters& set_test(Parameters* test) {
-        test = test;
+        this->test = test;
         return *this;
     }
 
     BenchParameters& set_prefill(Parameters* prefill) {
-        prefill = prefill;
+        this->prefill = prefill;
         return *this;
     }
 
     BenchParameters& set_warm_up(Parameters* warm_up) {
-        warmUp = warm_up;
+        this->warmUp = warm_up;
         return *this;
     }
 

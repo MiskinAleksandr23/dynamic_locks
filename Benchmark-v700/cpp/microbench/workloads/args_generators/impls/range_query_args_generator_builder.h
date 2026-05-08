@@ -43,8 +43,10 @@ public:
     }
 
     RangeQueryArgsGenerator<K>* build(Random64& rng) override {
+        const size_t start_range = range_ > interval_ ? range_ - interval_ : 1;
         return new RangeQueryArgsGenerator<K>(dataMapBuilder->build(),
-                                              distributionBuilder->build(rng, range_), interval_);
+                                              distributionBuilder->build(rng, start_range),
+                                              interval_);
     }
 
     void to_json(nlohmann::json& j) const override {

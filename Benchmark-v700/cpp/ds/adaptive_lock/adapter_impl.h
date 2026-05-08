@@ -159,8 +159,6 @@ public:
             thread_checksums_[tid] += local_checksum;
         }
 
-        // The benchmark only needs the method call to happen. Returning zero avoids
-        // pretending that this lock adapter materialized a real set range query.
         return 0;
     }
 
@@ -226,4 +224,4 @@ private:
     std::atomic<uint64_t> range_queries_{0};
 };
 
-}  // namespace adaptive_lock_benchmark
+}
