@@ -526,8 +526,8 @@ private:
     }
 
     if (active != nullptr && population.size() < population_size_) {
-      Chromosome guided = MakeProfileGuidedChromosome(active->centroid);
-      if (guided.cuts != current_.cuts &&
+      if (Chromosome guided = MakeProfileGuidedChromosome(active->centroid);
+          guided.cuts != current_.cuts &&
           (!active->has_best_partition ||
            guided.cuts != active->best_partition.cuts)) {
         population.push_back(std::move(guided));

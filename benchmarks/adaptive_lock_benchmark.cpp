@@ -27,7 +27,7 @@ constexpr size_t kPointQueryLength = 1;
 constexpr size_t kRandomRangeMaxLength = 65'536;
 constexpr size_t kClusteredHotWindowSize = kHotWindowSize;
 constexpr size_t kSmallRangeMaxLength = 8;
-constexpr size_t kMovingWindowSize = 4 * kBlockSize;
+constexpr size_t kMovingWindowSize = kHotWindowSize;
 constexpr size_t kMovingWindowStops = 8;
 
 const size_t kThreadCount = std::max(1u, std::thread::hardware_concurrency());
@@ -406,7 +406,7 @@ ScenarioInput MakeClusteredChurnScenario(size_t cluster_count,
 ScenarioInput MakeMovingWindowScenario() {
   return {
       "moving_small_window",
-      "4,096-element hot window moves left-to-right and back; each stop "
+      "16,384-element hot window moves left-to-right and back; each stop "
       "runs long enough for online repartitioning attempts",
       {{"warmup first moving window",
         BuildMultiWindowQueries(kMovingWindowWarmupQueries, {0},
