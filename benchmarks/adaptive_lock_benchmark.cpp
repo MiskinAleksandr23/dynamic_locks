@@ -32,18 +32,18 @@ constexpr size_t kMovingWindowStops = 8;
 
 const size_t kThreadCount = std::max(1u, std::thread::hardware_concurrency());
 
-constexpr size_t kWarmupQueries = 64'000;
-constexpr size_t kAdaptQueries = 192'000;
-constexpr size_t kMeasuredQueries = 1'200'000;
-constexpr size_t kRandomRangeWarmupQueries = 16'000;
-constexpr size_t kRandomRangeAdaptQueries = 48'000;
-constexpr size_t kRandomRangeMeasuredQueries = 40'000;
-constexpr size_t kMovingWindowWarmupQueries = 128'000;
-constexpr size_t kMovingWindowAdaptQueriesPerStop = 192'000;
-constexpr size_t kMovingWindowMeasuredQueriesPerStop = 700'000;
+constexpr size_t kWarmupQueries = 6'400'000;
+constexpr size_t kAdaptQueries = 19'200'000;
+constexpr size_t kMeasuredQueries = 120'000'000;
+constexpr size_t kRandomRangeWarmupQueries = 1'600'000;
+constexpr size_t kRandomRangeAdaptQueries = 4'800'000;
+constexpr size_t kRandomRangeMeasuredQueries = 4'000'000;
+constexpr size_t kMovingWindowWarmupQueries = 12'800'000;
+constexpr size_t kMovingWindowAdaptQueriesPerStop = 19'200'000;
+constexpr size_t kMovingWindowMeasuredQueriesPerStop = 70'000'000;
 constexpr size_t kChurnChanges = 5;
-constexpr size_t kChurnAdaptQueries = 96'000;
-constexpr size_t kChurnMeasuredQueries = 200'000;
+constexpr size_t kChurnAdaptQueries = 9'600'000;
+constexpr size_t kChurnMeasuredQueries = 20'000'000;
 constexpr auto kDynamicRebuildInterval = std::chrono::milliseconds(100);
 constexpr double kDynamicRebuildThreshold = 2.0;
 

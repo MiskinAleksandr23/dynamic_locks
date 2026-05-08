@@ -36,8 +36,8 @@ constexpr size_t kEliteCount = 4;
 constexpr size_t kGenerationCount = 18;
 const size_t kThreadCount = std::max(1u, std::thread::hardware_concurrency());
 constexpr size_t kOnlineTrainingBatchSize = 2048;
-constexpr size_t kOnlinePhaseQueries = 48'000;
-constexpr size_t kPureLockQueries = 900'000;
+constexpr size_t kOnlinePhaseQueries = 480'000;
+constexpr size_t kPureLockQueries = 9'000'000;
 constexpr size_t kPretrainBatches = 8;
 
 struct Snapshot {

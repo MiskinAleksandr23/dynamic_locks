@@ -63,13 +63,13 @@ and `lock_x` is "Empty-body speedup".
 
 Right-side warmup, then final point requests in the left hot window.
 
-Setup queries: `64,000 + 192,000`. Measured queries: `1,200,000`.
+Setup queries: `6,400,000 + 19,200,000`. Measured queries: `120,000,000`.
 
 | Implementation | Setup time, s | Measured request time, s | Request speedup | Empty critical section time, s | Empty-body speedup | Avg lock wait, us | Total lock wait, s | Avg mutexes/query | Hot locks L/R | Rebuild/train |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| Naive fixed | 0.042 | 0.201 | 1.000x | 0.133 | 1.000x | 1.15 | 1.377 | 1.00 | 1 / 1 | 0 |
-| Dynamic DP | 0.356 | 0.156 | 1.286x | 0.146 | 0.912x | 1.01 | 1.210 | 1.00 | 16 / 1 | 1 |
-| Genetic | 0.710 | 0.150 | 1.334x | 0.139 | 0.957x | 0.97 | 1.166 | 1.00 | 16 / 1 | 7 |
+| Naive fixed | 4.753 | 21.431 | 1.000x | 13.475 | 1.000x | 1.26 | 151.006 | 1.00 | 1 / 1 | 0 |
+| Dynamic DP | 4.317 | 13.416 | 1.597x | 12.503 | 1.078x | 0.89 | 106.271 | 1.00 | 16 / 1 | 3 |
+| Genetic | 7.950 | 13.137 | 1.631x | 12.301 | 1.095x | 0.87 | 104.439 | 1.00 | 16 / 1 | 97 |
 
 ## Scenario: Clustered 2 Hot Windows
 
@@ -77,13 +77,13 @@ Two compact 16,384-element hot windows. Requests are point updates. The hot
 windows start at fine blocks `16` and `48`, so there is a cold gap before,
 between, and after the hot intervals.
 
-Setup queries: `64,000 + 192,000`. Measured queries: `1,200,000`.
+Setup queries: `6,400,000 + 19,200,000`. Measured queries: `120,000,000`.
 
 | Implementation | Setup time, s | Measured request time, s | Request speedup | Empty critical section time, s | Empty-body speedup | Avg lock wait, us | Total lock wait, s | Avg mutexes/query | Hot locks L/R | Rebuild/train |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| Naive fixed | 0.038 | 0.180 | 1.000x | 0.148 | 1.000x | 1.15 | 1.376 | 1.00 | 1 / 1 | 0 |
-| Dynamic DP | 0.353 | 0.146 | 1.233x | 0.138 | 1.074x | 0.90 | 1.075 | 1.00 | 16 / 1 | 1 |
-| Genetic | 0.756 | 0.137 | 1.313x | 0.131 | 1.130x | 0.84 | 1.014 | 1.00 | 1 / 1 | 7 |
+| Naive fixed | 3.617 | 16.924 | 1.000x | 14.795 | 1.000x | 1.08 | 129.007 | 1.00 | 1 / 1 | 0 |
+| Dynamic DP | 5.320 | 11.850 | 1.428x | 12.174 | 1.215x | 0.75 | 90.536 | 1.00 | 16 / 1 | 1 |
+| Genetic | 9.653 | 11.869 | 1.426x | 11.470 | 1.290x | 0.75 | 90.458 | 1.00 | 2 / 1 | 79 |
 
 ## Scenario: Clustered 4 Hot Windows
 
@@ -91,13 +91,13 @@ Four compact 16,384-element hot windows. Requests are point updates. The hot
 windows start at fine blocks `16`, `48`, `80`, and `112`, giving the intended
 cold/hot/cold/hot/cold/hot/cold/hot/cold structure.
 
-Setup queries: `64,000 + 192,000`. Measured queries: `1,200,000`.
+Setup queries: `6,400,000 + 19,200,000`. Measured queries: `120,000,000`.
 
 | Implementation | Setup time, s | Measured request time, s | Request speedup | Empty critical section time, s | Empty-body speedup | Avg lock wait, us | Total lock wait, s | Avg mutexes/query | Hot locks L/R | Rebuild/train |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| Naive fixed | 0.033 | 0.154 | 1.000x | 0.138 | 1.000x | 1.01 | 1.208 | 1.00 | 1 / 1 | 0 |
-| Dynamic DP | 0.346 | 0.152 | 1.015x | 0.145 | 0.952x | 0.82 | 0.981 | 1.00 | 1 / 1 | 1 |
-| Genetic | 0.960 | 0.139 | 1.112x | 0.133 | 1.038x | 0.78 | 0.936 | 1.00 | 1 / 1 | 7 |
+| Naive fixed | 3.141 | 15.203 | 1.000x | 14.061 | 1.000x | 0.97 | 116.713 | 1.00 | 1 / 1 | 0 |
+| Dynamic DP | 5.019 | 12.574 | 1.209x | 12.153 | 1.157x | 0.67 | 80.698 | 1.00 | 1 / 1 | 1 |
+| Genetic | 12.146 | 11.998 | 1.267x | 11.936 | 1.178x | 0.66 | 79.172 | 1.00 | 1 / 1 | 76 |
 
 Result: the old 1,024-element clustered windows were exactly one fine block, so
 adaptive implementations could not split inside a window. With 16,384-element
@@ -111,13 +111,13 @@ Two compact 16,384-element hot windows. There are 5 timed phases; in every
 phase, half of the active windows is replaced by new compact windows before
 measuring point requests.
 
-Setup queries: `64,000 + 480,000 timed adapt`. Measured queries: `1,000,000`.
+Setup queries: `6,400,000 + 48,000,000 timed adapt`. Measured queries: `100,000,000`.
 
 | Implementation | Setup time, s | Measured request time, s | Request speedup | Empty critical section time, s | Empty-body speedup | Avg lock wait, us | Total lock wait, s | Avg mutexes/query | Hot locks L/R | Rebuild/train |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| Naive fixed | 0.080 | 0.150 | 1.000x | 0.122 | 1.000x | 1.15 | 1.145 | 1.00 | 1 / 1 | 0 |
-| Dynamic DP | 0.577 | 0.118 | 1.278x | 0.112 | 1.091x | 0.86 | 0.855 | 1.00 | 16 / 1 | 5 |
-| Genetic | 1.988 | 0.124 | 1.214x | 0.120 | 1.017x | 0.89 | 0.889 | 1.00 | 1 / 1 | 19 |
+| Naive fixed | 7.918 | 14.897 | 1.000x | 12.386 | 1.000x | 1.13 | 112.651 | 1.00 | 1 / 1 | 0 |
+| Dynamic DP | 7.999 | 9.923 | 1.501x | 9.613 | 1.288x | 0.75 | 74.992 | 1.00 | 16 / 1 | 20 |
+| Genetic | 19.242 | 9.850 | 1.512x | 9.603 | 1.290x | 0.75 | 75.138 | 1.00 | 1 / 1 | 156 |
 
 ## Scenario: Clustered Churn, 4 Hot Windows
 
@@ -125,13 +125,13 @@ Four compact 16,384-element hot windows. There are 5 timed phases; in every
 phase, half of the active windows is replaced by new compact windows before
 measuring point requests.
 
-Setup queries: `64,000 + 480,000 timed adapt`. Measured queries: `1,000,000`.
+Setup queries: `6,400,000 + 48,000,000 timed adapt`. Measured queries: `100,000,000`.
 
 | Implementation | Setup time, s | Measured request time, s | Request speedup | Empty critical section time, s | Empty-body speedup | Avg lock wait, us | Total lock wait, s | Avg mutexes/query | Hot locks L/R | Rebuild/train |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| Naive fixed | 0.069 | 0.129 | 1.000x | 0.113 | 1.000x | 1.01 | 1.014 | 1.00 | 1 / 1 | 0 |
-| Dynamic DP | 0.585 | 0.122 | 1.055x | 0.118 | 0.964x | 0.76 | 0.762 | 1.00 | 1 / 1 | 5 |
-| Genetic | 2.345 | 0.125 | 1.034x | 0.119 | 0.950x | 0.81 | 0.805 | 1.00 | 1 / 1 | 18 |
+| Naive fixed | 6.890 | 12.785 | 1.000x | 12.007 | 1.000x | 0.99 | 98.631 | 1.00 | 1 / 1 | 0 |
+| Dynamic DP | 7.711 | 9.901 | 1.291x | 9.750 | 1.231x | 0.66 | 65.536 | 1.00 | 1 / 1 | 20 |
+| Genetic | 22.648 | 10.368 | 1.233x | 9.828 | 1.222x | 0.67 | 67.421 | 1.00 | 1 / 1 | 139 |
 
 ## Scenario: Moving Small Window
 
@@ -140,14 +140,14 @@ benchmark adapts/rebuilds first, then measures with online adaptation disabled.
 This checks whether the learned layout is useful after the window has moved
 slowly enough to converge.
 
-Setup queries: `128,000 + 2,688,000 timed adapt`. Measured queries:
-`9,800,000`.
+Setup queries: `12,800,000 + 268,800,000 timed adapt`. Measured queries:
+`980,000,000`.
 
 | Implementation | Setup time, s | Measured request time, s | Request speedup | Empty critical section time, s | Empty-body speedup | Avg lock wait, us | Total lock wait, s | Avg mutexes/query | Hot locks L/R | Rebuild/train |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| Naive fixed | 0.490 | 1.732 | 1.000x | 1.106 | 1.000x | 1.21 | 11.857 | 1.00 | 1 / 1 | 0 |
-| Dynamic DP | 1.271 | 1.270 | 1.364x | 1.112 | 0.994x | 1.04 | 10.143 | 1.00 | 16 / 1 | 14 |
-| Genetic | 5.380 | 1.279 | 1.354x | 1.152 | 0.960x | 1.02 | 9.988 | 1.00 | 1 / 1 | 70 |
+| Naive fixed | 51.986 | 180.355 | 1.000x | 113.022 | 1.000x | 1.27 | 1249.434 | 1.00 | 1 / 1 | 0 |
+| Dynamic DP | 43.041 | 107.076 | 1.684x | 97.033 | 1.165x | 0.81 | 791.501 | 1.00 | 16 / 1 | 53 |
+| Genetic | 76.518 | 109.463 | 1.648x | 98.245 | 1.150x | 0.83 | 813.699 | 1.00 | 1 / 1 | 1021 |
 
 Result: after fixing runtime lookup to O(1), the moving-window case shows a
 measured win for both adaptive implementations. The setup cost is intentionally
@@ -157,37 +157,37 @@ higher because every window stop gets its own adaptation phase.
 
 Uniform random point updates over the whole array.
 
-Setup queries: `64,000`. Measured queries: `1,200,000`.
+Setup queries: `6,400,000`. Measured queries: `120,000,000`.
 
 | Implementation | Setup time, s | Measured request time, s | Request speedup | Empty critical section time, s | Empty-body speedup | Avg lock wait, us | Total lock wait, s | Avg mutexes/query | Hot locks L/R | Rebuild/train |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| Naive fixed | 0.007 | 0.120 | 1.000x | 0.120 | 1.000x | 0.65 | 0.778 | 1.00 | 1 / 1 | 0 |
-| Dynamic DP | 0.011 | 0.138 | 0.867x | 0.121 | 0.994x | 0.73 | 0.874 | 1.00 | 1 / 1 | 0 |
-| Genetic | 0.414 | 0.141 | 0.851x | 0.134 | 0.898x | 0.74 | 0.892 | 1.00 | 1 / 1 | 3 |
+| Naive fixed | 0.636 | 11.473 | 1.000x | 12.326 | 1.000x | 0.60 | 71.533 | 1.00 | 1 / 1 | 0 |
+| Dynamic DP | 0.817 | 12.484 | 0.919x | 12.158 | 1.014x | 0.67 | 80.406 | 1.00 | 1 / 1 | 0 |
+| Genetic | 4.652 | 12.036 | 0.953x | 11.900 | 1.036x | 0.67 | 79.946 | 1.00 | 1 / 2 | 29 |
 
 ## Scenario: Shifted Hotspot, Random-Length Ranges
 
 Right-side warmup, then left hot-window random-length ranges.
 
-Setup queries: `16,000 + 48,000`. Measured queries: `40,000`.
+Setup queries: `1,600,000 + 4,800,000`. Measured queries: `4,000,000`.
 
 | Implementation | Setup time, s | Measured request time, s | Request speedup | Empty critical section time, s | Empty-body speedup | Avg lock wait, us | Total lock wait, s | Avg mutexes/query | Hot locks L/R | Rebuild/train |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| Naive fixed | 0.088 | 0.054 | 1.000x | 0.004 | 1.000x | 10.49 | 0.420 | 1.00 | 1 / 1 | 0 |
-| Dynamic DP | 0.410 | 0.079 | 0.682x | 0.011 | 0.411x | 16.12 | 0.645 | 1.00 | 1 / 1 | 1 |
-| Genetic | 0.657 | 0.043 | 1.240x | 0.012 | 0.367x | 10.57 | 0.423 | 1.23 | 2 / 1 | 4 |
+| Naive fixed | 8.640 | 5.453 | 1.000x | 0.446 | 1.000x | 10.81 | 43.245 | 1.00 | 1 / 1 | 0 |
+| Dynamic DP | 11.483 | 6.411 | 0.851x | 1.829 | 0.244x | 15.86 | 63.422 | 3.40 | 5 / 1 | 4 |
+| Genetic | 11.604 | 5.321 | 1.025x | 2.806 | 0.159x | 13.44 | 53.742 | 8.96 | 16 / 1 | 87 |
 
 ## Scenario: Uniform Random, Random-Length Ranges
 
 Uniform random ranges over the whole array.
 
-Setup queries: `16,000`. Measured queries: `40,000`.
+Setup queries: `1,600,000`. Measured queries: `4,000,000`.
 
 | Implementation | Setup time, s | Measured request time, s | Request speedup | Empty critical section time, s | Empty-body speedup | Avg lock wait, us | Total lock wait, s | Avg mutexes/query | Hot locks L/R | Rebuild/train |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| Naive fixed | 0.016 | 0.038 | 1.000x | 0.011 | 1.000x | 7.60 | 0.304 | 2.99 | 1 / 1 | 0 |
-| Dynamic DP | 0.015 | 0.037 | 1.013x | 0.017 | 0.610x | 7.50 | 0.300 | 2.99 | 1 / 1 | 0 |
-| Genetic | 0.409 | 0.040 | 0.953x | 0.012 | 0.853x | 7.89 | 0.316 | 3.03 | 1 / 1 | 2 |
+| Naive fixed | 1.480 | 3.669 | 1.000x | 1.120 | 1.000x | 7.53 | 30.121 | 3.00 | 1 / 1 | 0 |
+| Dynamic DP | 1.493 | 3.673 | 0.999x | 1.131 | 0.990x | 7.50 | 30.017 | 3.00 | 1 / 1 | 0 |
+| Genetic | 2.180 | 3.654 | 1.004x | 1.100 | 1.018x | 7.46 | 29.859 | 3.04 | 1 / 1 | 9 |
 
 ## Implementation Notes
 
@@ -206,12 +206,12 @@ order and unlocks them in reverse order.
 
 | Case | Best final measured time | Comment |
 |---|---|---|
-| Shifted hotspot, point queries | Genetic, 1.334x over naive | Adaptive variants split the hot region |
-| Clustered 2 hot windows | Genetic, 1.313x over naive | Compact cold/hot/cold/hot/cold layout |
-| Clustered 4 hot windows | Genetic, 1.112x over naive | Compact cold/hot repeated layout; Dynamic is close to parity here |
-| Clustered churn, 2 hot windows | Dynamic DP, 1.278x over naive | Half of the active windows changes each phase |
-| Clustered churn, 4 hot windows | Dynamic DP, 1.055x over naive | More windows dilute per-window contention |
-| Moving small window | Dynamic DP, 1.364x over naive | 16-page moving window gives adaptive implementations enough internal structure |
+| Shifted hotspot, point queries | Genetic, 1.631x over naive | Adaptive variants split the hot region |
+| Clustered 2 hot windows | Dynamic DP, 1.428x over naive | Compact cold/hot/cold/hot/cold layout; Dynamic and Genetic are effectively tied |
+| Clustered 4 hot windows | Genetic, 1.267x over naive | Compact cold/hot repeated layout; both adaptive implementations benefit |
+| Clustered churn, 2 hot windows | Genetic, 1.512x over naive | Half of the active windows changes each phase |
+| Clustered churn, 4 hot windows | Dynamic DP, 1.291x over naive | More windows dilute per-window contention, but the effect remains stable |
+| Moving small window | Dynamic DP, 1.684x over naive | 16-page moving window gives the strongest stable win |
 | Uniform random, point queries | Naive | No stable locality to exploit |
-| Shifted hotspot, random ranges | Genetic, 1.277x over naive | Dynamic keeps ranges coarse; genetic wins on body time but loses on empty-body time |
-| Uniform random, random ranges | Naive | Multi-mutex requests exist, but no stable locality to exploit |
+| Shifted hotspot, random ranges | Genetic, 1.025x over naive | Adaptive splitting increases mutexes per range and hurts empty-body time |
+| Uniform random, random ranges | Genetic, 1.004x over naive | Effectively parity; no stable locality to exploit |
