@@ -302,6 +302,29 @@ double ReadEnvDouble(const char *name, double default_value) {
   return parsed;
 }
 
+size_t ReadEnvSize(const char *name, size_t default_value) {
+  const char *value = std::getenv(name);
+  if (value == nullptr) {
+    return default_value;
+  }
+
+  char *end = nullptr;
+  const unsigned long long parsed = std::strtoull(value, &end, 10);
+  if (end == value || parsed == 0) {
+    return default_value;
+  }
+  return static_cast<size_t>(parsed);
+}
+
+size_t QueryDivisor() {
+  static const size_t divisor = ReadEnvSize("DYNAMIC_LOCK_QUERY_DIVISOR", 1);
+  return divisor;
+}
+
+size_t ScaleQueryCount(size_t count) {
+  return std::max(size_t{1}, count / QueryDivisor());
+}
+
 double MovingWindowAdaptSecondsPerStop() {
   static const double seconds_per_direction =
       ReadEnvDouble("DYNAMIC_LOCK_MOVING_SECONDS_PER_DIRECTION", 0.0);
@@ -320,12 +343,12 @@ std::vector<TimedPhaseInput> BuildMovingWindowPhases(uint64_t seed) {
   for (size_t i = 0; i < begins.size(); ++i) {
     phases.push_back(
         {"window stop " + std::to_string(i),
-         BuildMultiWindowQueries(kMovingWindowAdaptQueriesPerStop, {begins[i]},
-                                 kMovingWindowSize, kSmallRangeMaxLength,
-                                 seed + 2 * i),
-         BuildMultiWindowQueries(kMovingWindowMeasuredQueriesPerStop,
-                                 {begins[i]}, kMovingWindowSize,
-                                 kSmallRangeMaxLength, seed + 2 * i + 1),
+         BuildMultiWindowQueries(
+             ScaleQueryCount(kMovingWindowAdaptQueriesPerStop), {begins[i]},
+             kMovingWindowSize, kSmallRangeMaxLength, seed + 2 * i),
+         BuildMultiWindowQueries(
+             ScaleQueryCount(kMovingWindowMeasuredQueriesPerStop), {begins[i]},
+             kMovingWindowSize, kSmallRangeMaxLength, seed + 2 * i + 1),
          adapt_seconds_per_stop});
   }
 
@@ -333,19 +356,20 @@ std::vector<TimedPhaseInput> BuildMovingWindowPhases(uint64_t seed) {
 }
 
 ScenarioInput MakeShiftScenario() {
-  return {"shift_hotspot_point",
-          "right warmup, then left hotspot; final queries are point updates",
-          {{"warmup right hotspot",
-            BuildQueries(kWarmupQueries, QueryPattern::kHotWindow,
-                         TrafficSide::kRight, kPointQueryLength, 11)},
-           {"adapt left hotspot",
-            BuildQueries(kAdaptQueries, QueryPattern::kHotWindow,
-                         TrafficSide::kLeft, kPointQueryLength, 12)}},
-          {"measure left hotspot",
-           BuildQueries(kMeasuredQueries, QueryPattern::kHotWindow,
-                        TrafficSide::kLeft, kPointQueryLength, 13)},
-          {},
-          true};
+  return {
+      "shift_hotspot_point",
+      "right warmup, then left hotspot; final queries are point updates",
+      {{"warmup right hotspot",
+        BuildQueries(ScaleQueryCount(kWarmupQueries), QueryPattern::kHotWindow,
+                     TrafficSide::kRight, kPointQueryLength, 11)},
+       {"adapt left hotspot",
+        BuildQueries(ScaleQueryCount(kAdaptQueries), QueryPattern::kHotWindow,
+                     TrafficSide::kLeft, kPointQueryLength, 12)}},
+      {"measure left hotspot",
+       BuildQueries(ScaleQueryCount(kMeasuredQueries), QueryPattern::kHotWindow,
+                    TrafficSide::kLeft, kPointQueryLength, 13)},
+      {},
+      true};
 }
 
 ScenarioInput MakeClusteredWindowsScenario(size_t cluster_count,
@@ -356,17 +380,17 @@ ScenarioInput MakeClusteredWindowsScenario(size_t cluster_count,
           std::to_string(cluster_count) +
               " 16,384-element hot windows; final requests are point updates",
           {{"warmup clustered small windows",
-            BuildMultiWindowQueries(kWarmupQueries, window_begins,
-                                    kClusteredHotWindowSize, kPointQueryLength,
-                                    seed_base)},
+            BuildMultiWindowQueries(ScaleQueryCount(kWarmupQueries),
+                                    window_begins, kClusteredHotWindowSize,
+                                    kPointQueryLength, seed_base)},
            {"adapt clustered small windows",
-            BuildMultiWindowQueries(kAdaptQueries, window_begins,
-                                    kClusteredHotWindowSize, kPointQueryLength,
-                                    seed_base + 1)}},
+            BuildMultiWindowQueries(ScaleQueryCount(kAdaptQueries),
+                                    window_begins, kClusteredHotWindowSize,
+                                    kPointQueryLength, seed_base + 1)}},
           {"measure clustered small windows",
-           BuildMultiWindowQueries(kMeasuredQueries, window_begins,
-                                   kClusteredHotWindowSize, kPointQueryLength,
-                                   seed_base + 2)},
+           BuildMultiWindowQueries(ScaleQueryCount(kMeasuredQueries),
+                                   window_begins, kClusteredHotWindowSize,
+                                   kPointQueryLength, seed_base + 2)},
           {},
           true};
 }
@@ -380,27 +404,28 @@ ScenarioInput MakeClusteredChurnScenario(size_t cluster_count,
         MakeChurnedClusteredWindowBegins(cluster_count, change);
     phases.push_back(
         {"churn change " + std::to_string(change),
-         BuildMultiWindowQueries(kChurnAdaptQueries, window_begins,
-                                 kClusteredHotWindowSize, kPointQueryLength,
-                                 seed_base + 10 * change),
-         BuildMultiWindowQueries(kChurnMeasuredQueries, window_begins,
-                                 kClusteredHotWindowSize, kPointQueryLength,
+         BuildMultiWindowQueries(ScaleQueryCount(kChurnAdaptQueries),
+                                 window_begins, kClusteredHotWindowSize,
+                                 kPointQueryLength, seed_base + 10 * change),
+         BuildMultiWindowQueries(ScaleQueryCount(kChurnMeasuredQueries),
+                                 window_begins, kClusteredHotWindowSize,
+                                 kPointQueryLength,
                                  seed_base + 10 * change + 1),
          0.0});
   }
 
-  return {
-      "clustered_churn_" + std::to_string(cluster_count) + "_hot_windows",
-      std::to_string(cluster_count) +
-          " compact hot windows; five phases replace half of the active "
-          "windows before measuring point requests",
-      {{"warmup initial clustered windows",
-        BuildMultiWindowQueries(
-            kWarmupQueries, MakeChurnedClusteredWindowBegins(cluster_count, 0),
-            kClusteredHotWindowSize, kPointQueryLength, seed_base)}},
-      {},
-      std::move(phases),
-      true};
+  return {"clustered_churn_" + std::to_string(cluster_count) + "_hot_windows",
+          std::to_string(cluster_count) +
+              " compact hot windows; five phases replace half of the active "
+              "windows before measuring point requests",
+          {{"warmup initial clustered windows",
+            BuildMultiWindowQueries(
+                ScaleQueryCount(kWarmupQueries),
+                MakeChurnedClusteredWindowBegins(cluster_count, 0),
+                kClusteredHotWindowSize, kPointQueryLength, seed_base)}},
+          {},
+          std::move(phases),
+          true};
 }
 
 ScenarioInput MakeMovingWindowScenario() {
@@ -409,8 +434,9 @@ ScenarioInput MakeMovingWindowScenario() {
       "16,384-element hot window moves left-to-right and back; each stop "
       "runs long enough for online repartitioning attempts",
       {{"warmup first moving window",
-        BuildMultiWindowQueries(kMovingWindowWarmupQueries, {0},
-                                kMovingWindowSize, kSmallRangeMaxLength, 61)}},
+        BuildMultiWindowQueries(ScaleQueryCount(kMovingWindowWarmupQueries),
+                                {0}, kMovingWindowSize, kSmallRangeMaxLength,
+                                61)}},
       {},
       BuildMovingWindowPhases(62),
       true,
@@ -418,31 +444,32 @@ ScenarioInput MakeMovingWindowScenario() {
 }
 
 ScenarioInput MakeRandomScenario() {
-  return {"random_uniform_point",
-          "uniform random point updates over the whole array",
-          {{"warmup uniform random",
-            BuildQueries(kWarmupQueries, QueryPattern::kUniform,
-                         TrafficSide::kLeft, kPointQueryLength, 21)}},
-          {"measure uniform random",
-           BuildQueries(kMeasuredQueries, QueryPattern::kUniform,
-                        TrafficSide::kLeft, kPointQueryLength, 22)},
-          {},
-          false};
+  return {
+      "random_uniform_point",
+      "uniform random point updates over the whole array",
+      {{"warmup uniform random",
+        BuildQueries(ScaleQueryCount(kWarmupQueries), QueryPattern::kUniform,
+                     TrafficSide::kLeft, kPointQueryLength, 21)}},
+      {"measure uniform random",
+       BuildQueries(ScaleQueryCount(kMeasuredQueries), QueryPattern::kUniform,
+                    TrafficSide::kLeft, kPointQueryLength, 22)},
+      {},
+      false};
 }
 
 ScenarioInput MakeShiftRandomRangeScenario() {
   return {"shift_hotspot_random_ranges",
           "right warmup, then left hotspot; final ranges have random length",
           {{"warmup right hotspot random ranges",
-            BuildQueries(kRandomRangeWarmupQueries,
+            BuildQueries(ScaleQueryCount(kRandomRangeWarmupQueries),
                          QueryPattern::kHotWindowRandomRange,
                          TrafficSide::kRight, kRandomRangeMaxLength, 31)},
            {"adapt left hotspot random ranges",
-            BuildQueries(kRandomRangeAdaptQueries,
+            BuildQueries(ScaleQueryCount(kRandomRangeAdaptQueries),
                          QueryPattern::kHotWindowRandomRange,
                          TrafficSide::kLeft, kRandomRangeMaxLength, 32)}},
           {"measure left hotspot random ranges",
-           BuildQueries(kRandomRangeMeasuredQueries,
+           BuildQueries(ScaleQueryCount(kRandomRangeMeasuredQueries),
                         QueryPattern::kHotWindowRandomRange, TrafficSide::kLeft,
                         kRandomRangeMaxLength, 33)},
           {},
@@ -453,11 +480,11 @@ ScenarioInput MakeRandomRangeScenario() {
   return {"random_uniform_ranges",
           "uniform random ranges over the whole array; range length is random",
           {{"warmup uniform random ranges",
-            BuildQueries(kRandomRangeWarmupQueries,
+            BuildQueries(ScaleQueryCount(kRandomRangeWarmupQueries),
                          QueryPattern::kUniformRandomRange, TrafficSide::kLeft,
                          kRandomRangeMaxLength, 41)}},
           {"measure uniform random ranges",
-           BuildQueries(kRandomRangeMeasuredQueries,
+           BuildQueries(ScaleQueryCount(kRandomRangeMeasuredQueries),
                         QueryPattern::kUniformRandomRange, TrafficSide::kLeft,
                         kRandomRangeMaxLength, 42)},
           {},
@@ -886,6 +913,7 @@ int main() {
   std::println("  small range max length: {}", kSmallRangeMaxLength);
   std::println("  moving window size: {}", kMovingWindowSize);
   std::println("  moving window stops: {}", 2 * kMovingWindowStops - 2);
+  std::println("  query divisor: {}", QueryDivisor());
   std::println("  body_s: final measured phase with sum+single update");
   std::println(
       "  lock_only_s: same final coordinates after same setup, empty body");

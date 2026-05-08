@@ -21,6 +21,7 @@ Snapshot from `./cmake-build-release/adaptive_lock_benchmark`.
 | Small range max length | 8 |
 | Moving window size | 16,384 |
 | Moving window stops | 14 |
+| Query divisor | 1 |
 | Main lock primitive | `std::mutex` |
 
 For a slow run of the moving-window scenario, set:
@@ -38,6 +39,13 @@ of the scenario name. For example:
 
 ```bash
 DYNAMIC_LOCK_SCENARIO=clustered_churn ./cmake-build-release/adaptive_lock_benchmark
+```
+
+To reduce query counts approximately by `M` at runtime, set
+`DYNAMIC_LOCK_QUERY_DIVISOR=M`. The default is `1`. For example:
+
+```bash
+DYNAMIC_LOCK_QUERY_DIVISOR=10 ./cmake-build-release/adaptive_lock_benchmark
 ```
 
 ## Column Meaning
