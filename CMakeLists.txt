@@ -22,6 +22,12 @@ target_compile_features(genetic_lock_benchmark PRIVATE cxx_std_23)
 target_compile_options(genetic_lock_benchmark PRIVATE -O3 -pthread)
 target_link_libraries(genetic_lock_benchmark PRIVATE pthread)
 
+add_executable(example example/main.cpp common/spinlock.cpp)
+target_include_directories(example PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_compile_features(example PRIVATE cxx_std_23)
+target_compile_options(example PRIVATE -O3 -pthread)
+target_link_libraries(example PRIVATE pthread)
+
 if (BUILD_BENCHMARK_V700)
         add_subdirectory(Benchmark-v700/cpp Benchmark-v700-build EXCLUDE_FROM_ALL)
 endif ()
