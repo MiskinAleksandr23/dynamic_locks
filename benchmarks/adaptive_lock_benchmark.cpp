@@ -1,4 +1,5 @@
 #include "common/naive_lock.hpp"
+#include "common/print_compat.hpp"
 #include "common/request_workload.hpp"
 #include "common/spinlock.hpp"
 #include "dynamic/dynamic_lock.hpp"
@@ -10,7 +11,6 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
-#include <print>
 #include <random>
 #include <stdexcept>
 #include <string>

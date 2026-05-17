@@ -7,6 +7,7 @@
  */
 
 #include "common/naive_lock.hpp"
+#include "common/print_compat.hpp"
 #include "common/request_workload.hpp"
 #include "genetic/genetic_lock.hpp"
 #include "genetic/genetic_partitioner.hpp"
@@ -16,7 +17,6 @@
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
-#include <print>
 #include <string>
 #include <thread>
 #include <vector>
