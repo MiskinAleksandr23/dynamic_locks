@@ -30,7 +30,24 @@ constexpr size_t kSmallRangeMaxLength = 8;
 constexpr size_t kMovingWindowSize = kHotWindowSize;
 constexpr size_t kMovingWindowStops = 8;
 
-const size_t kThreadCount = std::max(1u, std::thread::hardware_concurrency());
+size_t BenchmarkThreadCount() {
+  const size_t hardware_threads =
+      std::max(1u, std::thread::hardware_concurrency());
+  const char *value = std::getenv("DYNAMIC_LOCK_THREAD_COUNT");
+  if (value == nullptr) {
+    return std::min(size_t{32}, hardware_threads);
+  }
+
+  char *end = nullptr;
+  const unsigned long long parsed = std::strtoull(value, &end, 10);
+  if (end == value || parsed == 0) {
+    return std::min(size_t{32}, hardware_threads);
+  }
+  return std::max(size_t{1}, std::min(static_cast<size_t>(parsed),
+                                      hardware_threads));
+}
+
+const size_t kThreadCount = BenchmarkThreadCount();
 
 constexpr size_t kWarmupQueries = 2'400'000;
 constexpr size_t kAdaptQueries = 7'200'000;
