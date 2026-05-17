@@ -192,7 +192,7 @@ public:
   ~DynamicLock() { StopRebuilder(); }
 
 private:
-  static constexpr size_t kBlocks = 1024;
+  static constexpr size_t kBlocks = 4096;
   // Penalizes cuts that split observed range queries. Point queries do not
   // cross any boundary, so the original hotspot behavior remains unchanged.
   static constexpr size_t kBoundaryCrossingPenalty = 10'000'000;

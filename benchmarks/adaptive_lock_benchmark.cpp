@@ -19,8 +19,8 @@
 
 namespace {
 constexpr size_t kLockCount = 64;
-constexpr size_t kBlocks = 1024;
-constexpr size_t kBlockSize = 1024;
+constexpr size_t kBlocks = 4096;
+constexpr size_t kBlockSize = 512;
 constexpr size_t kArraySize = kBlocks * kBlockSize;
 constexpr size_t kHotWindowSize = kArraySize / kLockCount;
 constexpr size_t kPointQueryLength = 1;
@@ -30,20 +30,21 @@ constexpr size_t kSmallRangeMaxLength = 8;
 constexpr size_t kMovingWindowSize = kHotWindowSize;
 constexpr size_t kMovingWindowStops = 8;
 
-const size_t kThreadCount = std::max(1u, std::thread::hardware_concurrency());
+const size_t kThreadCount =
+    std::max(1u, std::min(32u, std::thread::hardware_concurrency()));
 
-constexpr size_t kWarmupQueries = 6'400'000;
-constexpr size_t kAdaptQueries = 19'200'000;
-constexpr size_t kMeasuredQueries = 120'000'000;
-constexpr size_t kRandomRangeWarmupQueries = 1'600'000;
-constexpr size_t kRandomRangeAdaptQueries = 4'800'000;
-constexpr size_t kRandomRangeMeasuredQueries = 4'000'000;
-constexpr size_t kMovingWindowWarmupQueries = 12'800'000;
-constexpr size_t kMovingWindowAdaptQueriesPerStop = 19'200'000;
-constexpr size_t kMovingWindowMeasuredQueriesPerStop = 70'000'000;
+constexpr size_t kWarmupQueries = 2'400'000;
+constexpr size_t kAdaptQueries = 7'200'000;
+constexpr size_t kMeasuredQueries = 40'000'000;
+constexpr size_t kRandomRangeWarmupQueries = 800'000;
+constexpr size_t kRandomRangeAdaptQueries = 2'400'000;
+constexpr size_t kRandomRangeMeasuredQueries = 2'000'000;
+constexpr size_t kMovingWindowWarmupQueries = 4'000'000;
+constexpr size_t kMovingWindowAdaptQueriesPerStop = 6'000'000;
+constexpr size_t kMovingWindowMeasuredQueriesPerStop = 20'000'000;
 constexpr size_t kChurnChanges = 5;
-constexpr size_t kChurnAdaptQueries = 9'600'000;
-constexpr size_t kChurnMeasuredQueries = 20'000'000;
+constexpr size_t kChurnAdaptQueries = 3'200'000;
+constexpr size_t kChurnMeasuredQueries = 8'000'000;
 constexpr auto kDynamicRebuildInterval = std::chrono::milliseconds(100);
 constexpr double kDynamicRebuildThreshold = 2.0;
 
