@@ -228,10 +228,10 @@ order and unlocks them in reverse order.
 
 ## x86/Linux Server Configuration
 
-Run command:
+Run command pattern:
 
 ```bash
-DYNAMIC_LOCK_QUERY_DIVISOR=10 ./build/adaptive_lock_benchmark
+DYNAMIC_LOCK_SCENARIO=<scenario> DYNAMIC_LOCK_QUERY_DIVISOR=<divisor> ./build/adaptive_lock_benchmark
 ```
 
 | Parameter | Value |
@@ -248,7 +248,7 @@ DYNAMIC_LOCK_QUERY_DIVISOR=10 ./build/adaptive_lock_benchmark
 | Small range max length | 8 |
 | Moving window size | 16,384 |
 | Moving window stops | 14 |
-| Query divisor | 10 |
+| Query divisor | Mixed; see setup/measured query counts per scenario |
 | Main lock primitive | `std::mutex` |
 
 ## x86/Linux Server Results
@@ -260,7 +260,7 @@ Setup queries: `640,000 + 1,920,000`. Measured queries: `12,000,000`.
 | Implementation | Setup time, s | Measured request time, s | Request speedup | Empty critical section time, s | Empty-body speedup | Avg lock wait, us | Total lock wait, s | Avg mutexes/query | Hot locks L/R | Rebuild/train |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
 | Naive fixed | 1.489 | 6.841 | 1.000x | 5.169 | 1.000x | 2.98 | 35.815 | 1.00 | 1 / 1 | 0 |
-| Dynamic DP | 1.268 | 2.146 | 3.188x | 1.403 | 3.683x | 0.74 | 8.860 | 1.00 | 16 / 1 | 2 |
+| Dynamic DP | 1.268 | 2.146 | 2.811x | 1.403 | 2.611x | 0.74 | 8.860 | 1.00 | 16 / 1 | 2 |
 | Genetic | 4.492 | 2.688 | 2.545x | 2.199 | 2.350x | 0.91 | 10.938 | 1.00 | 16 / 1 | 24 |
 
 ### Scenario: Clustered 2 Hot Windows
@@ -285,33 +285,33 @@ Setup queries: `640,000 + 1,920,000`. Measured queries: `12,000,000`.
 
 ### Scenario: Clustered Churn, 2 Hot Windows
 
-Setup queries: `640,000 + 4,800,000 timed adapt`. Measured queries: `10,000,000`.
+Setup queries: `128,000 + 960,000 timed adapt`. Measured queries: `2,000,000`.
 
 | Implementation | Setup time, s | Measured request time, s | Request speedup | Empty critical section time, s | Empty-body speedup | Avg lock wait, us | Total lock wait, s | Avg mutexes/query | Hot locks L/R | Rebuild/train |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| Naive fixed | 2.384 | 4.359 | 1.000x | 2.405 | 1.000x | 2.26 | 22.619 | 1.00 | 1 / 1 | 0 |
-| Dynamic DP | 2.507 | 1.463 | 2.980x | 1.320 | 1.823x | 0.55 | 5.539 | 1.00 | 16 / 1 | 10 |
-| Genetic | 11.577 | 2.040 | 2.137x | 1.991 | 1.208x | 0.74 | 7.405 | 1.00 | 1 / 1 | 59 |
+| Naive fixed | 0.628 | 1.265 | 1.000x | 0.632 | 1.000x | 3.41 | 6.822 | 1.00 | 1 / 1 | 0 |
+| Dynamic DP | 1.042 | 0.438 | 2.889x | 0.436 | 1.450x | 0.99 | 1.976 | 1.00 | 16 / 1 | 10 |
+| Genetic | 6.273 | 0.559 | 2.265x | 0.455 | 1.389x | 1.22 | 2.435 | 1.00 | 1 / 1 | 29 |
 
 ### Scenario: Clustered Churn, 4 Hot Windows
 
-Setup queries: `640,000 + 4,800,000 timed adapt`. Measured queries: `10,000,000`.
+Setup queries: `128,000 + 960,000 timed adapt`. Measured queries: `2,000,000`.
 
 | Implementation | Setup time, s | Measured request time, s | Request speedup | Empty critical section time, s | Empty-body speedup | Avg lock wait, us | Total lock wait, s | Avg mutexes/query | Hot locks L/R | Rebuild/train |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| Naive fixed | 1.711 | 3.036 | 1.000x | 1.969 | 1.000x | 1.45 | 14.510 | 1.00 | 1 / 1 | 0 |
-| Dynamic DP | 2.436 | 1.128 | 2.692x | 1.077 | 1.829x | 0.38 | 3.808 | 1.00 | 1 / 1 | 10 |
-| Genetic | 12.577 | 1.827 | 1.662x | 1.537 | 1.281x | 0.59 | 5.950 | 1.00 | 1 / 1 | 48 |
+| Naive fixed | 0.444 | 0.851 | 1.000x | 0.561 | 1.000x | 2.16 | 4.328 | 1.00 | 1 / 1 | 0 |
+| Dynamic DP | 1.109 | 0.414 | 2.054x | 0.302 | 1.857x | 0.84 | 1.671 | 1.00 | 1 / 1 | 10 |
+| Genetic | 7.862 | 0.595 | 1.430x | 0.480 | 1.168x | 1.09 | 2.173 | 1.00 | 1 / 1 | 29 |
 
 ### Scenario: Moving Small Window
 
-Setup queries: `1,280,000 + 26,880,000 timed adapt`. Measured queries: `98,000,000`.
+Setup queries: `26,122 + 548,562 timed adapt`. Measured queries: `1,999,998`.
 
 | Implementation | Setup time, s | Measured request time, s | Request speedup | Empty critical section time, s | Empty-body speedup | Avg lock wait, us | Total lock wait, s | Avg mutexes/query | Hot locks L/R | Rebuild/train |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| Naive fixed | 17.198 | 65.031 | 1.000x | 39.264 | 1.000x | 3.57 | 350.169 | 1.00 | 1 / 1 | 0 |
-| Dynamic DP | 12.994 | 18.024 | 3.608x | 16.539 | 2.374x | 0.78 | 76.413 | 1.00 | 16 / 1 | 40 |
-| Genetic | 31.178 | 23.601 | 2.755x | 20.757 | 1.892x | 0.97 | 95.273 | 1.00 | 1 / 1 | 220 |
+| Naive fixed | 0.411 | 1.491 | 1.000x | 0.614 | 1.000x | 4.01 | 8.020 | 1.00 | 1 / 1 | 0 |
+| Dynamic DP | 1.798 | 0.804 | 1.854x | 0.473 | 1.298x | 2.03 | 4.065 | 1.00 | 16 / 1 | 21 |
+| Genetic | 6.805 | 0.640 | 2.330x | 0.512 | 1.200x | 1.44 | 2.888 | 1.00 | 1 / 1 | 45 |
 
 ### Scenario: Uniform Random, Point Queries
 
@@ -350,9 +350,9 @@ Setup queries: `160,000`. Measured queries: `400,000`.
 | Shifted hotspot, point queries | Dynamic DP, 3.188x over naive | Server shows much higher mutex contention than ARM/macOS |
 | Clustered 2 hot windows | Dynamic DP, 2.645x over naive | Adaptive splitting strongly reduces contention |
 | Clustered 4 hot windows | Dynamic DP, 1.797x over naive | More hot windows dilute contention, but Dynamic still wins |
-| Clustered churn, 2 hot windows | Dynamic DP, 2.980x over naive | Dynamic adapts cheaply across changing windows |
-| Clustered churn, 4 hot windows | Dynamic DP, 2.692x over naive | Churn workload remains favorable on x86 |
-| Moving small window | Dynamic DP, 3.608x over naive | Strongest x86 result; 16-page moving window has enough structure |
+| Clustered churn, 2 hot windows | Dynamic DP, 2.889x over naive | Dynamic adapts cheaply across changing windows |
+| Clustered churn, 4 hot windows | Dynamic DP, 2.054x over naive | Churn workload remains favorable on x86 |
+| Moving small window | Genetic, 2.330x over naive | 16-page moving window has enough structure |
 | Uniform random, point queries | Dynamic DP, 1.117x over naive | Small positive result on this server, unlike ARM/macOS |
 | Shifted hotspot, random ranges | Naive | Adaptive layouts hurt range-lock count or overhead here |
 | Uniform random, random ranges | Naive | No stable locality to exploit |

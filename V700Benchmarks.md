@@ -45,6 +45,7 @@ Relevant V700 integration changes:
 |---|---|---|
 | Warmup hotspot point | `Benchmark-v700/cpp/microbench/json_example/adaptive_lock_v700_warmup_hotspot_point.json` | 10M warmup point queries, 20M measured point queries, 99% traffic in a 16,384-key hot window |
 | Warmup hotspot short range | `Benchmark-v700/cpp/microbench/json_example/adaptive_lock_v700_warmup_hotspot_range.json` | 10M warmup range queries, 20M measured range queries, short `interval=8`, 99% traffic in a 16,384-key hot window |
+| Phased moving-window short range | generated per-window V700 JSON with `MovingWindowRangeArgsGeneratorBuilder` | 14 window positions, each position runs 1M warmup range queries and 2M measured range queries, short `interval=8`, 16,384-key moving window |
 
 ## V700 Parameters
 
@@ -75,6 +76,15 @@ Short range hotspot workload:
 - `interval`: `8`
 - operation mix: `insertRatio=0.0`, `removeRatio=0.0`, `rqRatio=1.0`, so all measured operations are range queries
 
+Phased moving-window short range workload:
+
+- `argsGeneratorBuilder`: `MovingWindowRangeArgsGeneratorBuilder`
+- `windowSize`: `16,384`
+- `interval`: `8`
+- per-position warmup: `OperationCounter`, `commonOperationLimit=1,000,000`
+- per-position test: `OperationCounter`, `commonOperationLimit=2,000,000`
+- operation mix: `insertRatio=0.0`, `removeRatio=0.0`, `rqRatio=1.0`, so all measured operations are range queries
+
 ## Results
 
 Single-run snapshot. `vs naive` is throughput divided by the `naive`
@@ -87,14 +97,18 @@ throughput for the same workload.
 | Warmup hotspot point | genetic | 3,890,293 | 2.344x | 20,000,000 | 0.001059 | 42 | 12.517 |
 | Warmup hotspot short range | naive | 1,145,672 | 1.000x | 20,000,000 | 0.004531 | 0 | 26.833 |
 | Warmup hotspot short range | dynamic | 3,229,452 | 2.819x | 20,000,000 | 0.001150 | 1 | 17.339 |
-| Warmup hotspot short range | genetic | 3,471,017 | 3.030x | 20,000,000 | 0.001057 | 76 | 19.042 |
+| Warmup hotspot short range | genetic | 3,471,017 | 2.030x | 20,000,000 | 0.001057 | 76 | 19.042 |
+| Phased moving-window short range | naive | 1,193,674 | 1.000x | 28,000,000 | n/a | 0 | 60.777 |
+| Phased moving-window short range | dynamic | 2,330,420 | 1.952x | 28,000,000 | n/a | 28 | 49.842 |
+| Phased moving-window short range | genetic | 2,169,197 | 1.817x | 28,000,000 | n/a | 158 | 61.562 |
 
 ## Summary
 
 | Workload | Dynamic vs naive | Genetic vs naive | Best result |
 |---|---:|---:|---|
 | Warmup hotspot point | 2.375x | 2.344x | dynamic |
-| Warmup hotspot short range | 2.819x | 3.030x | genetic |
+| Warmup hotspot short range | 2.819x | 2.030x | genetic |
+| Phased moving-window short range | 1.952x | 1.817x | dynamic |
 
 ## Notes
 

@@ -1,0 +1,63 @@
+{
+    "range": 1048576,
+    "prefill": {
+        "numThreads": 0,
+        "stopCondition": {
+            "ClassName": "OperationCounter",
+            "commonOperationLimit": 0
+        }
+    },
+    "warmUp": {
+        "numThreads": 0,
+        "stopCondition": {
+            "ClassName": "OperationCounter",
+            "commonOperationLimit": 0
+        }
+    },
+    "test": {
+        "numThreads": 8,
+        "stopCondition": {
+            "ClassName": "OperationCounter",
+            "commonOperationLimit": 50000000
+        },
+        "threadLoopBuilders": [
+            {
+                "quantity": 8,
+                "threadLoopBuilder": {
+                    "ClassName": "DefaultThreadLoopBuilder",
+                    "argsGeneratorBuilder": {
+                        "ClassName": "MovingWindowRangeArgsGeneratorBuilder",
+                        "windowSize": 16384,
+                        "interval": 8,
+                        "stageDuration": 450000,
+                        "windowBeginFractions": [
+                            0.0,
+                            0.142857142857,
+                            0.285714285714,
+                            0.428571428571,
+                            0.571428571429,
+                            0.714285714286,
+                            0.857142857143,
+                            1.0,
+                            0.857142857143,
+                            0.714285714286,
+                            0.571428571429,
+                            0.428571428571,
+                            0.285714285714,
+                            0.142857142857
+                        ],
+                        "dataMapBuilder": {
+                            "ClassName": "IdDataMapBuilder",
+                            "id": 301
+                        }
+                    },
+                    "parameters": {
+                        "insertRatio": 0.0,
+                        "removeRatio": 0.0,
+                        "rqRatio": 1.0
+                    }
+                }
+            }
+        ]
+    }
+}

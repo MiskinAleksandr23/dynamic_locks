@@ -331,6 +331,11 @@ private:
     const size_t last_total =
         std::accumulate(last_stats_.begin(), last_stats_.end(), size_t{0});
     if (last_total == 0) {
+      last_stats_ = current_stats;
+      for (size_t i = 0; i < kBlocks; ++i) {
+        stats_[i].store(0, std::memory_order_relaxed);
+        boundary_crossings_[i].store(0, std::memory_order_relaxed);
+      }
       return false;
     }
 

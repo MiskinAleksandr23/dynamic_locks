@@ -14,6 +14,7 @@
 #include "workloads/args_generators/impls/generalized_args_generator_builder.h"
 #include "workloads/args_generators/impls/null_args_generator_builder.h"
 #include "workloads/args_generators/impls/range_query_args_generator_builder.h"
+#include "workloads/args_generators/impls/moving_window_range_args_generator_builder.h"
 #include "errors.h"
 
 namespace microbench::workload {
@@ -41,6 +42,8 @@ ArgsGeneratorBuilder* get_args_generator_from_json(const nlohmann::json& j) {
         args_generator_builder = new NullArgsGeneratorBuilder();
     } else if (class_name == "RangeQueryArgsGeneratorBuilder") {
         args_generator_builder = new RangeQueryArgsGeneratorBuilder();
+    } else if (class_name == "MovingWindowRangeArgsGeneratorBuilder") {
+        args_generator_builder = new MovingWindowRangeArgsGeneratorBuilder();
     } else {
         setbench_error("JSON PARSER: Unknown class name ArgsGeneratorBuilder -- " + class_name)
     }
