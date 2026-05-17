@@ -19,7 +19,7 @@
 
 namespace {
 constexpr size_t kLockCount = 64;
-constexpr size_t kBlocks = 4096;
+constexpr size_t kBlocks = 8192;
 constexpr size_t kBlockSize = 512;
 constexpr size_t kArraySize = kBlocks * kBlockSize;
 constexpr size_t kHotWindowSize = kArraySize / kLockCount;
@@ -30,8 +30,7 @@ constexpr size_t kSmallRangeMaxLength = 8;
 constexpr size_t kMovingWindowSize = kHotWindowSize;
 constexpr size_t kMovingWindowStops = 8;
 
-const size_t kThreadCount =
-    std::max(1u, std::min(32u, std::thread::hardware_concurrency()));
+const size_t kThreadCount = std::max(1u, std::thread::hardware_concurrency());
 
 constexpr size_t kWarmupQueries = 2'400'000;
 constexpr size_t kAdaptQueries = 7'200'000;
@@ -379,7 +378,8 @@ ScenarioInput MakeClusteredWindowsScenario(size_t cluster_count,
       MakeClusteredWindowBegins(cluster_count);
   return {"clustered_" + std::to_string(cluster_count) + "_hot_windows",
           std::to_string(cluster_count) +
-              " 16,384-element hot windows; final requests are point updates",
+              " " + std::to_string(kClusteredHotWindowSize) +
+              "-element hot windows; final requests are point updates",
           {{"warmup clustered small windows",
             BuildMultiWindowQueries(ScaleQueryCount(kWarmupQueries),
                                     window_begins, kClusteredHotWindowSize,
@@ -432,7 +432,8 @@ ScenarioInput MakeClusteredChurnScenario(size_t cluster_count,
 ScenarioInput MakeMovingWindowScenario() {
   return {
       "moving_small_window",
-      "16,384-element hot window moves left-to-right and back; each stop "
+      std::to_string(kMovingWindowSize) +
+          "-element hot window moves left-to-right and back; each stop "
       "runs long enough for online repartitioning attempts",
       {{"warmup first moving window",
         BuildMultiWindowQueries(ScaleQueryCount(kMovingWindowWarmupQueries),
