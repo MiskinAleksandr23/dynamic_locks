@@ -1,0 +1,123 @@
+REALTIME_MAIN_START_PERF_FORMAT=680913.123813848
+binary=./build/Benchmark-v700-build/adaptive_lock_naive.debra
+DS_TYPENAME=DS_TYPENAME
+FIND_FUNC=FIND_FUNC
+INSERT_FUNC=INSERT_FUNC
+ERASE_FUNC=ERASE_FUNC
+GET_FUNC=execute_get
+RQ_FUNC=RQ_FUNC
+RECLAIM=reclaimer_debra
+ALLOC=allocator_new
+POOL=pool_none
+MAX_THREADS_POW2=512
+CPU_FREQ_GHZ=2.1
+
+initialization of parameters...
+
+################################################################################
+############################### BENCH PARAMETERS ###############################
+################################################################################
+
+  Range:                     1048576
+--------------------------------------------------------------------------------
+without prefill
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+without warmUp
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+test parameters
+--------------------------------------------------------------------------------
+    number of threads:       8
+    stop condition:
+      Type:                  OperationCounter
+      commonOperationLimit:  60000000
+    number of workloads:     1
+    all pins:                -1,-1,-1,-1,-1,-1,-1,-1
+    thread loops:
+      quantity:              8
+        Type:                Default
+        INS_RATIO:           0.000000
+        REM_RATIO:           0.000000
+        RQ_RATIO:            1.000000
+        Args generator:
+          Type:              RangeQuery
+          Interval:          8
+          Distribution:
+            Type:            Skewed Uniform
+            HOT SIZE:        0.015625
+            HOT RATIO:       0.990000
+          Data Map:
+            Type:            IdDataMap
+            ID:              2
+
+
+
+adaptive_lock_naive_object_bytes=144
+
+################################################################################
+################################# BEGIN RUNNING ################################
+################################################################################
+
+--------------------------------------------------------------------------------
+Without Prefill stage
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+Without WarmUp stage
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+Test stage
+--------------------------------------------------------------------------------
+binding threads...
+ACTUAL_THREAD_BINDINGS=-1,-1,-1,-1,-1,-1,-1,-1
+creating threads...
+REALTIME_START_PERF_FORMAT=680913.142079535
+REALTIME_END_PERF_FORMAT=680976.232254095
+
+################################################################################
+################################## END RUNNING #################################
+################################################################################
+
+63.09s
+PRODUCING OUTPUT
+
+KEY_DEPTH_TOTAL_STAT START
+KEY_DEPTH_TOTAL_STAT END
+
+KEY_SEARCH_TOTAL_STAT START
+KEY_SEARCH_TOTAL_STAT END
+adaptive_lock_naive_range_queries=60000000
+adaptive_lock_naive_total_lock_ms=330163
+adaptive_lock_naive_avg_lock_ms=0.00550271
+adaptive_lock_naive_reconfigurations=0
+adaptive_lock_naive_checksum=13873320111
+threads_final_keysum=0
+Structural validation OK.
+
+  total gets:                    0
+    total successful gets:       0
+    total fail gets:             0
+  total rq:                      60000000
+  total inserts:                 0
+    total successful inserts:    0
+    total fail inserts:          0
+  total removes:                 0
+    total successful removes:    0
+    total fail removes:          0
+  total updates:                 0
+    total successful updates:    0
+    total fail updates:          0
+  total queries:                 60000000
+  total ops:                     60000000
+  find throughput:               0
+  rq throughput:                 951022
+  update throughput:             0
+  query throughput:              951022
+  total throughput:              951022
+
+  elapsed milliseconds:          63090
+  napping milliseconds overtime: 0
+
+begin delete ds...
+end delete ds.
+REALTIME_MAIN_END_PERF_FORMAT=680976.238343826

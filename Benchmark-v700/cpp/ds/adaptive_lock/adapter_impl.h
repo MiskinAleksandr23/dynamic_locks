@@ -17,14 +17,17 @@ namespace adaptive_lock_benchmark {
 
 constexpr size_t kLockCount = 64;
 constexpr size_t kBlocks = 1024;
-constexpr auto kDynamicRebuildInterval = std::chrono::milliseconds(100);
+constexpr auto kDynamicRebuildInterval = std::chrono::milliseconds(500);
 constexpr double kDynamicRebuildThreshold = 2.0;
+constexpr size_t kStatsSampleRate = 64;
+constexpr double kMinSkew = 4.0;
+constexpr size_t kGeneticProbeGap = 1000000;
 
-constexpr size_t kGeneticTrainingBatchSize = 8192;
+constexpr size_t kGeneticTrainingBatchSize = 100000;
 constexpr size_t kGeneticHistoryLimit = 12000;
 constexpr size_t kGeneticPopulationSize = 24;
 constexpr size_t kGeneticEliteCount = 4;
-constexpr size_t kGeneticGenerationCount = 18;
+constexpr size_t kGeneticGenerationCount = 0;
 constexpr uint64_t kGeneticSeed = 500;
 
 struct NaiveTag {};
@@ -52,7 +55,7 @@ struct LockTraits<DynamicTag> {
     using Lock = DynamicLock<kLockCount>;
 
     static std::unique_ptr<Lock> Create(size_t array_size) {
-        return std::make_unique<Lock>(array_size);
+        return std::make_unique<Lock>(array_size, kStatsSampleRate, 1.0, kMinSkew);
     }
 
     static const char* Name() {
@@ -67,26 +70,14 @@ struct LockTraits<GeneticTag> {
     static std::unique_ptr<Lock> Create(size_t array_size) {
         return std::make_unique<Lock>(array_size, kGeneticSeed, kGeneticTrainingBatchSize,
                                       kGeneticHistoryLimit, kGeneticPopulationSize,
-                                      kGeneticEliteCount, kGeneticGenerationCount);
+                                      kGeneticEliteCount, kGeneticGenerationCount,
+                                      kStatsSampleRate, kMinSkew, kGeneticProbeGap);
     }
 
     static const char* Name() {
         return "adaptive_lock_genetic";
     }
 };
-
-template <typename T, typename = void>
-struct HasFlushTraining : std::false_type {};
-
-template <typename T>
-struct HasFlushTraining<T, std::void_t<decltype(std::declval<T&>().FlushTraining())>>
-    : std::true_type {};
-
-template <typename T, typename = void>
-struct HasRebuildNow : std::false_type {};
-
-template <typename T>
-struct HasRebuildNow<T, std::void_t<decltype(std::declval<T&>().RebuildNow())>> : std::true_type {};
 
 template <typename K, typename V, typename LockKind>
 class AdapterImpl {
@@ -106,7 +97,6 @@ public:
     }
 
     ~AdapterImpl() {
-        FlushIfSupported();
         lock_->StopRebuilder();
     }
 
@@ -121,11 +111,11 @@ public:
     }
 
     void warmupEnd() {
-        FlushIfSupported();
-        RebuildNowIfSupported();
+        // Keep online adaptation running; V700 test timing should include it.
+    }
+
+    void testEnd() {
         lock_->StopRebuilder();
-        lock_->ResetRuntimeStats();
-        range_queries_.store(0, std::memory_order_relaxed);
     }
 
     V insert(const int, const K& key, const V&) {
@@ -256,18 +246,6 @@ private:
             return array_size_ - 1;
         }
         return static_cast<size_t>(key - key_min_);
-    }
-
-    void FlushIfSupported() {
-        if constexpr (HasFlushTraining<typename LockTraits<LockKind>::Lock>::value) {
-            lock_->FlushTraining();
-        }
-    }
-
-    void RebuildNowIfSupported() {
-        if constexpr (HasRebuildNow<typename LockTraits<LockKind>::Lock>::value) {
-            lock_->RebuildNow();
-        }
     }
 
     V ValueForIndex(size_t index) const {

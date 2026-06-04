@@ -179,6 +179,13 @@ GSTATS_DECLARE_STATS_OBJECT(MAX_THREADS_POW2);
 using namespace microbench;
 using namespace microbench::workload;
 
+template <typename Adapter>
+void testEndIfSupported(Adapter* adapter) {
+    if constexpr (requires { adapter->testEnd(); }) {
+        adapter->testEnd();
+    }
+}
+
 void bind_threads(int nthreads) {
     // setup thread pinning/binding
 
@@ -412,6 +419,10 @@ void run(globals_t* g) {
     std::cout << to_string_stage("Test stage");
 
     execute(g, g->benchParameters->test);
+    testEndIfSupported(g->dsAdapter);
+    g->endTime = std::chrono::high_resolution_clock::now();
+    g->elapsedMillis =
+        std::chrono::duration_cast<std::chrono::milliseconds>(g->endTime - g->startTime).count();
 
     COUTATOMIC(std::endl);
     COUTATOMIC(to_string_big_stage("END RUNNING"))

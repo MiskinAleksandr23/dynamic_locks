@@ -1,0 +1,136 @@
+REALTIME_MAIN_START_PERF_FORMAT=681239.7118834
+binary=./build/Benchmark-v700-build/adaptive_lock_genetic.debra
+DS_TYPENAME=DS_TYPENAME
+FIND_FUNC=FIND_FUNC
+INSERT_FUNC=INSERT_FUNC
+ERASE_FUNC=ERASE_FUNC
+GET_FUNC=execute_get
+RQ_FUNC=RQ_FUNC
+RECLAIM=reclaimer_debra
+ALLOC=allocator_new
+POOL=pool_none
+MAX_THREADS_POW2=512
+CPU_FREQ_GHZ=2.1
+
+initialization of parameters...
+
+################################################################################
+############################### BENCH PARAMETERS ###############################
+################################################################################
+
+  Range:                     1048576
+--------------------------------------------------------------------------------
+without prefill
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+without warmUp
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+test parameters
+--------------------------------------------------------------------------------
+    number of threads:       8
+    stop condition:
+      Type:                  OperationCounter
+      commonOperationLimit:  112000000
+    number of workloads:     1
+    all pins:                -1,-1,-1,-1,-1,-1,-1,-1
+    thread loops:
+      quantity:              8
+        Type:                Default
+        INS_RATIO:           0.000000
+        REM_RATIO:           0.000000
+        RQ_RATIO:            1.000000
+        Args generator:
+          Type:              MovingWindowRange
+          Window size:       16384
+          Interval:          8
+          Stage duration:    8000000
+          Window begin fractions:
+            Stop 0:          0.000000
+            Stop 1:          0.142857
+            Stop 2:          0.285714
+            Stop 3:          0.428571
+            Stop 4:          0.571429
+            Stop 5:          0.714286
+            Stop 6:          0.857143
+            Stop 7:          1.000000
+            Stop 8:          0.857143
+            Stop 9:          0.714286
+            Stop 10:         0.571429
+            Stop 11:         0.428571
+            Stop 12:         0.285714
+            Stop 13:         0.142857
+          Data Map:
+            Type:            IdDataMap
+            ID:              2
+
+
+
+adaptive_lock_genetic_object_bytes=144
+
+################################################################################
+################################# BEGIN RUNNING ################################
+################################################################################
+
+--------------------------------------------------------------------------------
+Without Prefill stage
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+Without WarmUp stage
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+Test stage
+--------------------------------------------------------------------------------
+binding threads...
+ACTUAL_THREAD_BINDINGS=-1,-1,-1,-1,-1,-1,-1,-1
+creating threads...
+REALTIME_START_PERF_FORMAT=681239.51135942
+REALTIME_END_PERF_FORMAT=681313.462662625
+
+################################################################################
+################################## END RUNNING #################################
+################################################################################
+
+8.03117e+15s
+PRODUCING OUTPUT
+
+KEY_DEPTH_TOTAL_STAT START
+KEY_DEPTH_TOTAL_STAT END
+
+KEY_SEARCH_TOTAL_STAT START
+KEY_SEARCH_TOTAL_STAT END
+adaptive_lock_genetic_range_queries=112000000
+adaptive_lock_genetic_total_lock_ms=317938
+adaptive_lock_genetic_avg_lock_ms=0.00283873
+adaptive_lock_genetic_reconfigurations=2
+adaptive_lock_genetic_checksum=7931495389
+threads_final_keysum=0
+Structural validation OK.
+
+  total gets:                    0
+    total successful gets:       0
+    total fail gets:             0
+  total rq:                      112000000
+  total inserts:                 0
+    total successful inserts:    0
+    total fail inserts:          0
+  total removes:                 0
+    total successful removes:    0
+    total fail removes:          0
+  total updates:                 0
+    total successful updates:    0
+    total fail updates:          0
+  total queries:                 112000000
+  total ops:                     112000000
+  find throughput:               0
+  rq throughput:                 1505153
+  update throughput:             0
+  query throughput:              1505153
+  total throughput:              1505153
+
+  elapsed milliseconds:          74411
+  napping milliseconds overtime: 8031170617323560970
+
+begin delete ds...
+end delete ds.
+REALTIME_MAIN_END_PERF_FORMAT=681313.468406149

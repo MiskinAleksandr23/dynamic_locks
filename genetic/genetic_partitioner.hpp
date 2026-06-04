@@ -25,8 +25,7 @@ public:
                      size_t max_components = 4, double component_decay = 0.90,
                      double component_learning_rate = 0.35,
                      double new_component_threshold = 0.55,
-                     size_t max_cut_shift_per_batch =
-                         std::max(size_t{1}, (kBlocks / kLockCnt) * size_t{4}))
+                     size_t max_cut_shift_per_batch = kBlocks)
       : array_size_(array_size),
         block_size_(array_size == 0 ? 1 : 1 + ((array_size - 1) / kBlocks)),
         history_limit_(history_limit),
@@ -34,7 +33,7 @@ public:
         elite_count_(std::max(
             size_t{1},
             std::min(elite_count, std::max(population_size, size_t{1})))),
-        generation_count_(std::max(generation_count, size_t{1})),
+        generation_count_(generation_count),
         max_components_(std::max(max_components, size_t{1})),
         component_query_limit_(std::max(history_limit, size_t{1})),
         component_decay_(std::clamp(component_decay, 0.0, 1.0)),
@@ -52,6 +51,12 @@ public:
     DecayComponentMasses();
     active_component_ = AssignBatchToComponent(profile, batch);
     ActivateComponent(active_component_);
+    if (ApplyProfileGuidedPartition()) {
+      return;
+    }
+    if (generation_count_ == 0) {
+      return;
+    }
     TrainOnActiveComponent();
   }
 
@@ -101,10 +106,12 @@ private:
 
   struct WorkloadComponent {
     std::vector<double> centroid;
+    std::vector<double> partition_centroid;
     std::deque<Query> queries;
     Chromosome best_partition;
     double mass = 0.0;
     bool has_best_partition = false;
+    bool has_partition_centroid = false;
   };
 
   Chromosome MakeUniformChromosome() const {
@@ -150,6 +157,64 @@ private:
     }
 
     chromosome.cuts[kLockCnt] = kBlocks;
+    return chromosome;
+  }
+
+  Chromosome
+  MakeLoadBalancedChromosome(const std::vector<double> &profile) const {
+    double total_mass = 0.0;
+    for (const double value : profile) {
+      total_mass += value;
+    }
+    if (total_mass <= 0.0) {
+      return MakeUniformChromosome();
+    }
+
+    std::vector<double> prefix(kBlocks + 1, 0.0);
+    for (size_t block = 0; block < kBlocks; ++block) {
+      prefix[block + 1] = prefix[block] + profile[block];
+    }
+
+    const size_t columns = kLockCnt + 1;
+    std::vector<double> dp((kBlocks + 1) * columns,
+                           std::numeric_limits<double>::infinity());
+    std::vector<size_t> split((kBlocks + 1) * columns, 0);
+    const auto index = [](size_t block, size_t locks) {
+      return block * (kLockCnt + 1) + locks;
+    };
+
+    dp[index(0, 0)] = 0.0;
+    for (size_t right = 1; right <= kBlocks; ++right) {
+      const size_t max_locks = std::min(right, kLockCnt);
+      for (size_t locks = 1; locks <= max_locks; ++locks) {
+        const size_t min_left = locks - 1;
+        for (size_t left = min_left; left < right; ++left) {
+          const double previous = dp[index(left, locks - 1)];
+          if (!std::isfinite(previous)) {
+            continue;
+          }
+
+          const double weight = prefix[right] - prefix[left];
+          const double candidate = previous + weight * weight;
+          if (candidate < dp[index(right, locks)]) {
+            dp[index(right, locks)] = candidate;
+            split[index(right, locks)] = left;
+          }
+        }
+      }
+    }
+
+    Chromosome chromosome;
+    chromosome.cuts.assign(kLockCnt + 1, 0);
+    chromosome.cuts[kLockCnt] = kBlocks;
+
+    size_t current = kBlocks;
+    for (size_t locks = kLockCnt; locks > 0; --locks) {
+      const size_t left = split[index(current, locks)];
+      chromosome.cuts[locks - 1] = left;
+      current = left;
+    }
+
     return chromosome;
   }
 
@@ -399,9 +464,11 @@ private:
                       const std::vector<double> &profile,
                       const std::vector<Query> &batch) {
     component.centroid = profile;
+    component.partition_centroid.clear();
     component.queries.clear();
     component.mass = 1.0;
     component.has_best_partition = false;
+    component.has_partition_centroid = false;
     AppendQueries(component, batch);
   }
 
@@ -472,6 +539,50 @@ private:
     if (component.has_best_partition) {
       current_ = MoveToward(current_, component.best_partition);
     }
+  }
+
+  bool ApplyProfileGuidedPartition() {
+    if (active_component_ >= components_.size()) {
+      return false;
+    }
+
+    WorkloadComponent &component = components_[active_component_];
+    constexpr double kPartitionProfileDistanceThreshold = 0.08;
+    if (component.has_best_partition && component.has_partition_centroid &&
+        current_.cuts == component.best_partition.cuts &&
+        ProfileDistance(component.centroid, component.partition_centroid) <
+            kPartitionProfileDistanceThreshold) {
+      return false;
+    }
+
+    const std::vector<Query> queries = BuildActiveQueries();
+    if (queries.empty()) {
+      return false;
+    }
+
+    const Chromosome start_partition = current_;
+    Chromosome guided = MakeLoadBalancedChromosome(component.centroid);
+    if (guided.cuts == start_partition.cuts) {
+      component.partition_centroid = component.centroid;
+      component.has_partition_centroid = true;
+      return false;
+    }
+
+    const PartitionMetrics start_metrics =
+        Evaluate(start_partition.cuts, queries);
+    guided.metrics = Evaluate(guided.cuts, queries);
+    if (guided.metrics.fitness > start_metrics.fitness * 0.98) {
+      component.partition_centroid = component.centroid;
+      component.has_partition_centroid = true;
+      return false;
+    }
+
+    RememberBestForActiveComponent(guided, queries);
+    component.partition_centroid = component.centroid;
+    component.has_partition_centroid = true;
+    current_ = MoveToward(start_partition, guided);
+    current_.metrics = Evaluate(current_.cuts, queries);
+    return true;
   }
 
   [[nodiscard]] std::vector<Query> BuildActiveQueries() const {

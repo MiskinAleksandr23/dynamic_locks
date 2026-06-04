@@ -8,66 +8,17 @@
         }
     },
     "warmUp": {
-        "numThreads": 8,
+        "numThreads": 0,
         "stopCondition": {
             "ClassName": "OperationCounter",
-            "commonOperationLimit": 10000000
-        },
-        "threadLoopBuilders": [
-            {
-                "quantity": 8,
-                "threadLoopBuilder": {
-                    "ClassName": "DefaultThreadLoopBuilder",
-                    "argsGeneratorBuilder": {
-                        "ClassName": "TemporarySkewedArgsGeneratorBuilder",
-                        "dataMapBuilder": {
-                            "ClassName": "IdDataMapBuilder",
-                            "id": 201
-                        },
-                        "defaultHotTime": -1,
-                        "defaultRelaxTime": -1,
-                        "hotDistBuilders": [
-                            {
-                                "ClassName": "SkewedUniformDistributionBuilder",
-                                "coldDistBuilder": {
-                                    "ClassName": "UniformDistributionBuilder"
-                                },
-                                "hotDistBuilder": {
-                                    "ClassName": "UniformDistributionBuilder"
-                                },
-                                "hotRatio": 0.99,
-                                "hotSize": 0.015625
-                            }
-                        ],
-                        "hotTimes": [
-                            10000000
-                        ],
-                        "manualSettingSetBegins": true,
-                        "relaxDistBuilder": {
-                            "ClassName": "UniformDistributionBuilder"
-                        },
-                        "relaxTimes": [
-                            1
-                        ],
-                        "setBegins": [
-                            0.0
-                        ],
-                        "setNumber": 1
-                    },
-                    "parameters": {
-                        "insertRatio": 0.0,
-                        "removeRatio": 0.0,
-                        "rqRatio": 0.0
-                    }
-                }
-            }
-        ]
+            "commonOperationLimit": 0
+        }
     },
     "test": {
         "numThreads": 8,
         "stopCondition": {
             "ClassName": "OperationCounter",
-            "commonOperationLimit": 20000000
+            "commonOperationLimit": 60000000
         },
         "threadLoopBuilders": [
             {
@@ -96,7 +47,7 @@
                             }
                         ],
                         "hotTimes": [
-                            20000000
+                            60000000
                         ],
                         "manualSettingSetBegins": true,
                         "relaxDistBuilder": {

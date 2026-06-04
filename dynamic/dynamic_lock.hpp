@@ -12,10 +12,15 @@
 
 template <size_t kLockCnt, typename Mutex = std::mutex> class DynamicLock {
 public:
-  explicit DynamicLock(size_t array_size)
+  explicit DynamicLock(size_t array_size, size_t stats_sample_rate = 1,
+                       double min_rebuild_gain = 1.0,
+                       double min_rebuild_skew = 4.0)
       : array_size_(array_size),
         block_size_(array_size == 0 ? 1 : 1 + ((array_size - 1) / kBlocks)),
-        total_lock_time_(std::chrono::nanoseconds(0)) {
+        stats_sample_rate_(std::max(stats_sample_rate, size_t{1})),
+        total_lock_time_(std::chrono::nanoseconds(0)),
+        min_rebuild_gain_(std::max(min_rebuild_gain, 1.0)),
+        min_rebuild_skew_(std::max(min_rebuild_skew, 1.0)) {
     partitions_.resize(kLockCnt + 1);
     for (size_t i = 0; i <= kLockCnt; ++i) {
       partitions_[i] = i * kBlocks / kLockCnt;
@@ -46,52 +51,51 @@ public:
 
     const auto start = std::chrono::steady_clock::now();
 
-    const bool rebuilder_running =
-        rebuilder_running_.load(std::memory_order_acquire);
-
-    if (rebuilder_running) {
-      while (true) {
-        while (pause_queries_.load(std::memory_order_acquire)) {
-          std::this_thread::yield();
-        }
-
-        active_queries_.fetch_add(1, std::memory_order_acq_rel);
-        if (!pause_queries_.load(std::memory_order_acquire)) {
-          break;
-        }
-
-        active_queries_.fetch_sub(1, std::memory_order_acq_rel);
+    while (true) {
+      while (pause_queries_.load(std::memory_order_acquire)) {
+        std::this_thread::yield();
       }
-    }
 
-    const auto [lock_start, lock_end] = FindLocksSegmentUnlocked(left, right);
+      const size_t epoch = partition_epoch_.load(std::memory_order_acquire);
+      if ((epoch & size_t{1}) != 0) {
+        std::this_thread::yield();
+        continue;
+      }
+      const auto [lock_start, lock_end] = FindLocksSegmentUnlocked(left, right);
+      if (lock_start > lock_end) {
+        continue;
+      }
 
-    if (lock_start == lock_end) {
-      std::lock_guard guard(locks_[lock_start]);
+      if (lock_start == lock_end) {
+        std::lock_guard guard(locks_[lock_start]);
+        const size_t current_epoch =
+            partition_epoch_.load(std::memory_order_acquire);
+        if (epoch != current_epoch || (current_epoch & size_t{1}) != 0) {
+          continue;
+        }
+        AddDuration(total_lock_time_, std::chrono::steady_clock::now() - start);
+        ++operation_count_;
+        if (ShouldSampleStats()) {
+          UpdateStats(left, right);
+        }
+        func(left, right);
+        return;
+      }
+
+      RangeLockGuard guard(locks_, lock_start, lock_end);
+      const size_t current_epoch =
+          partition_epoch_.load(std::memory_order_acquire);
+      if (epoch != current_epoch || (current_epoch & size_t{1}) != 0) {
+        continue;
+      }
+
       AddDuration(total_lock_time_, std::chrono::steady_clock::now() - start);
       ++operation_count_;
-      if (collect_stats_.load(std::memory_order_relaxed)) {
+      if (ShouldSampleStats()) {
         UpdateStats(left, right);
       }
       func(left, right);
-
-      if (rebuilder_running) {
-        active_queries_.fetch_sub(1, std::memory_order_acq_rel);
-      }
       return;
-    }
-
-    RangeLockGuard guard(locks_, lock_start, lock_end);
-
-    AddDuration(total_lock_time_, std::chrono::steady_clock::now() - start);
-    ++operation_count_;
-    if (collect_stats_.load(std::memory_order_relaxed)) {
-      UpdateStats(left, right);
-    }
-    func(left, right);
-
-    if (rebuilder_running) {
-      active_queries_.fetch_sub(1, std::memory_order_acq_rel);
     }
   }
 
@@ -107,13 +111,18 @@ public:
     rebuilder_running_.store(true, std::memory_order_release);
     rebuild_thread_ = std::thread([this, interval, change_threshold]() {
       while (!stop_rebuilder_) {
-        std::this_thread::sleep_for(interval);
+        auto slept = std::chrono::milliseconds(0);
+        while (!stop_rebuilder_ && slept < interval) {
+          const auto step =
+              std::min(std::chrono::milliseconds(50), interval - slept);
+          std::this_thread::sleep_for(step);
+          slept += step;
+        }
         if (stop_rebuilder_) {
           break;
         }
 
-        if (ShouldRebuild(change_threshold)) {
-          RebuildPartitions();
+        if (ShouldRebuild(change_threshold) && RebuildPartitions()) {
           ++rebuild_count_;
         }
       }
@@ -145,8 +154,9 @@ public:
       return;
     }
 
-    RebuildPartitions();
-    ++rebuild_count_;
+    if (RebuildPartitions()) {
+      ++rebuild_count_;
+    }
   }
 
   double GetAvgLockTimeMs() const {
@@ -174,6 +184,15 @@ public:
   size_t GetRebuildCount() const { return rebuild_count_.load(); }
   size_t GetOperationCount() const { return operation_count_.load(); }
 
+  void SetStatsSampleRate(size_t sample_rate) {
+    stats_sample_rate_ = std::max(sample_rate, size_t{1});
+  }
+
+  std::vector<size_t> PartitionCuts() const {
+    std::lock_guard lock(partitions_mutex_);
+    return partitions_;
+  }
+
   size_t CountLocksForRange(size_t left, size_t right) const {
     if (array_size_ == 0) [[unlikely]] {
       return 0;
@@ -192,7 +211,7 @@ public:
   ~DynamicLock() { StopRebuilder(); }
 
 private:
-  static constexpr size_t kBlocks = 8192;
+  static constexpr size_t kBlocks = 1024;
   // Penalizes cuts that split observed range queries. Point queries do not
   // cross any boundary, so the original hotspot behavior remains unchanged.
   static constexpr size_t kBoundaryCrossingPenalty = 10'000'000;
@@ -201,7 +220,7 @@ private:
   const size_t block_size_;
 
   std::array<Mutex, kLockCnt> locks_;
-  std::array<size_t, kBlocks> block_to_lock_{};
+  std::array<std::atomic<size_t>, kBlocks> block_to_lock_{};
   std::array<std::atomic<size_t>, kBlocks> stats_;
   std::array<std::atomic<size_t>, kBlocks> boundary_crossings_;
   std::array<size_t, kBlocks> last_stats_{};
@@ -215,15 +234,36 @@ private:
   std::atomic<bool> pause_queries_{false};
   std::atomic<bool> rebuilder_running_{false};
   std::atomic<size_t> active_queries_{0};
+  std::atomic<size_t> partition_epoch_{0};
   std::thread rebuild_thread_;
   std::atomic<bool> stop_rebuilder_{false};
 
   std::atomic<size_t> rebuild_count_{0};
   std::atomic<size_t> operation_count_{0};
+  size_t stats_sample_rate_;
   std::atomic<std::chrono::nanoseconds> total_lock_time_;
+  const double min_rebuild_gain_;
+  const double min_rebuild_skew_;
 
   size_t PositionToBlock(size_t pos) const {
     return std::min(pos / block_size_, kBlocks - 1);
+  }
+
+  bool ShouldSampleStats() const {
+    if (!collect_stats_.load(std::memory_order_relaxed)) {
+      return false;
+    }
+
+    if (stats_sample_rate_ <= 1) {
+      return true;
+    }
+
+    static thread_local size_t counter = 0;
+    ++counter;
+    if ((stats_sample_rate_ & (stats_sample_rate_ - 1)) == 0) {
+      return (counter & (stats_sample_rate_ - 1)) == 0;
+    }
+    return counter % stats_sample_rate_ == 0;
   }
 
   class RangeLockGuard {
@@ -276,7 +316,7 @@ private:
              block >= partitions_[lock_index + 1]) {
         ++lock_index;
       }
-      block_to_lock_[block] = lock_index;
+      block_to_lock_[block].store(lock_index, std::memory_order_relaxed);
     }
   }
 
@@ -284,7 +324,8 @@ private:
                                                      size_t right) const {
     const size_t left_block = PositionToBlock(left);
     const size_t right_block = PositionToBlock(right);
-    return {block_to_lock_[left_block], block_to_lock_[right_block]};
+    return {block_to_lock_[left_block].load(std::memory_order_relaxed),
+            block_to_lock_[right_block].load(std::memory_order_relaxed)};
   }
 
   void UpdateStats(size_t left, size_t right) {
@@ -327,16 +368,16 @@ private:
     if (total_ops < 1000) {
       return false;
     }
+    if (!HasEnoughSkew(current_stats, total_ops)) {
+      ResetCollectedStatsUnlocked(current_stats);
+      return false;
+    }
 
     const size_t last_total =
         std::accumulate(last_stats_.begin(), last_stats_.end(), size_t{0});
     if (last_total == 0) {
       last_stats_ = current_stats;
-      for (size_t i = 0; i < kBlocks; ++i) {
-        stats_[i].store(0, std::memory_order_relaxed);
-        boundary_crossings_[i].store(0, std::memory_order_relaxed);
-      }
-      return false;
+      return true;
     }
 
     double diff = 0.0;
@@ -357,6 +398,16 @@ private:
     }
 
     return diff / static_cast<double>(comparable_blocks) > threshold;
+  }
+
+  bool HasEnoughSkew(const std::array<size_t, kBlocks> &stats,
+                     size_t total_ops) const {
+    const size_t max_block = *std::max_element(stats.begin(), stats.end());
+    const double average_block =
+        static_cast<double>(total_ops) / static_cast<double>(kBlocks);
+    return average_block > 0.0 &&
+           static_cast<double>(max_block) / average_block >=
+               min_rebuild_skew_;
   }
 
   std::vector<size_t>
@@ -402,9 +453,55 @@ private:
     return new_partitions;
   }
 
-  void RebuildPartitions() {
+  size_t PartitionCost(const std::vector<size_t> &partitions,
+                       const std::vector<size_t> &prefix_sum,
+                       const std::array<size_t, kBlocks> &boundary_crossings)
+      const {
+    size_t total = 0;
+    for (size_t lock_index = 0; lock_index < kLockCnt; ++lock_index) {
+      const size_t left = partitions[lock_index];
+      const size_t right = partitions[lock_index + 1];
+      const size_t weight = prefix_sum[right] - prefix_sum[left];
+      const size_t cut_penalty =
+          left == 0 ? 0 : kBoundaryCrossingPenalty * boundary_crossings[left];
+      total += weight * weight + cut_penalty;
+    }
+    return total;
+  }
+
+  bool HasEnoughPartitionGain(
+      const std::vector<size_t> &current_partitions,
+      const std::vector<size_t> &new_partitions,
+      const std::vector<size_t> &prefix_sum,
+      const std::array<size_t, kBlocks> &boundary_crossings) const {
+    if (new_partitions == current_partitions) {
+      return false;
+    }
+
+    const size_t current_cost =
+        PartitionCost(current_partitions, prefix_sum, boundary_crossings);
+    const size_t new_cost =
+        PartitionCost(new_partitions, prefix_sum, boundary_crossings);
+    if (new_cost == 0) {
+      return current_cost != 0;
+    }
+
+    return static_cast<long double>(current_cost) >
+           static_cast<long double>(new_cost) * min_rebuild_gain_;
+  }
+
+  void ResetCollectedStatsUnlocked(
+      const std::array<size_t, kBlocks> &current_stats) {
+    last_stats_ = current_stats;
+    for (size_t i = 0; i < kBlocks; ++i) {
+      stats_[i].store(0, std::memory_order_relaxed);
+      boundary_crossings_[i].store(0, std::memory_order_relaxed);
+    }
+  }
+
+  bool RebuildPartitions() {
     if (rebuild_flag_.exchange(true)) {
-      return;
+      return false;
     }
 
     const auto current_stats = SnapshotStats();
@@ -417,16 +514,27 @@ private:
     auto new_partitions =
         OptimizePartitions(prefix_sum, current_boundary_crossings);
 
-    pause_queries_.store(true, std::memory_order_release);
-    while (active_queries_.load(std::memory_order_acquire) != 0) {
-      std::this_thread::yield();
+    {
+      std::lock_guard parts_lock(partitions_mutex_);
+      if (!HasEnoughPartitionGain(partitions_, new_partitions, prefix_sum,
+                                  current_boundary_crossings)) {
+        std::lock_guard stats_lock(stats_mutex_);
+        ResetCollectedStatsUnlocked(current_stats);
+        rebuild_flag_ = false;
+        return false;
+      }
     }
+
+    pause_queries_.store(true, std::memory_order_release);
+    RangeLockGuard all_locks(locks_, 0, kLockCnt - 1);
     {
       std::lock_guard parts_lock(partitions_mutex_);
       std::lock_guard stats_lock(stats_mutex_);
 
       partitions_ = std::move(new_partitions);
+      partition_epoch_.fetch_add(1, std::memory_order_acq_rel);
       RefreshBlockToLock();
+      partition_epoch_.fetch_add(1, std::memory_order_release);
       last_stats_ = current_stats;
       for (size_t i = 0; i < kBlocks; ++i) {
         stats_[i].store(0, std::memory_order_relaxed);
@@ -436,5 +544,6 @@ private:
 
     rebuild_flag_ = false;
     pause_queries_.store(false, std::memory_order_release);
+    return true;
   }
 };

@@ -11,7 +11,6 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
-#include <random>
 #include <stdexcept>
 #include <string>
 #include <thread>
@@ -19,8 +18,8 @@
 
 namespace {
 constexpr size_t kLockCount = 64;
-constexpr size_t kBlocks = 8192;
-constexpr size_t kBlockSize = 512;
+constexpr size_t kBlocks = 1024;
+constexpr size_t kBlockSize = 1024;
 constexpr size_t kArraySize = kBlocks * kBlockSize;
 constexpr size_t kHotWindowSize = kArraySize / kLockCount;
 constexpr size_t kPointQueryLength = 1;
@@ -35,40 +34,45 @@ size_t BenchmarkThreadCount() {
       std::max(1u, std::thread::hardware_concurrency());
   const char *value = std::getenv("DYNAMIC_LOCK_THREAD_COUNT");
   if (value == nullptr) {
-    return std::min(size_t{32}, hardware_threads);
+    return hardware_threads;
   }
 
   char *end = nullptr;
   const unsigned long long parsed = std::strtoull(value, &end, 10);
   if (end == value || parsed == 0) {
-    return std::min(size_t{32}, hardware_threads);
+    return hardware_threads;
   }
-  return std::max(size_t{1}, std::min(static_cast<size_t>(parsed),
-                                      hardware_threads));
+  return std::max(size_t{1}, static_cast<size_t>(parsed));
 }
 
 const size_t kThreadCount = BenchmarkThreadCount();
 
-constexpr size_t kWarmupQueries = 2'400'000;
-constexpr size_t kAdaptQueries = 7'200'000;
-constexpr size_t kMeasuredQueries = 40'000'000;
-constexpr size_t kRandomRangeWarmupQueries = 800'000;
-constexpr size_t kRandomRangeAdaptQueries = 2'400'000;
-constexpr size_t kRandomRangeMeasuredQueries = 2'000'000;
-constexpr size_t kMovingWindowWarmupQueries = 4'000'000;
-constexpr size_t kMovingWindowAdaptQueriesPerStop = 6'000'000;
-constexpr size_t kMovingWindowMeasuredQueriesPerStop = 20'000'000;
+constexpr size_t kWarmupQueries = 6'400'000;
+constexpr size_t kAdaptQueries = 19'200'000;
+constexpr size_t kMeasuredQueries = 120'000'000;
+constexpr size_t kRandomRangeWarmupQueries = 1'600'000;
+constexpr size_t kRandomRangeAdaptQueries = 4'800'000;
+constexpr size_t kRandomRangeMeasuredQueries = 4'000'000;
+constexpr size_t kMovingWindowWarmupQueries = 12'800'000;
+constexpr size_t kMovingWindowAdaptQueriesPerStop = 19'200'000;
+constexpr size_t kMovingWindowMeasuredQueriesPerStop = 70'000'000;
 constexpr size_t kChurnChanges = 5;
-constexpr size_t kChurnAdaptQueries = 3'200'000;
-constexpr size_t kChurnMeasuredQueries = 8'000'000;
-constexpr auto kDynamicRebuildInterval = std::chrono::milliseconds(100);
-constexpr double kDynamicRebuildThreshold = 2.0;
+constexpr size_t kChurnAdaptQueries = 9'600'000;
+constexpr size_t kChurnMeasuredQueries = 20'000'000;
+constexpr auto kDefaultDynamicRebuildInterval =
+    std::chrono::milliseconds(10'000);
+constexpr double kDefaultDynamicRebuildThreshold = 2.0;
+constexpr double kDefaultDynamicRebuildMinGain = 1.0;
+constexpr double kDefaultDynamicRebuildMinSkew = 4.0;
 
-constexpr size_t kGeneticTrainingBatchSize = 8'192;
+constexpr size_t kDefaultGeneticTrainingBatchSize = 100'000;
+constexpr size_t kDefaultGeneticTrainingSampleRate = 64;
+constexpr size_t kDefaultGeneticTrainingProbeGap = 1'000'000;
+constexpr double kDefaultGeneticMinTrainingSkew = 4.0;
 constexpr size_t kGeneticHistoryLimit = 12'000;
 constexpr size_t kGeneticPopulationSize = 24;
 constexpr size_t kGeneticEliteCount = 4;
-constexpr size_t kGeneticGenerationCount = 18;
+constexpr size_t kGeneticGenerationCount = 0;
 
 enum class QueryPattern {
   kHotWindow,
@@ -79,15 +83,28 @@ enum class QueryPattern {
 
 enum class QueryBody { kRealWork, kLockOnly };
 
+struct QueryStreamSpec {
+  size_t count = 0;
+  QueryPattern pattern = QueryPattern::kUniform;
+  TrafficSide side = TrafficSide::kLeft;
+  size_t query_length = 1;
+  uint64_t seed = 0;
+  std::vector<size_t> window_begins;
+  size_t window_size = 0;
+  bool multi_window = false;
+  bool thread_grouped_windows = false;
+  bool thread_striped_windows = false;
+};
+
 struct PhaseInput {
   std::string name;
-  std::vector<Query> queries;
+  QueryStreamSpec queries;
 };
 
 struct TimedPhaseInput {
   std::string name;
-  std::vector<Query> adapt_queries;
-  std::vector<Query> measure_queries;
+  QueryStreamSpec adapt_queries;
+  QueryStreamSpec measure_queries;
   double adapt_seconds = 0.0;
 };
 
@@ -97,7 +114,7 @@ struct ScenarioInput {
   std::vector<PhaseInput> setup_phases;
   PhaseInput measured_phase;
   std::vector<TimedPhaseInput> timed_phases;
-  bool wait_for_background_rebuild = false;
+  std::vector<size_t> debug_window_begins;
 };
 
 struct WorkerStats {
@@ -115,9 +132,10 @@ struct PhaseRunStats {
 
 struct ImplementationResult {
   std::string name;
+  double total_seconds = 0.0;
   double setup_seconds = 0.0;
-  double body_seconds = 0.0;
-  double lock_only_seconds = 0.0;
+  double measured_seconds = 0.0;
+  double lock_only_total_seconds = 0.0;
   double avg_lock_us = 0.0;
   double lock_only_avg_lock_us = 0.0;
   double measured_lock_total_seconds = 0.0;
@@ -125,8 +143,10 @@ struct ImplementationResult {
   size_t left_hot_locks = 0;
   size_t right_hot_locks = 0;
   size_t reconfigurations = 0;
-  uint64_t body_queries = 0;
+  uint64_t total_queries = 0;
   uint64_t lock_only_queries = 0;
+  std::vector<size_t> partition_cuts;
+  std::vector<size_t> debug_window_locks;
 };
 
 std::vector<int> MakeInitialData() {
@@ -137,111 +157,31 @@ std::vector<int> MakeInitialData() {
   return data;
 }
 
-Query MakeWindowQuery(std::mt19937_64 &rng, size_t window_begin,
-                      size_t window_size, size_t query_length) {
-  std::uniform_int_distribution<size_t> left_dist(
-      window_begin, window_begin + window_size - query_length);
-  std::uniform_int_distribution<size_t> target_offset_dist(0, query_length - 1);
-  std::uniform_int_distribution<int> delta_dist(1, 7);
-
-  const size_t left = left_dist(rng);
-  const size_t target = left + target_offset_dist(rng);
-  return {static_cast<uint32_t>(left),
-          static_cast<uint32_t>(left + query_length - 1),
-          static_cast<uint32_t>(target), delta_dist(rng)};
+QueryStreamSpec BuildQueries(size_t count, QueryPattern pattern,
+                             TrafficSide side, size_t query_length,
+                             uint64_t seed) {
+  return {count, pattern, side, query_length, seed, {}, 0, false, false, false};
 }
 
-Query MakeUniformQuery(std::mt19937_64 &rng, size_t query_length) {
-  std::uniform_int_distribution<size_t> left_dist(0, kArraySize - query_length);
-  std::uniform_int_distribution<size_t> target_offset_dist(0, query_length - 1);
-  std::uniform_int_distribution<int> delta_dist(1, 7);
-
-  const size_t left = left_dist(rng);
-  const size_t target = left + target_offset_dist(rng);
-  return {static_cast<uint32_t>(left),
-          static_cast<uint32_t>(left + query_length - 1),
-          static_cast<uint32_t>(target), delta_dist(rng)};
-}
-
-Query MakeWindowRandomRangeQuery(std::mt19937_64 &rng, size_t window_begin,
-                                 size_t window_size, size_t max_length) {
-  const size_t capped_max_length = std::min(max_length, window_size);
-  std::uniform_int_distribution<size_t> length_dist(1, capped_max_length);
-  std::uniform_int_distribution<int> delta_dist(1, 7);
-
-  const size_t length = length_dist(rng);
-  std::uniform_int_distribution<size_t> left_dist(
-      window_begin, window_begin + window_size - length);
-  std::uniform_int_distribution<size_t> target_offset_dist(0, length - 1);
-
-  const size_t left = left_dist(rng);
-  const size_t target = left + target_offset_dist(rng);
-  return {static_cast<uint32_t>(left), static_cast<uint32_t>(left + length - 1),
-          static_cast<uint32_t>(target), delta_dist(rng)};
-}
-
-Query MakeUniformRandomRangeQuery(std::mt19937_64 &rng, size_t max_length) {
-  const size_t capped_max_length = std::min(max_length, kArraySize);
-  std::uniform_int_distribution<size_t> length_dist(1, capped_max_length);
-  std::uniform_int_distribution<int> delta_dist(1, 7);
-
-  const size_t length = length_dist(rng);
-  std::uniform_int_distribution<size_t> left_dist(0, kArraySize - length);
-  std::uniform_int_distribution<size_t> target_offset_dist(0, length - 1);
-
-  const size_t left = left_dist(rng);
-  const size_t target = left + target_offset_dist(rng);
-  return {static_cast<uint32_t>(left), static_cast<uint32_t>(left + length - 1),
-          static_cast<uint32_t>(target), delta_dist(rng)};
-}
-
-std::vector<Query> BuildQueries(size_t count, QueryPattern pattern,
-                                TrafficSide side, size_t query_length,
-                                uint64_t seed) {
-  std::mt19937_64 rng(seed);
-  std::vector<Query> queries;
-  queries.reserve(count);
-
-  const size_t hot_begin =
-      side == TrafficSide::kLeft ? 0 : kArraySize - kHotWindowSize;
-  for (size_t i = 0; i < count; ++i) {
-    if (pattern == QueryPattern::kUniform) {
-      queries.push_back(MakeUniformQuery(rng, query_length));
-    } else if (pattern == QueryPattern::kUniformRandomRange) {
-      queries.push_back(MakeUniformRandomRangeQuery(rng, query_length));
-    } else if (pattern == QueryPattern::kHotWindowRandomRange) {
-      queries.push_back(MakeWindowRandomRangeQuery(
-          rng, hot_begin, kHotWindowSize, query_length));
-    } else {
-      queries.push_back(
-          MakeWindowQuery(rng, hot_begin, kHotWindowSize, query_length));
-    }
-  }
-
-  return queries;
-}
-
-std::vector<Query>
+QueryStreamSpec
 BuildMultiWindowQueries(size_t count, const std::vector<size_t> &window_begins,
                         size_t window_size, size_t max_query_length,
-                        uint64_t seed) {
+                        uint64_t seed, bool thread_grouped_windows = false,
+                        bool thread_striped_windows = false) {
   if (window_begins.empty()) {
     throw std::invalid_argument("window_begins must be non-empty");
   }
 
-  std::mt19937_64 rng(seed);
-  std::uniform_int_distribution<size_t> window_dist(0,
-                                                    window_begins.size() - 1);
-  std::vector<Query> queries;
-  queries.reserve(count);
-
-  for (size_t i = 0; i < count; ++i) {
-    const size_t window_begin = window_begins[window_dist(rng)];
-    queries.push_back(MakeWindowRandomRangeQuery(rng, window_begin, window_size,
-                                                 max_query_length));
-  }
-
-  return queries;
+  return {count,
+          QueryPattern::kHotWindowRandomRange,
+          TrafficSide::kLeft,
+          max_query_length,
+          seed,
+          window_begins,
+          window_size,
+          true,
+          thread_grouped_windows,
+          thread_striped_windows};
 }
 
 std::vector<size_t> MakeClusteredWindowBegins(size_t cluster_count) {
@@ -385,8 +325,7 @@ ScenarioInput MakeShiftScenario() {
       {"measure left hotspot",
        BuildQueries(ScaleQueryCount(kMeasuredQueries), QueryPattern::kHotWindow,
                     TrafficSide::kLeft, kPointQueryLength, 13)},
-      {},
-      true};
+      {}};
 }
 
 ScenarioInput MakeClusteredWindowsScenario(size_t cluster_count,
@@ -410,7 +349,60 @@ ScenarioInput MakeClusteredWindowsScenario(size_t cluster_count,
                                    window_begins, kClusteredHotWindowSize,
                                    kPointQueryLength, seed_base + 2)},
           {},
-          true};
+          window_begins};
+}
+
+ScenarioInput MakeClusteredThreadGroupsScenario(size_t cluster_count,
+                                                uint64_t seed_base) {
+  const std::vector<size_t> window_begins =
+      MakeClusteredWindowBegins(cluster_count);
+  return {"clustered_" + std::to_string(cluster_count) + "_thread_groups",
+          std::to_string(cluster_count) +
+              " hot windows; threads are split evenly across windows and "
+              "striped inside each window",
+          {{"warmup grouped clustered windows",
+            BuildMultiWindowQueries(ScaleQueryCount(kWarmupQueries),
+                                    window_begins, kClusteredHotWindowSize,
+                                    kPointQueryLength, seed_base, true, true)},
+           {"adapt grouped clustered windows",
+            BuildMultiWindowQueries(ScaleQueryCount(kAdaptQueries),
+                                    window_begins, kClusteredHotWindowSize,
+                                    kPointQueryLength, seed_base + 1, true,
+                                    true)}},
+          {"measure grouped clustered windows",
+           BuildMultiWindowQueries(ScaleQueryCount(kMeasuredQueries),
+                                   window_begins, kClusteredHotWindowSize,
+                                   kPointQueryLength, seed_base + 2, true,
+                                   true)},
+          {},
+          window_begins};
+}
+
+ScenarioInput MakeClusteredThreadGroupsContendedScenario(size_t cluster_count,
+                                                         uint64_t seed_base) {
+  const std::vector<size_t> window_begins =
+      MakeClusteredWindowBegins(cluster_count);
+  return {"clustered_" + std::to_string(cluster_count) +
+              "_thread_groups_contended",
+          std::to_string(cluster_count) +
+              " hot windows; threads are split evenly across windows and "
+              "randomize inside each assigned window",
+          {{"warmup grouped contended windows",
+            BuildMultiWindowQueries(ScaleQueryCount(kWarmupQueries),
+                                    window_begins, kClusteredHotWindowSize,
+                                    kPointQueryLength, seed_base, true, false)},
+           {"adapt grouped contended windows",
+            BuildMultiWindowQueries(ScaleQueryCount(kAdaptQueries),
+                                    window_begins, kClusteredHotWindowSize,
+                                    kPointQueryLength, seed_base + 1, true,
+                                    false)}},
+          {"measure grouped contended windows",
+           BuildMultiWindowQueries(ScaleQueryCount(kMeasuredQueries),
+                                   window_begins, kClusteredHotWindowSize,
+                                   kPointQueryLength, seed_base + 2, true,
+                                   false)},
+          {},
+          window_begins};
 }
 
 ScenarioInput MakeClusteredChurnScenario(size_t cluster_count,
@@ -442,8 +434,7 @@ ScenarioInput MakeClusteredChurnScenario(size_t cluster_count,
                 MakeChurnedClusteredWindowBegins(cluster_count, 0),
                 kClusteredHotWindowSize, kPointQueryLength, seed_base)}},
           {},
-          std::move(phases),
-          true};
+          std::move(phases)};
 }
 
 ScenarioInput MakeMovingWindowScenario() {
@@ -458,7 +449,6 @@ ScenarioInput MakeMovingWindowScenario() {
                                 61)}},
       {},
       BuildMovingWindowPhases(62),
-      true,
   };
 }
 
@@ -472,8 +462,7 @@ ScenarioInput MakeRandomScenario() {
       {"measure uniform random",
        BuildQueries(ScaleQueryCount(kMeasuredQueries), QueryPattern::kUniform,
                     TrafficSide::kLeft, kPointQueryLength, 22)},
-      {},
-      false};
+      {}};
 }
 
 ScenarioInput MakeShiftRandomRangeScenario() {
@@ -491,8 +480,7 @@ ScenarioInput MakeShiftRandomRangeScenario() {
            BuildQueries(ScaleQueryCount(kRandomRangeMeasuredQueries),
                         QueryPattern::kHotWindowRandomRange, TrafficSide::kLeft,
                         kRandomRangeMaxLength, 33)},
-          {},
-          true};
+          {}};
 }
 
 ScenarioInput MakeRandomRangeScenario() {
@@ -506,8 +494,117 @@ ScenarioInput MakeRandomRangeScenario() {
            BuildQueries(ScaleQueryCount(kRandomRangeMeasuredQueries),
                         QueryPattern::kUniformRandomRange, TrafficSide::kLeft,
                         kRandomRangeMaxLength, 42)},
-          {},
-          false};
+          {}};
+}
+
+struct FastRng {
+  uint64_t state;
+
+  explicit FastRng(uint64_t seed) : state(seed) {}
+
+  uint64_t Next() {
+    uint64_t value = (state += 0x9E3779B97F4A7C15ULL);
+    value = (value ^ (value >> 30)) * 0xBF58476D1CE4E5B9ULL;
+    value = (value ^ (value >> 27)) * 0x94D049BB133111EBULL;
+    return value ^ (value >> 31);
+  }
+
+  size_t Uniform(size_t bound) {
+    return bound == 0 ? 0 : static_cast<size_t>(Next() % bound);
+  }
+};
+
+uint64_t ThreadSeed(uint64_t seed, size_t thread_index) {
+  return seed ^ (0xD1B54A32D192ED03ULL * (thread_index + 1));
+}
+
+size_t DeterministicOffset(size_t sequence_index, size_t thread_index,
+                           size_t bound) {
+  if (bound == 0) {
+    return 0;
+  }
+  return (sequence_index + thread_index * 131) % bound;
+}
+
+Query MakeStreamQuery(FastRng &rng, const QueryStreamSpec &spec,
+                      size_t thread_index, size_t sequence_index) {
+  const size_t length_cap = std::max(size_t{1}, spec.query_length);
+  const int delta = static_cast<int>(1 + ((sequence_index + thread_index) % 7));
+
+  if (spec.multi_window) {
+    const size_t window_count = spec.window_begins.size();
+    const size_t window_index =
+        spec.thread_grouped_windows
+            ? std::min(thread_index * window_count / kThreadCount,
+                       window_count - 1)
+            : (sequence_index + thread_index) % window_count;
+    size_t window_begin = spec.window_begins[window_index];
+    size_t window_size = std::max(size_t{1}, spec.window_size);
+
+    if (spec.thread_striped_windows) {
+      const size_t first_thread = window_index * kThreadCount / window_count;
+      const size_t end_thread = (window_index + 1) * kThreadCount / window_count;
+      const size_t group_threads = std::max(size_t{1}, end_thread - first_thread);
+      const size_t local_thread =
+          std::min(thread_index - first_thread, group_threads - 1);
+      const size_t window_blocks = std::max(size_t{1}, window_size / kBlockSize);
+      const size_t stripes = std::min(group_threads, window_blocks);
+      const size_t stripe_index = local_thread % stripes;
+      const size_t first_block = stripe_index * window_blocks / stripes;
+      const size_t end_block = (stripe_index + 1) * window_blocks / stripes;
+      window_begin += first_block * kBlockSize;
+      window_size = std::max(size_t{1}, (end_block - first_block) * kBlockSize);
+    }
+
+    const size_t length =
+        1 + rng.Uniform(std::min(length_cap, window_size));
+    const size_t left =
+        window_begin +
+        (length == 1
+             ? DeterministicOffset(sequence_index, thread_index, window_size)
+             : rng.Uniform(window_size - length + 1));
+    const size_t target = left + (length == 1 ? 0 : rng.Uniform(length));
+    return {static_cast<uint32_t>(left),
+            static_cast<uint32_t>(left + length - 1),
+            static_cast<uint32_t>(target), delta};
+  }
+
+  if (spec.pattern == QueryPattern::kUniform) {
+    const size_t length = std::min(length_cap, kArraySize);
+    const size_t left =
+        length == 1
+            ? DeterministicOffset(sequence_index, thread_index, kArraySize)
+            : rng.Uniform(kArraySize - length + 1);
+    const size_t target = left + (length == 1 ? 0 : rng.Uniform(length));
+    return {static_cast<uint32_t>(left),
+            static_cast<uint32_t>(left + length - 1),
+            static_cast<uint32_t>(target), delta};
+  }
+
+  if (spec.pattern == QueryPattern::kUniformRandomRange) {
+    const size_t length = 1 + rng.Uniform(std::min(length_cap, kArraySize));
+    const size_t left = rng.Uniform(kArraySize - length + 1);
+    const size_t target = left + rng.Uniform(length);
+    return {static_cast<uint32_t>(left),
+            static_cast<uint32_t>(left + length - 1),
+            static_cast<uint32_t>(target), delta};
+  }
+
+  const size_t hot_begin =
+      spec.side == TrafficSide::kLeft ? 0 : kArraySize - kHotWindowSize;
+  const size_t length =
+      spec.pattern == QueryPattern::kHotWindow
+          ? std::min(length_cap, kHotWindowSize)
+          : 1 + rng.Uniform(std::min(length_cap, kHotWindowSize));
+  const size_t left =
+      hot_begin +
+      (length == 1
+           ? DeterministicOffset(sequence_index, thread_index, kHotWindowSize)
+           : rng.Uniform(kHotWindowSize - length + 1));
+  const size_t target = left + (length == 1 ? 0 : rng.Uniform(length));
+  return {static_cast<uint32_t>(left),
+          static_cast<uint32_t>(left + length - 1),
+          static_cast<uint32_t>(target), delta};
 }
 
 template <typename Lock>
@@ -533,20 +630,23 @@ void ExecuteQuery(Lock &lock, std::vector<int> &data, const Query &query,
 
 template <typename Lock>
 PhaseRunStats RunPhase(Lock &lock, std::vector<int> &data,
-                       const std::vector<Query> &queries, QueryBody body) {
+                       const QueryStreamSpec &queries, QueryBody body) {
   std::vector<WorkerStats> worker_stats(kThreadCount);
   std::vector<std::thread> threads;
   threads.reserve(kThreadCount);
 
   std::barrier start_barrier(static_cast<std::ptrdiff_t>(kThreadCount + 1));
   const auto worker = [&](size_t thread_index) {
-    const size_t begin = queries.size() * thread_index / kThreadCount;
-    const size_t end = queries.size() * (thread_index + 1) / kThreadCount;
+    const size_t begin = queries.count * thread_index / kThreadCount;
+    const size_t end = queries.count * (thread_index + 1) / kThreadCount;
+    FastRng rng(ThreadSeed(queries.seed, thread_index));
 
     start_barrier.arrive_and_wait();
     WorkerStats &stats = worker_stats[thread_index];
     for (size_t i = begin; i < end; ++i) {
-      ExecuteQuery(lock, data, queries[i], body, stats);
+      ExecuteQuery(lock, data,
+                   MakeStreamQuery(rng, queries, thread_index, i), body,
+                   stats);
     }
   };
 
@@ -571,152 +671,174 @@ PhaseRunStats RunPhase(Lock &lock, std::vector<int> &data,
   return result;
 }
 
-template <typename Lock> void WaitForBackgroundRebuild(Lock &, double &) {}
-
-template <typename Mutex>
-void WaitForBackgroundRebuild(DynamicLock<kLockCount, Mutex> &,
-                              double &seconds) {
-  const auto start = std::chrono::steady_clock::now();
-  std::this_thread::sleep_for(kDynamicRebuildInterval * 3);
-  seconds +=
-      std::chrono::duration<double>(std::chrono::steady_clock::now() - start)
-          .count();
+std::chrono::milliseconds DynamicRebuildInterval() {
+  static const auto interval = std::chrono::milliseconds(ReadEnvSize(
+      "DYNAMIC_LOCK_REBUILD_INTERVAL_MS",
+      static_cast<size_t>(kDefaultDynamicRebuildInterval.count())));
+  return interval;
 }
 
-template <typename Lock> double FlushPendingTraining(Lock &lock) {
-  const auto start = std::chrono::steady_clock::now();
-  if constexpr (requires { lock.FlushTraining(); }) {
-    lock.FlushTraining();
-  }
-  return std::chrono::duration<double>(std::chrono::steady_clock::now() - start)
-      .count();
+double DynamicRebuildThreshold() {
+  static const double threshold = ReadEnvDouble(
+      "DYNAMIC_LOCK_REBUILD_THRESHOLD", kDefaultDynamicRebuildThreshold);
+  return threshold;
 }
 
-template <typename Lock>
-double RunSetup(Lock &lock, std::vector<int> &data,
-                const ScenarioInput &scenario, QueryBody body) {
-  double seconds = 0.0;
-  lock.StartRebuilder(kDynamicRebuildInterval, kDynamicRebuildThreshold);
+double DynamicRebuildMinGain() {
+  static const double min_gain = ReadEnvDouble(
+      "DYNAMIC_LOCK_REBUILD_MIN_GAIN", kDefaultDynamicRebuildMinGain);
+  return min_gain;
+}
 
-  for (size_t phase_index = 0; phase_index < scenario.setup_phases.size();
-       ++phase_index) {
-    const auto &[_, queries] = scenario.setup_phases[phase_index];
-    seconds += RunPhase(lock, data, queries, body).seconds;
+double DynamicRebuildMinSkew() {
+  static const double min_skew = ReadEnvDouble(
+      "DYNAMIC_LOCK_REBUILD_MIN_SKEW", kDefaultDynamicRebuildMinSkew);
+  return min_skew;
+}
 
-    if (phase_index == 0) {
-      lock.ForceSaveStats();
-    }
-  }
+size_t GeneticTrainingBatchSize() {
+  static const size_t batch_size = ReadEnvSize(
+      "DYNAMIC_LOCK_GENETIC_TRAINING_BATCH",
+      kDefaultGeneticTrainingBatchSize);
+  return batch_size;
+}
 
-  if (scenario.wait_for_background_rebuild) {
-    WaitForBackgroundRebuild(lock, seconds);
-  }
+size_t GeneticTrainingSampleRate() {
+  static const size_t sample_rate = ReadEnvSize(
+      "DYNAMIC_LOCK_GENETIC_TRAINING_SAMPLE_RATE",
+      kDefaultGeneticTrainingSampleRate);
+  return sample_rate;
+}
 
-  seconds += FlushPendingTraining(lock);
-  lock.StopRebuilder();
-  return seconds;
+size_t GeneticTrainingProbeGap() {
+  static const size_t probe_gap = ReadEnvSize(
+      "DYNAMIC_LOCK_GENETIC_PROBE_GAP", kDefaultGeneticTrainingProbeGap);
+  return probe_gap;
+}
+
+double GeneticMinTrainingSkew() {
+  static const double skew = ReadEnvDouble(
+      "DYNAMIC_LOCK_GENETIC_MIN_SKEW", kDefaultGeneticMinTrainingSkew);
+  return skew;
+}
+
+size_t DynamicStatsSampleRate() {
+  static const size_t sample_rate =
+      ReadEnvSize("DYNAMIC_LOCK_STATS_SAMPLE_RATE", 64);
+  return sample_rate;
+}
+
+bool RunGeneticEnabled() {
+  const char *value = std::getenv("DYNAMIC_LOCK_RUN_GENETIC");
+  return value == nullptr || std::string(value) != "0";
 }
 
 template <typename Lock>
 double AverageMutexesForQueries(const Lock &lock,
-                                const std::vector<Query> &queries) {
-  if (queries.empty()) {
+                                const QueryStreamSpec &queries) {
+  if (queries.count == 0) {
     return 0.0;
   }
 
   constexpr size_t kMaxSamples = 100'000;
-  const size_t step = std::max(size_t{1}, queries.size() / kMaxSamples);
+  const size_t samples = std::min(kMaxSamples, queries.count);
   uint64_t total_mutexes = 0;
-  uint64_t samples = 0;
+  FastRng rng(ThreadSeed(queries.seed, 0xA5A5A5A5U));
 
-  for (size_t i = 0; i < queries.size(); i += step) {
-    total_mutexes += lock.CountLocksForRange(queries[i].left, queries[i].right);
-    ++samples;
+  for (size_t i = 0; i < samples; ++i) {
+    const Query query = MakeStreamQuery(rng, queries, 0, i);
+    total_mutexes += lock.CountLocksForRange(query.left, query.right);
   }
 
   return static_cast<double>(total_mutexes) / static_cast<double>(samples);
 }
 
-template <typename Lock> double ForceImmediateAdaptation(Lock &lock) {
-  const auto start = std::chrono::steady_clock::now();
-  if constexpr (requires { lock.RebuildNow(); }) {
-    lock.RebuildNow();
-  }
-  if constexpr (requires { lock.FlushTraining(); }) {
-    lock.FlushTraining();
-  }
-  return std::chrono::duration<double>(std::chrono::steady_clock::now() - start)
-      .count();
-}
-
 struct MeasurementStats {
   double seconds = 0.0;
   uint64_t queries = 0;
-  double lock_total_ms = 0.0;
   double mutex_query_sum = 0.0;
 };
 
-void AddMeasurement(MeasurementStats &total, const MeasurementStats &part) {
-  total.seconds += part.seconds;
-  total.queries += part.queries;
-  total.lock_total_ms += part.lock_total_ms;
-  total.mutex_query_sum += part.mutex_query_sum;
-}
-
 template <typename Lock>
-MeasurementStats RunMeasuredQueries(Lock &lock, std::vector<int> &data,
-                                    const std::vector<Query> &queries,
-                                    QueryBody body) {
-  lock.ResetRuntimeStats();
+MeasurementStats RunWorkloadPhase(Lock &lock, std::vector<int> &data,
+                                  const QueryStreamSpec &queries,
+                                  QueryBody body) {
   const PhaseRunStats measured = RunPhase(lock, data, queries, body);
 
   MeasurementStats stats;
   stats.seconds = measured.seconds;
   stats.queries = measured.queries;
-  stats.lock_total_ms = lock.GetTotalLockTimeMs();
   stats.mutex_query_sum = AverageMutexesForQueries(lock, queries) *
                           static_cast<double>(measured.queries);
   return stats;
 }
 
-template <typename Lock>
-double RunAdaptQueries(Lock &lock, std::vector<int> &data,
-                       const TimedPhaseInput &phase, QueryBody body) {
-  if (phase.adapt_seconds <= 0.0) {
-    return RunPhase(lock, data, phase.adapt_queries, body).seconds;
+struct WorkloadRunStats {
+  double total_seconds = 0.0;
+  double setup_seconds = 0.0;
+  double measured_seconds = 0.0;
+  uint64_t total_queries = 0;
+  uint64_t measured_queries = 0;
+  double lock_total_ms = 0.0;
+  double mutex_query_sum = 0.0;
+};
+
+template <typename Lock> std::vector<size_t> GetPartitionCuts(const Lock &lock) {
+  if constexpr (requires { lock.PartitionCuts(); }) {
+    return lock.PartitionCuts();
   }
-
-  const auto start = std::chrono::steady_clock::now();
-  const auto deadline =
-      start + std::chrono::duration<double>(phase.adapt_seconds);
-  do {
-    RunPhase(lock, data, phase.adapt_queries, body);
-  } while (std::chrono::steady_clock::now() < deadline);
-
-  return std::chrono::duration<double>(std::chrono::steady_clock::now() - start)
-      .count();
+  return {};
 }
 
 template <typename Lock>
-MeasurementStats RunTimedMeasurements(Lock &lock, std::vector<int> &data,
-                                      const ScenarioInput &scenario,
-                                      QueryBody body, double &setup_seconds) {
-  if (scenario.timed_phases.empty()) {
-    return RunMeasuredQueries(lock, data, scenario.measured_phase.queries,
-                              body);
+WorkloadRunStats RunWorkload(Lock &lock, std::vector<int> &data,
+                             const ScenarioInput &scenario, QueryBody body) {
+  WorkloadRunStats total;
+  lock.ResetRuntimeStats();
+
+  const auto start = std::chrono::steady_clock::now();
+  lock.StartRebuilder(DynamicRebuildInterval(), DynamicRebuildThreshold());
+
+  const auto run_phase = [&](const QueryStreamSpec &queries, bool measured) {
+    const MeasurementStats stats = RunWorkloadPhase(lock, data, queries, body);
+    total.total_queries += stats.queries;
+    total.mutex_query_sum += stats.mutex_query_sum;
+    if (measured) {
+      total.measured_seconds += stats.seconds;
+      total.measured_queries += stats.queries;
+    } else {
+      total.setup_seconds += stats.seconds;
+    }
+  };
+
+  for (const PhaseInput &phase : scenario.setup_phases) {
+    run_phase(phase.queries, false);
   }
 
-  MeasurementStats total;
   for (const TimedPhaseInput &phase : scenario.timed_phases) {
-    lock.StartRebuilder(kDynamicRebuildInterval, kDynamicRebuildThreshold);
-    setup_seconds += RunAdaptQueries(lock, data, phase, body);
-    setup_seconds += ForceImmediateAdaptation(lock);
-    lock.StopRebuilder();
-
-    AddMeasurement(total,
-                   RunMeasuredQueries(lock, data, phase.measure_queries, body));
+    if (phase.adapt_seconds <= 0.0) {
+      run_phase(phase.adapt_queries, false);
+    } else {
+      const auto adapt_start = std::chrono::steady_clock::now();
+      const auto deadline =
+          adapt_start + std::chrono::duration<double>(phase.adapt_seconds);
+      do {
+        run_phase(phase.adapt_queries, false);
+      } while (std::chrono::steady_clock::now() < deadline);
+    }
+    run_phase(phase.measure_queries, true);
   }
 
+  if (scenario.measured_phase.queries.count != 0) {
+    run_phase(scenario.measured_phase.queries, true);
+  }
+
+  lock.StopRebuilder();
+
+  total.total_seconds =
+      std::chrono::duration<double>(std::chrono::steady_clock::now() - start)
+          .count();
+  total.lock_total_ms = lock.GetTotalLockTimeMs();
   return total;
 }
 
@@ -730,60 +852,64 @@ ImplementationResult RunImplementation(const std::string &name,
     auto lock = factory();
     std::vector<int> data = MakeInitialData();
 
-    result.setup_seconds = RunSetup(lock, data, scenario, QueryBody::kRealWork);
-    const size_t setup_reconfigurations = lock.GetRebuildCount();
+    const WorkloadRunStats measured =
+        RunWorkload(lock, data, scenario, QueryBody::kRealWork);
 
-    const size_t reconfigurations_after_reset = lock.GetRebuildCount();
-    const MeasurementStats measured = RunTimedMeasurements(
-        lock, data, scenario, QueryBody::kRealWork, result.setup_seconds);
-
-    result.body_seconds = measured.seconds;
-    result.body_queries = measured.queries;
-    result.avg_lock_us = measured.queries == 0
+    result.total_seconds = measured.total_seconds;
+    result.setup_seconds = measured.setup_seconds;
+    result.measured_seconds = measured.measured_seconds;
+    result.total_queries = measured.total_queries;
+    result.avg_lock_us = measured.total_queries == 0
                              ? 0.0
                              : measured.lock_total_ms * 1000.0 /
-                                   static_cast<double>(measured.queries);
+                                   static_cast<double>(measured.total_queries);
     result.measured_lock_total_seconds = measured.lock_total_ms / 1000.0;
     result.avg_mutexes_per_query =
-        measured.queries == 0
+        measured.total_queries == 0
             ? 0.0
-            : measured.mutex_query_sum / static_cast<double>(measured.queries);
-    result.reconfigurations =
-        setup_reconfigurations +
-        (lock.GetRebuildCount() - reconfigurations_after_reset);
+            : measured.mutex_query_sum /
+                  static_cast<double>(measured.total_queries);
+    result.reconfigurations = lock.GetRebuildCount();
     result.left_hot_locks = lock.CountLocksForRange(0, kHotWindowSize - 1);
     result.right_hot_locks =
         lock.CountLocksForRange(kArraySize - kHotWindowSize, kArraySize - 1);
+    result.partition_cuts = GetPartitionCuts(lock);
+    for (const size_t window_begin : scenario.debug_window_begins) {
+      result.debug_window_locks.push_back(lock.CountLocksForRange(
+          window_begin, window_begin + kClusteredHotWindowSize - 1));
+    }
   }
   {
     auto lock = factory();
     std::vector<int> data = MakeInitialData();
 
-    RunSetup(lock, data, scenario, QueryBody::kLockOnly);
-    double ignored_setup_seconds = 0.0;
-    const MeasurementStats measured = RunTimedMeasurements(
-        lock, data, scenario, QueryBody::kLockOnly, ignored_setup_seconds);
+    const WorkloadRunStats measured =
+        RunWorkload(lock, data, scenario, QueryBody::kLockOnly);
 
-    result.lock_only_seconds = measured.seconds;
-    result.lock_only_queries = measured.queries;
+    result.lock_only_total_seconds = measured.total_seconds;
+    result.lock_only_queries = measured.total_queries;
     result.lock_only_avg_lock_us =
-        measured.queries == 0 ? 0.0
+        measured.total_queries == 0 ? 0.0
                               : measured.lock_total_ms * 1000.0 /
-                                    static_cast<double>(measured.queries);
+                                    static_cast<double>(measured.total_queries);
   }
 
   return result;
 }
 
+bool DebugPartitionsEnabled();
+void PrintPartitionDebug(const ScenarioInput &scenario,
+                         const ImplementationResult &result);
+
 void PrintScenario(const ScenarioInput &scenario,
                    const std::vector<ImplementationResult> &results) {
   const ImplementationResult &baseline = results.front();
   uint64_t timed_adapt_queries = 0;
-  uint64_t measured_queries = scenario.measured_phase.queries.size();
+  uint64_t measured_queries = scenario.measured_phase.queries.count;
   double timed_adapt_seconds = 0.0;
   for (const TimedPhaseInput &phase : scenario.timed_phases) {
-    timed_adapt_queries += phase.adapt_queries.size();
-    measured_queries += phase.measure_queries.size();
+    timed_adapt_queries += phase.adapt_queries.count;
+    measured_queries += phase.measure_queries.count;
     timed_adapt_seconds += phase.adapt_seconds;
   }
 
@@ -794,7 +920,7 @@ void PrintScenario(const ScenarioInput &scenario,
     if (i != 0) {
       std::print(" + ");
     }
-    std::print("{}", scenario.setup_phases[i].queries.size());
+    std::print("{}", scenario.setup_phases[i].queries.count);
   }
   if (timed_adapt_queries != 0) {
     std::print(" + {} timed adapt", timed_adapt_queries);
@@ -805,29 +931,38 @@ void PrintScenario(const ScenarioInput &scenario,
   }
   std::print(", measured queries: {}\n\n", measured_queries);
   if (!scenario.timed_phases.empty()) {
-    std::println("  timed scenario: each phase is adapted, rebuilt, then "
-                 "measured with online adaptation disabled\n");
+    std::println("  timed scenario: adapt and measure phases run continuously; "
+                 "online rebuild/training is included in total_s\n");
   }
 
-  std::println("  impl       setup_s  body_s  body_x  lock_only_s  lock_x"
-               "  avg_lock_us  lock_sum_s  avg_mutex  hot(L/R)  rebuild/train");
+  std::println("  impl       total_s total_x  setup_s measured_s  lock_only_s"
+               "  lock_x  avg_lock_us  lock_sum_s  avg_mutex  hot(L/R)"
+               "  rebuild/train");
 
   for (const ImplementationResult &result : results) {
-    const double body_speedup =
-        result.body_seconds > 0.0 ? baseline.body_seconds / result.body_seconds
-                                  : 0.0;
+    const double total_speedup = result.total_seconds > 0.0
+                                     ? baseline.total_seconds /
+                                           result.total_seconds
+                                     : 0.0;
     const double lock_speedup =
-        result.lock_only_seconds > 0.0
-            ? baseline.lock_only_seconds / result.lock_only_seconds
+        result.lock_only_total_seconds > 0.0
+            ? baseline.lock_only_total_seconds / result.lock_only_total_seconds
             : 0.0;
 
-    std::println("  {:<10}{:>8.3f}{:>8.3f}{:>8.3f}{:>13.3f}{:>8.3f}{:>13.2f}"
-                 "{:>12.3f}{:>11.2f}{:>5}/{:>2}{:>10}",
-                 result.name, result.setup_seconds, result.body_seconds,
-                 body_speedup, result.lock_only_seconds, lock_speedup,
+    std::println("  {:<10}{:>8.3f}{:>8.3f}{:>8.3f}{:>11.3f}{:>13.3f}"
+                 "{:>8.3f}{:>13.2f}{:>12.3f}{:>11.2f}{:>5}/{:>2}{:>10}",
+                 result.name, result.total_seconds, total_speedup,
+                 result.setup_seconds, result.measured_seconds,
+                 result.lock_only_total_seconds, lock_speedup,
                  result.avg_lock_us, result.measured_lock_total_seconds,
                  result.avg_mutexes_per_query, result.left_hot_locks,
                  result.right_hot_locks, result.reconfigurations);
+  }
+  if (DebugPartitionsEnabled()) {
+    std::println("");
+    for (const ImplementationResult &result : results) {
+      PrintPartitionDebug(scenario, result);
+    }
   }
   std::println("");
 }
@@ -839,19 +974,25 @@ RunScenarioResults(const ScenarioInput &scenario) {
 
   auto naive_factory = [] { return NaiveLock<kLockCount, Lock>(kArraySize); };
   auto dynamic_factory = [] {
-    return DynamicLock<kLockCount, Lock>(kArraySize);
+    return DynamicLock<kLockCount, Lock>(kArraySize,
+                                         DynamicStatsSampleRate(),
+                                         DynamicRebuildMinGain(),
+                                         DynamicRebuildMinSkew());
   };
   auto genetic_factory = [&genetic_seed] {
     return GeneticLock<kLockCount, kBlocks, Lock>(
-        kArraySize, genetic_seed++, kGeneticTrainingBatchSize,
+        kArraySize, genetic_seed++, GeneticTrainingBatchSize(),
         kGeneticHistoryLimit, kGeneticPopulationSize, kGeneticEliteCount,
-        kGeneticGenerationCount);
+        kGeneticGenerationCount, GeneticTrainingSampleRate(),
+        GeneticMinTrainingSkew(), GeneticTrainingProbeGap());
   };
 
   std::vector<ImplementationResult> results;
   results.push_back(RunImplementation("naive", scenario, naive_factory));
   results.push_back(RunImplementation("dynamic", scenario, dynamic_factory));
-  results.push_back(RunImplementation("genetic", scenario, genetic_factory));
+  if (RunGeneticEnabled()) {
+    results.push_back(RunImplementation("genetic", scenario, genetic_factory));
+  }
 
   return results;
 }
@@ -881,8 +1022,69 @@ FindResult(const std::vector<ImplementationResult> &results,
   return *it;
 }
 
+bool HasResult(const std::vector<ImplementationResult> &results,
+               const std::string &name) {
+  return std::any_of(results.begin(), results.end(),
+                     [&](const ImplementationResult &result) {
+                       return result.name == name;
+                     });
+}
+
 double SafeSpeedup(double baseline_seconds, double measured_seconds) {
   return measured_seconds > 0.0 ? baseline_seconds / measured_seconds : 0.0;
+}
+
+bool DebugPartitionsEnabled() {
+  const char *value = std::getenv("DYNAMIC_LOCK_DEBUG_PARTITIONS");
+  return value != nullptr && std::string(value) != "0";
+}
+
+void PrintSizeVector(const std::vector<size_t> &values) {
+  std::print("[");
+  for (size_t i = 0; i < values.size(); ++i) {
+    if (i != 0) {
+      std::print(", ");
+    }
+    std::print("{}", values[i]);
+  }
+  std::print("]");
+}
+
+std::vector<size_t> CutsToWidths(const std::vector<size_t> &cuts) {
+  std::vector<size_t> widths;
+  if (cuts.size() < 2) {
+    return widths;
+  }
+  widths.reserve(cuts.size() - 1);
+  for (size_t i = 1; i < cuts.size(); ++i) {
+    widths.push_back(cuts[i] - cuts[i - 1]);
+  }
+  return widths;
+}
+
+void PrintPartitionDebug(const ScenarioInput &scenario,
+                         const ImplementationResult &result) {
+  if (result.partition_cuts.empty() && result.debug_window_locks.empty()) {
+    return;
+  }
+
+  std::println("  {} partition debug:", result.name);
+  if (!result.partition_cuts.empty()) {
+    std::print("    cuts: ");
+    PrintSizeVector(result.partition_cuts);
+    std::println("");
+    std::print("    widths: ");
+    PrintSizeVector(CutsToWidths(result.partition_cuts));
+    std::println("");
+  }
+  if (!scenario.debug_window_begins.empty()) {
+    std::print("    hot window begins: ");
+    PrintSizeVector(scenario.debug_window_begins);
+    std::println("");
+    std::print("    locks per hot window: ");
+    PrintSizeVector(result.debug_window_locks);
+    std::println("");
+  }
 }
 
 void PrintPointSpinComparison(
@@ -892,28 +1094,31 @@ void PrintPointSpinComparison(
   const ImplementationResult &spin_naive = FindResult(spin_results, "naive");
 
   std::println("point lock primitive comparison: {}", scenario.name);
-  std::print("  spin naive baseline: body_s={:.3f}, lock_only_s={:.3f}\n\n",
-             spin_naive.body_seconds, spin_naive.lock_only_seconds);
-  std::println("  impl       spin_body_s  spin_x  spin_lock_only_s  spin_lock_x"
-               "  mutex_body_s  mutex_lock_only_s  spin_vs_mutex_body"
+  std::print("  spin naive baseline: total_s={:.3f}, lock_only_s={:.3f}\n\n",
+             spin_naive.total_seconds, spin_naive.lock_only_total_seconds);
+  std::println("  impl       spin_total_s  spin_x  spin_lock_only_s  spin_lock_x"
+               "  mutex_total_s  mutex_lock_only_s  spin_vs_mutex_total"
                "  spin_vs_mutex_lock");
 
   for (const std::string &name : {"dynamic", "genetic"}) {
+    if (!HasResult(spin_results, name) || !HasResult(mutex_results, name)) {
+      continue;
+    }
     const ImplementationResult &spin_result = FindResult(spin_results, name);
     const ImplementationResult &mutex_result = FindResult(mutex_results, name);
 
     std::println(
         "  {:<10}{:>12.3f}{:>8.3f}{:>18.3f}{:>13.3f}{:>14.3f}{:>19.3f}"
         "{:>20.3f}{:>20.3f}",
-        name, spin_result.body_seconds,
-        SafeSpeedup(spin_naive.body_seconds, spin_result.body_seconds),
-        spin_result.lock_only_seconds,
-        SafeSpeedup(spin_naive.lock_only_seconds,
-                    spin_result.lock_only_seconds),
-        mutex_result.body_seconds, mutex_result.lock_only_seconds,
-        SafeSpeedup(mutex_result.body_seconds, spin_result.body_seconds),
-        SafeSpeedup(mutex_result.lock_only_seconds,
-                    spin_result.lock_only_seconds));
+        name, spin_result.total_seconds,
+        SafeSpeedup(spin_naive.total_seconds, spin_result.total_seconds),
+        spin_result.lock_only_total_seconds,
+        SafeSpeedup(spin_naive.lock_only_total_seconds,
+                    spin_result.lock_only_total_seconds),
+        mutex_result.total_seconds, mutex_result.lock_only_total_seconds,
+        SafeSpeedup(mutex_result.total_seconds, spin_result.total_seconds),
+        SafeSpeedup(mutex_result.lock_only_total_seconds,
+                    spin_result.lock_only_total_seconds));
   }
   std::println("");
 }
@@ -933,15 +1138,33 @@ int main() {
   std::println("  moving window size: {}", kMovingWindowSize);
   std::println("  moving window stops: {}", 2 * kMovingWindowStops - 2);
   std::println("  query divisor: {}", QueryDivisor());
-  std::println("  body_s: final measured phase with sum+single update");
+  std::println("  rebuild interval, ms: {}", DynamicRebuildInterval().count());
+  std::println("  rebuild threshold: {:.3f}", DynamicRebuildThreshold());
+  std::println("  rebuild min gain: {:.3f}", DynamicRebuildMinGain());
+  std::println("  rebuild min skew: {:.3f}", DynamicRebuildMinSkew());
+  std::println("  dynamic stats sample rate: {}", DynamicStatsSampleRate());
+  std::println("  genetic training batch: {}", GeneticTrainingBatchSize());
+  std::println("  genetic training sample rate: {}",
+               GeneticTrainingSampleRate());
+  std::println("  genetic training probe gap: {}",
+               GeneticTrainingProbeGap());
+  std::println("  genetic min training skew: {:.3f}",
+               GeneticMinTrainingSkew());
   std::println(
-      "  lock_only_s: same final coordinates after same setup, empty body");
+      "  total_s: full scenario wall time, including online rebuild/training");
+  std::println("  measured_s: final measured phases inside the same run");
+  std::println(
+      "  lock_only_s: same full scenario with empty critical-section body");
   std::print(
-      "  body_x and lock_x are speedups over naive in the same scenario\n\n");
+      "  total_x and lock_x are speedups over naive in the same scenario\n\n");
 
   const ScenarioInput shift_point = MakeShiftScenario();
   const ScenarioInput clustered_2_windows = MakeClusteredWindowsScenario(2, 51);
   const ScenarioInput clustered_4_windows = MakeClusteredWindowsScenario(4, 61);
+  const ScenarioInput clustered_4_thread_groups =
+      MakeClusteredThreadGroupsScenario(4, 65);
+  const ScenarioInput clustered_4_thread_groups_contended =
+      MakeClusteredThreadGroupsContendedScenario(4, 66);
   const ScenarioInput clustered_churn_2_windows =
       MakeClusteredChurnScenario(2, 71);
   const ScenarioInput clustered_churn_4_windows =
@@ -963,6 +1186,8 @@ int main() {
       run_if_selected(shift_point);
   run_if_selected(clustered_2_windows);
   run_if_selected(clustered_4_windows);
+  run_if_selected(clustered_4_thread_groups);
+  run_if_selected(clustered_4_thread_groups_contended);
   run_if_selected(clustered_churn_2_windows);
   run_if_selected(clustered_churn_4_windows);
   run_if_selected(moving_window);
