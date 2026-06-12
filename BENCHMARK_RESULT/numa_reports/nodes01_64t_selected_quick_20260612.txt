@@ -1,0 +1,103 @@
+amiskin@xeon5:~/dyn_locks/dynamic_locks$   NUMA_PROFILE=quick NUMA_TIMEOUT_SECONDS=300 bash -lc '
+  source scripts/numa_common.sh
+  OUT_DIR=$(make_result_dir nodes01_64t_selected)
+  write_topology "$OUT_DIR"
+
+  run_one_scenario "$OUT_DIR" nodes01 64 shift_hotspot_point 4 --cpunodebind=0,1 --interleave=0,1 || true
+  run_one_scenario "$OUT_DIR" nodes01 64 moving_small_window 40 --cpunodebind=0,1 --interleave=0,1 || true
+
+  summarize_dir "$OUT_DIR"
+  echo "Results: $OUT_DIR"
+  '
+
+=== nodes01 64 threads shift_hotspot_point divisor=4 ===
+expected roughly 30-120 sec; timeout=300s
+output=/home/amiskin/dyn_locks/dynamic_locks/BENCHMARK_RESULT/numa/20260612_004412_nodes01_64t_selected_quick/nodes01_64t_shift_hotspot_point_div4.txt
+dynamic lock comparison benchmark
+  array size: 1048576
+  mutexes: 64, fine blocks: 1024, fine block size: 1024
+  threads: 64
+  point query length: 1
+  random range max length: 65536
+  hot window size: 16384
+  clustered hot window size: 16384
+  small range max length: 8
+  moving window size: 16384
+  moving window stops: 14
+  query divisor: 4
+  rebuild interval, ms: 10000
+  rebuild threshold: 2.000
+  rebuild min gain: 1.000
+  rebuild min skew: 4.000
+  dynamic stats sample rate: 64
+  genetic training batch: 100000
+  genetic training sample rate: 64
+  genetic training probe gap: 1000000
+  genetic min training skew: 4.000
+  total_s: full scenario wall time, including online rebuild/training
+  measured_s: final measured phases inside the same run
+  lock_only_s: same full scenario with empty critical-section body
+  total_x and lock_x are speedups over naive in the same scenario
+
+scenario: shift_hotspot_point
+  right warmup, then left hotspot; final queries are point updates
+  setup queries: 1600000 + 4800000, measured queries: 30000000
+
+  impl       total_s total_x  setup_s measured_s  lock_only_s  lock_x  avg_lock_us  lock_sum_s  avg_mutex  hot(L/R)  rebuild/train
+  naive       21.023   1.000   3.574     17.438       18.609   1.000        18.40     669.668       1.00    1/ 1         0
+  dynamic     21.933   0.958   3.754     18.130       20.037   0.929        26.56     966.828       1.00   16/16         1
+  genetic     22.396   0.939   4.120     18.260       22.186   0.839        30.93    1125.716       1.00   16/16         1
+
+
+=== nodes01 64 threads moving_small_window divisor=40 ===
+expected roughly 1-3 min; timeout=300s
+output=/home/amiskin/dyn_locks/dynamic_locks/BENCHMARK_RESULT/numa/20260612_004412_nodes01_64t_selected_quick/nodes01_64t_moving_small_window_div40.txt
+dynamic lock comparison benchmark
+  array size: 1048576
+  mutexes: 64, fine blocks: 1024, fine block size: 1024
+  threads: 64
+  point query length: 1
+  random range max length: 65536
+  hot window size: 16384
+  clustered hot window size: 16384
+  small range max length: 8
+  moving window size: 16384
+  moving window stops: 14
+  query divisor: 40
+  rebuild interval, ms: 10000
+  rebuild threshold: 2.000
+  rebuild min gain: 1.000
+  rebuild min skew: 4.000
+  dynamic stats sample rate: 64
+  genetic training batch: 100000
+  genetic training sample rate: 64
+  genetic training probe gap: 1000000
+  genetic min training skew: 4.000
+  total_s: full scenario wall time, including online rebuild/training
+  measured_s: final measured phases inside the same run
+  lock_only_s: same full scenario with empty critical-section body
+  total_x and lock_x are speedups over naive in the same scenario
+
+scenario: moving_small_window
+  16384-element hot window moves left-to-right and back; each stop runs long enough for online repartitioning attempts
+  setup queries: 320000 + 6720000 timed adapt, measured queries: 24500000
+
+  timed scenario: adapt and measure phases run continuously; online rebuild/training is included in total_s
+
+  impl       total_s total_x  setup_s measured_s  lock_only_s  lock_x  avg_lock_us  lock_sum_s  avg_mutex  hot(L/R)  rebuild/train
+  naive       25.160   1.000   5.385     19.583       18.463   1.000        27.14     855.870       1.00    1/ 1         0
+  dynamic     22.291   1.129   4.915     17.090       15.727   1.174        25.03     789.463       1.00   16/ 5         2
+  genetic     24.645   1.021   5.342     19.005       19.098   0.967        30.10     949.366       1.00    1/ 1         2
+
+# NUMA Benchmark Summary
+
+Directory: `/home/amiskin/dyn_locks/dynamic_locks/BENCHMARK_RESULT/numa/20260612_004412_nodes01_64t_selected_quick`
+
+| File | Status | Scenario | Naive total_s | Dynamic total_x | Genetic total_x | Dynamic rebuilds | Genetic trains | Dynamic lock_sum_s | Genetic lock_sum_s |
+|---|---|---|---:|---:|---:|---:|---:|---:|---:|
+| `nodes01_64t_moving_small_window_div40.txt` | OK | `moving_small_window` | 25.160 | 1.129 | 1.021 | 2 | 2 | 789.463 | 949.366 |
+| `nodes01_64t_shift_hotspot_point_div4.txt` | OK | `shift_hotspot_point` | 21.023 | 0.958 | 0.939 | 1 | 1 | 966.828 | 1125.716 |
+
+Use `total_x` as the headline speedup. If `lock_sum_s` is orders of magnitude larger than wall time, the run is dominated by waiting.
+Results: /home/amiskin/dyn_locks/dynamic_locks/BENCHMARK_RESULT/numa/20260612_004412_nodes01_64t_selected_quick
+amiskin@xeon5:~/dyn_locks/dynamic_locks$ 
