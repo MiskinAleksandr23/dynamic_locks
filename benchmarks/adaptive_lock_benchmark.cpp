@@ -1007,7 +1007,7 @@ std::vector<ImplementationResult> RunScenario(const ScenarioInput &scenario) {
 
 bool ShouldRunScenario(const ScenarioInput &scenario) {
   const char *filter = std::getenv("DYNAMIC_LOCK_SCENARIO");
-  return filter == nullptr || scenario.name.find(filter) != std::string::npos;
+  return filter == nullptr || scenario.name == filter;
 }
 
 const ImplementationResult &

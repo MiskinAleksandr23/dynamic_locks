@@ -70,20 +70,20 @@ scenario_divisor() {
       ;;
     quick)
       case "${scenario}" in
-        moving_small_window) echo 80 ;;
-        *) echo 40 ;;
+        moving_small_window) echo 40 ;;
+        *) echo 4 ;;
       esac
       ;;
     balanced)
       case "${scenario}" in
-        moving_small_window) echo 60 ;;
-        *) echo 30 ;;
+        moving_small_window) echo 20 ;;
+        *) echo 1 ;;
       esac
       ;;
     final)
       case "${scenario}" in
-        moving_small_window) echo 40 ;;
-        *) echo 20 ;;
+        moving_small_window) echo 10 ;;
+        *) echo 1 ;;
       esac
       ;;
     *)
@@ -97,10 +97,10 @@ estimate_for() {
   local scenario="$1"
   case "${NUMA_PROFILE}:${scenario}" in
     smoke:*) echo "expected roughly < 1 min" ;;
-    quick:moving_small_window) echo "expected roughly 2-4 min" ;;
-    quick:*) echo "expected roughly 1-3 min" ;;
-    balanced:moving_small_window) echo "expected roughly 3-5 min" ;;
-    balanced:*) echo "expected roughly 2-4 min" ;;
+    quick:moving_small_window) echo "expected roughly 1-3 min" ;;
+    quick:*) echo "expected roughly 30-120 sec" ;;
+    balanced:moving_small_window) echo "expected roughly 2-5 min" ;;
+    balanced:*) echo "expected roughly 1-4 min" ;;
     final:moving_small_window) echo "may reach the ${NUMA_TIMEOUT_SECONDS}s timeout" ;;
     final:*) echo "expected roughly 3-5 min" ;;
     *) echo "rough estimate unavailable" ;;

@@ -133,9 +133,9 @@ Profiles:
 | Profile | Use | Divisors |
 |---|---|---|
 | `smoke` | Sanity check | grouped `80`, moving `120` |
-| `quick` | Faster exploratory run | grouped/shift `40`, moving `80` |
-| `balanced` | Recommended default | grouped/shift `30`, moving `60` |
-| `final` | Longer run if previous results look good | grouped/shift `20`, moving `40` |
+| `quick` | Faster exploratory run | grouped/shift `4`, moving `40` |
+| `balanced` | Recommended default | grouped/shift `1`, moving `20` |
+| `final` | Longer run if previous results look good | grouped/shift `1`, moving `10` |
 
 All batch scripts default to `NUMA_TIMEOUT_SECONDS=300` except smoke, which uses
 `180`. Override it if a run is clearly too short or too long.
