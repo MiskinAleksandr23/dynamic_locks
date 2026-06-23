@@ -1,3 +1,8 @@
+# Dynamic Locks
+
+Пример из [`example/main.cpp`](example/main.cpp):
+
+```cpp
 #include "dynamic/dynamic_lock.hpp"
 
 static constexpr int kLockSize = 1 << 20;
@@ -36,3 +41,5 @@ int main() {
         throw std::runtime_error("Incorrect result");
     }
 }
+
+```
