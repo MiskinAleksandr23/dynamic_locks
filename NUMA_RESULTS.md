@@ -1,7 +1,5 @@
 # NUMA Benchmark Results
 
-Date: 2026-06-23 UTC
-
 Host: 4 NUMA nodes, 128 logical CPUs, 256 GB RAM. Each NUMA node has 32 logical
 CPUs. Node distances:
 
@@ -13,13 +11,6 @@ CPUs. Node distances:
 | 3 | 21 | 31 | 21 | 10 |
 
 Raw copied outputs are stored in `BENCHMARK_RESULT/numa_reports/`.
-
-## Method
-
-All results use the local `adaptive_lock_benchmark` and the honest `total_s` /
-`total_x` metric. `total_s` includes setup, measured phases, online monitoring,
-rebuild/training, and stop/join time. Speedups are relative to `naive` in the
-same scenario and placement.
 
 Common settings:
 

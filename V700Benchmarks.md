@@ -32,18 +32,6 @@ Example run:
   -json-file Benchmark-v700/cpp/microbench/json_example/adaptive_lock_v700_warmup_hotspot_point.json
 ```
 
-## Method
-
-These are online V700 runs. The current workloads have `prefill.numThreads=0` and `warmUp.numThreads=0`; all reported throughput is from the V700 `test` stage.
-
-`Benchmark-v700/cpp/ds/adaptive_lock/adapter_impl.h::warmupEnd()` is intentionally a no-op for these adapters, so online rebuild/training remains enabled during the measured stage. `Benchmark-v700/cpp/microbench/main.cpp` calls an optional `testEnd()` hook after the test workers finish and recomputes `elapsedMillis`, so rebuilder/training stop and join time are also included in the V700 elapsed time and throughput.
-
-The adapter destructor only repeats an idempotent stop. It does not flush pending genetic samples or force a rebuild after the measured stage, so there is no useful adaptation work hidden outside the V700 timer.
-
-For moving-window runs, V700 also prints a bogus human-readable napping overtime
-line; the table uses `elapsed milliseconds` and `query throughput`, which match
-the real measured test stage.
-
 Adapter parameters:
 
 - `range`: `1,048,576`
