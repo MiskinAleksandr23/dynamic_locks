@@ -1,5 +1,5 @@
-REALTIME_MAIN_START_PERF_FORMAT=681172.923398109
-binary=./build/Benchmark-v700-build/adaptive_lock_dynamic.debra
+REALTIME_MAIN_START_PERF_FORMAT=2318090.737151657
+binary=build/Benchmark-v700-build/adaptive_lock_dynamic.debra
 DS_TYPENAME=DS_TYPENAME
 FIND_FUNC=FIND_FUNC
 INSERT_FUNC=INSERT_FUNC
@@ -84,8 +84,8 @@ Test stage
 binding threads...
 ACTUAL_THREAD_BINDINGS=-1,-1,-1,-1,-1,-1,-1,-1
 creating threads...
-REALTIME_START_PERF_FORMAT=681172.960063319
-REALTIME_END_PERF_FORMAT=681235.502162148
+REALTIME_START_PERF_FORMAT=2318090.761257565
+REALTIME_END_PERF_FORMAT=2318138.133275104
 
 ################################################################################
 ################################## END RUNNING #################################
@@ -100,10 +100,10 @@ KEY_DEPTH_TOTAL_STAT END
 KEY_SEARCH_TOTAL_STAT START
 KEY_SEARCH_TOTAL_STAT END
 adaptive_lock_dynamic_range_queries=112000000
-adaptive_lock_dynamic_total_lock_ms=265310
-adaptive_lock_dynamic_avg_lock_ms=0.00236884
-adaptive_lock_dynamic_reconfigurations=9
-adaptive_lock_dynamic_checksum=6140317883
+adaptive_lock_dynamic_total_lock_ms=210537
+adaptive_lock_dynamic_avg_lock_ms=0.00187979
+adaptive_lock_dynamic_reconfigurations=8
+adaptive_lock_dynamic_checksum=5693245826
 threads_final_keysum=0
 Structural validation OK.
 
@@ -123,14 +123,14 @@ Structural validation OK.
   total queries:                 112000000
   total ops:                     112000000
   find throughput:               0
-  rq throughput:                 1790395
+  rq throughput:                 2363018
   update throughput:             0
-  query throughput:              1790395
-  total throughput:              1790395
+  query throughput:              2363018
+  total throughput:              2363018
 
-  elapsed milliseconds:          62556
+  elapsed milliseconds:          47397
   napping milliseconds overtime: 8031170617323560970
 
 begin delete ds...
 end delete ds.
-REALTIME_MAIN_END_PERF_FORMAT=681235.523087934
+REALTIME_MAIN_END_PERF_FORMAT=2318138.164042146

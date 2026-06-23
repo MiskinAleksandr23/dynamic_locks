@@ -1,5 +1,5 @@
-REALTIME_MAIN_START_PERF_FORMAT=680889.799804631
-binary=./build/Benchmark-v700-build/adaptive_lock_genetic.debra
+REALTIME_MAIN_START_PERF_FORMAT=2317854.599374243
+binary=build/Benchmark-v700-build/adaptive_lock_genetic.debra
 DS_TYPENAME=DS_TYPENAME
 FIND_FUNC=FIND_FUNC
 INSERT_FUNC=INSERT_FUNC
@@ -83,14 +83,14 @@ Test stage
 binding threads...
 ACTUAL_THREAD_BINDINGS=-1,-1,-1,-1,-1,-1,-1,-1
 creating threads...
-REALTIME_START_PERF_FORMAT=680889.817139981
-REALTIME_END_PERF_FORMAT=680910.680787987
+REALTIME_START_PERF_FORMAT=2317854.977125016
+REALTIME_END_PERF_FORMAT=2317872.620247532
 
 ################################################################################
 ################################## END RUNNING #################################
 ################################################################################
 
-20.863s
+17.643s
 PRODUCING OUTPUT
 
 KEY_DEPTH_TOTAL_STAT START
@@ -99,8 +99,8 @@ KEY_DEPTH_TOTAL_STAT END
 KEY_SEARCH_TOTAL_STAT START
 KEY_SEARCH_TOTAL_STAT END
 adaptive_lock_genetic_range_queries=60000000
-adaptive_lock_genetic_total_lock_ms=93237.6
-adaptive_lock_genetic_avg_lock_ms=0.00155396
+adaptive_lock_genetic_total_lock_ms=79904
+adaptive_lock_genetic_avg_lock_ms=0.00133173
 adaptive_lock_genetic_reconfigurations=1
 adaptive_lock_genetic_checksum=0
 threads_final_keysum=0
@@ -121,15 +121,15 @@ Structural validation OK.
     total fail updates:          0
   total queries:                 60000000
   total ops:                     60000000
-  find throughput:               2875904
+  find throughput:               3400782
   rq throughput:                 0
   update throughput:             0
-  query throughput:              2875904
-  total throughput:              2875904
+  query throughput:              3400782
+  total throughput:              3400782
 
-  elapsed milliseconds:          20863
+  elapsed milliseconds:          17643
   napping milliseconds overtime: 0
 
 begin delete ds...
 end delete ds.
-REALTIME_MAIN_END_PERF_FORMAT=680910.686595181
+REALTIME_MAIN_END_PERF_FORMAT=2317872.624251208

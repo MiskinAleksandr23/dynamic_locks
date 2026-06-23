@@ -11,8 +11,7 @@ NUMA_TIMEOUT_SECONDS="${NUMA_TIMEOUT_SECONDS:-300}"
 source "${SCRIPT_DIR}/numa_common.sh"
 
 SCENARIOS=(
-  clustered_4_thread_groups
-  clustered_4_thread_groups_contended
+  shift_hotspot_point
   moving_small_window
 )
 

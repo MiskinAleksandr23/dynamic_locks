@@ -12,8 +12,6 @@ source "${SCRIPT_DIR}/numa_common.sh"
 
 SCENARIOS=(
   shift_hotspot_point
-  clustered_4_thread_groups
-  clustered_4_thread_groups_contended
   moving_small_window
 )
 

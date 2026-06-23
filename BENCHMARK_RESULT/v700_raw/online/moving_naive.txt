@@ -1,5 +1,5 @@
-REALTIME_MAIN_START_PERF_FORMAT=681058.788762895
-binary=./build/Benchmark-v700-build/adaptive_lock_naive.debra
+REALTIME_MAIN_START_PERF_FORMAT=2318005.389877386
+binary=build/Benchmark-v700-build/adaptive_lock_naive.debra
 DS_TYPENAME=DS_TYPENAME
 FIND_FUNC=FIND_FUNC
 INSERT_FUNC=INSERT_FUNC
@@ -84,8 +84,8 @@ Test stage
 binding threads...
 ACTUAL_THREAD_BINDINGS=-1,-1,-1,-1,-1,-1,-1,-1
 creating threads...
-REALTIME_START_PERF_FORMAT=681058.829127055
-REALTIME_END_PERF_FORMAT=681169.588288819
+REALTIME_START_PERF_FORMAT=2318005.406133397
+REALTIME_END_PERF_FORMAT=2318088.375974787
 
 ################################################################################
 ################################## END RUNNING #################################
@@ -100,10 +100,10 @@ KEY_DEPTH_TOTAL_STAT END
 KEY_SEARCH_TOTAL_STAT START
 KEY_SEARCH_TOTAL_STAT END
 adaptive_lock_naive_range_queries=112000000
-adaptive_lock_naive_total_lock_ms=532739
-adaptive_lock_naive_avg_lock_ms=0.0047566
+adaptive_lock_naive_total_lock_ms=409700
+adaptive_lock_naive_avg_lock_ms=0.00365804
 adaptive_lock_naive_reconfigurations=0
-adaptive_lock_naive_checksum=62834165548
+adaptive_lock_naive_checksum=37822944725
 threads_final_keysum=0
 Structural validation OK.
 
@@ -123,14 +123,14 @@ Structural validation OK.
   total queries:                 112000000
   total ops:                     112000000
   find throughput:               0
-  rq throughput:                 1011204
+  rq throughput:                 1349901
   update throughput:             0
-  query throughput:              1011204
-  total throughput:              1011204
+  query throughput:              1349901
+  total throughput:              1349901
 
-  elapsed milliseconds:          110759
+  elapsed milliseconds:          82969
   napping milliseconds overtime: 8031170617323560970
 
 begin delete ds...
 end delete ds.
-REALTIME_MAIN_END_PERF_FORMAT=681169.598103548
+REALTIME_MAIN_END_PERF_FORMAT=2318088.381996811

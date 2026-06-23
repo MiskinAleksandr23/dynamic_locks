@@ -1,5 +1,5 @@
-REALTIME_MAIN_START_PERF_FORMAT=680829.336720949
-binary=./build/Benchmark-v700-build/adaptive_lock_naive.debra
+REALTIME_MAIN_START_PERF_FORMAT=2317807.348319275
+binary=build/Benchmark-v700-build/adaptive_lock_naive.debra
 DS_TYPENAME=DS_TYPENAME
 FIND_FUNC=FIND_FUNC
 INSERT_FUNC=INSERT_FUNC
@@ -83,14 +83,14 @@ Test stage
 binding threads...
 ACTUAL_THREAD_BINDINGS=-1,-1,-1,-1,-1,-1,-1,-1
 creating threads...
-REALTIME_START_PERF_FORMAT=680829.648064382
-REALTIME_END_PERF_FORMAT=680868.815037826
+REALTIME_START_PERF_FORMAT=2317807.576077358
+REALTIME_END_PERF_FORMAT=2317838.38466524
 
 ################################################################################
 ################################## END RUNNING #################################
 ################################################################################
 
-39.167s
+30.462s
 PRODUCING OUTPUT
 
 KEY_DEPTH_TOTAL_STAT START
@@ -99,8 +99,8 @@ KEY_DEPTH_TOTAL_STAT END
 KEY_SEARCH_TOTAL_STAT START
 KEY_SEARCH_TOTAL_STAT END
 adaptive_lock_naive_range_queries=60000000
-adaptive_lock_naive_total_lock_ms=214177
-adaptive_lock_naive_avg_lock_ms=0.00356962
+adaptive_lock_naive_total_lock_ms=163222
+adaptive_lock_naive_avg_lock_ms=0.00272037
 adaptive_lock_naive_reconfigurations=0
 adaptive_lock_naive_checksum=0
 threads_final_keysum=0
@@ -121,15 +121,15 @@ Structural validation OK.
     total fail updates:          0
   total queries:                 60000000
   total ops:                     60000000
-  find throughput:               1531901
+  find throughput:               1969667
   rq throughput:                 0
   update throughput:             0
-  query throughput:              1531901
-  total throughput:              1531901
+  query throughput:              1969667
+  total throughput:              1969667
 
-  elapsed milliseconds:          39167
+  elapsed milliseconds:          30462
   napping milliseconds overtime: 0
 
 begin delete ds...
 end delete ds.
-REALTIME_MAIN_END_PERF_FORMAT=680868.822896816
+REALTIME_MAIN_END_PERF_FORMAT=2317838.44220620

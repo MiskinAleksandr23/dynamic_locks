@@ -20,7 +20,6 @@ machine.
 | Total lock wait | Sum of measured lock acquisition time across workers |
 | Avg mutexes/query | Average number of mutexes acquired per measured query |
 | Hot locks L/R | Number of mutexes covering left/right 16,384-element hot window after setup |
-| Rebuild/train | Dynamic rebuilds or genetic training batches |
 
 Current benchmark output names: `total_s` is "Total time", `total_x` is "Total
 speedup", `measured_s` is "Measured phase time", `lock_only_s` is "Empty
@@ -33,6 +32,14 @@ ARM machine and add the fresh results in the same online `total_s` / `total_x`
 format as the x86/Linux section.
 
 ## x86/Linux Server Configuration
+
+Date: 2026-06-23 UTC.
+
+Host: `x86_64`, Linux `6.8.0-117-generic`, 8 vCPUs, `AMD EPYC Processor`
+under KVM/QEMU.
+
+Build: clang++ 18.1.3, `CMAKE_BUILD_TYPE=Release`,
+`BUILD_BENCHMARK_V700=ON`.
 
 Current x86 numbers use the online benchmark path: `total_s` measures the full
 scenario wall time from `StartRebuilder()` to `StopRebuilder()`. Warmup, adapt,
@@ -92,115 +99,119 @@ env DYNAMIC_LOCK_SCENARIO=<scenario> \
 Setup queries: `3,200,000 + 9,600,000`. Measured queries: `60,000,000`.
 Query divisor: `2`.
 
-| Implementation | Total time, s | Total speedup | Setup time, s | Measured phase time, s | Empty critical section time, s | Empty-body speedup | Avg lock wait, us | Total lock wait, s | Avg mutexes/query | Hot locks L/R | Rebuild/train |
-|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| Naive fixed | 33.015 | 1.000x | 5.954 | 27.053 | 31.071 | 1.000x | 5.68 | 413.290 | 1.00 | 1 / 1 | 0 |
-| Dynamic DP | 13.799 | 2.393x | 2.500 | 11.270 | 13.224 | 2.350x | 1.91 | 138.972 | 1.00 | 16 / 16 | 1 |
-| Genetic | 15.622 | 2.113x | 4.135 | 11.479 | 14.396 | 2.158x | 2.14 | 155.807 | 1.00 | 16 / 16 | 1 |
+| Implementation | Total time, s | Total speedup | Setup time, s | Measured phase time, s | Empty critical section time, s | Empty-body speedup | Avg lock wait, us | Total lock wait, s | Avg mutexes/query | Hot locks L/R |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| Naive fixed | 36.940 | 1.000x | 6.010 | 30.925 | 34.483 | 1.000x | 6.32 | 459.777 | 1.00 | 1 / 1 |
+| Dynamic DP | 13.073 | 2.826x | 2.723 | 10.316 | 14.534 | 2.373x | 1.44 | 104.707 | 1.00 | 16 / 16 |
+| Genetic | 19.458 | 1.898x | 5.070 | 14.381 | 17.467 | 1.974x | 2.18 | 158.490 | 1.00 | 16 / 16 |
 
 ### Scenario: Clustered 2 Hot Windows
 
 Setup queries: `3,200,000 + 9,600,000`. Measured queries: `60,000,000`.
 Query divisor: `2`.
 
-| Implementation | Total time, s | Total speedup | Setup time, s | Measured phase time, s | Empty critical section time, s | Empty-body speedup | Avg lock wait, us | Total lock wait, s | Avg mutexes/query | Hot locks L/R | Rebuild/train |
-|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| Naive fixed | 27.015 | 1.000x | 4.892 | 22.105 | 25.186 | 1.000x | 4.74 | 345.070 | 1.00 | 1 / 1 | 0 |
-| Dynamic DP | 9.967 | 2.711x | 2.031 | 7.867 | 9.700 | 2.596x | 1.21 | 88.155 | 1.00 | 16 / 1 | 1 |
-| Genetic | 15.539 | 1.739x | 4.061 | 11.463 | 13.454 | 1.872x | 1.82 | 132.799 | 1.00 | 16 / 1 | 1 |
+| Implementation | Total time, s | Total speedup | Setup time, s | Measured phase time, s | Empty critical section time, s | Empty-body speedup | Avg lock wait, us | Total lock wait, s | Avg mutexes/query | Hot locks L/R |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| Naive fixed | 32.111 | 1.000x | 5.578 | 26.518 | 25.999 | 1.000x | 5.54 | 402.991 | 1.00 | 1 / 1 |
+| Dynamic DP | 22.147 | 1.450x | 3.969 | 18.130 | 20.775 | 1.251x | 2.77 | 201.753 | 1.00 | 16 / 1 |
+| Genetic | 17.608 | 1.824x | 4.366 | 13.229 | 16.455 | 1.580x | 2.32 | 168.939 | 1.00 | 16 / 1 |
 
 ### Scenario: Clustered 4 Hot Windows
 
-Setup queries: `3,200,000 + 9,600,000`. Measured queries: `60,000,000`.
-Query divisor: `2`.
+Setup queries: `6,400,000 + 19,200,000`. Measured queries: `120,000,000`.
+Query divisor: `1`.
 
-| Implementation | Total time, s | Total speedup | Setup time, s | Measured phase time, s | Empty critical section time, s | Empty-body speedup | Avg lock wait, us | Total lock wait, s | Avg mutexes/query | Hot locks L/R | Rebuild/train |
-|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| Naive fixed | 17.528 | 1.000x | 3.386 | 14.129 | 16.425 | 1.000x | 3.00 | 218.660 | 1.00 | 1 / 1 | 0 |
-| Dynamic DP | 11.711 | 1.497x | 2.218 | 9.450 | 11.433 | 1.437x | 1.64 | 119.437 | 1.00 | 1 / 1 | 1 |
-| Genetic | 13.169 | 1.331x | 2.841 | 10.309 | 12.179 | 1.349x | 1.74 | 126.340 | 1.00 | 1 / 1 | 1 |
+| Implementation | Total time, s | Total speedup | Setup time, s | Measured phase time, s | Empty critical section time, s | Empty-body speedup | Avg lock wait, us | Total lock wait, s | Avg mutexes/query | Hot locks L/R |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| Naive fixed | 44.562 | 1.000x | 8.066 | 36.483 | 43.330 | 1.000x | 3.84 | 559.058 | 1.00 | 1 / 1 |
+| Dynamic DP | 28.191 | 1.581x | 5.595 | 22.547 | 28.926 | 1.498x | 1.44 | 209.506 | 1.00 | 1 / 1 |
+| Genetic | 33.879 | 1.315x | 7.206 | 26.659 | 31.540 | 1.374x | 1.73 | 252.612 | 1.00 | 1 / 1 |
 
 The `Hot locks L/R` diagnostic is not meaningful for compact clustered
 scenarios because it reports fixed left/right windows, not the internal cluster
-windows. `DYNAMIC_LOCK_DEBUG_PARTITIONS=1` confirmed that dynamic assigns 16
-locks to each of the four clustered hot windows.
+windows.
 
 ### Scenario: Clustered Churn, 2 Hot Windows
 
-Setup queries: `3,200,000 + 24,000,000 timed adapt`. Measured queries:
-`50,000,000`. Query divisor: `2`.
+Setup queries: `6,400,000 + 48,000,000 timed adapt`. Measured queries:
+`100,000,000`. Query divisor: `1`.
 
-| Implementation | Total time, s | Total speedup | Setup time, s | Measured phase time, s | Empty critical section time, s | Empty-body speedup | Avg lock wait, us | Total lock wait, s | Avg mutexes/query | Hot locks L/R | Rebuild/train |
-|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| Naive fixed | 23.759 | 1.000x | 8.156 | 15.548 | 21.772 | 1.000x | 3.77 | 291.168 | 1.00 | 1 / 1 | 0 |
-| Dynamic DP | 11.855 | 2.004x | 5.013 | 6.757 | 11.566 | 1.882x | 1.38 | 106.224 | 1.00 | 16 / 1 | 6 |
-| Genetic | 20.028 | 1.186x | 8.738 | 11.231 | 18.384 | 1.184x | 2.52 | 194.861 | 1.00 | 16 / 1 | 5 |
+| Implementation | Total time, s | Total speedup | Setup time, s | Measured phase time, s | Empty critical section time, s | Empty-body speedup | Avg lock wait, us | Total lock wait, s | Avg mutexes/query | Hot locks L/R |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| Naive fixed | 33.326 | 1.000x | 11.499 | 21.779 | 31.784 | 1.000x | 5.36 | 413.714 | 1.00 | 1 / 1 |
+| Dynamic DP | 22.962 | 1.451x | 8.709 | 14.182 | 20.550 | 1.547x | 2.83 | 218.762 | 1.00 | 16 / 1 |
+| Genetic | 20.562 | 1.621x | 9.427 | 11.084 | 20.586 | 1.544x | 2.76 | 213.259 | 1.00 | 16 / 1 |
 
 ### Scenario: Clustered Churn, 4 Hot Windows
 
 Setup queries: `3,200,000 + 24,000,000 timed adapt`. Measured queries:
 `50,000,000`. Query divisor: `2`.
 
-| Implementation | Total time, s | Total speedup | Setup time, s | Measured phase time, s | Empty critical section time, s | Empty-body speedup | Avg lock wait, us | Total lock wait, s | Avg mutexes/query | Hot locks L/R | Rebuild/train |
-|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| Naive fixed | 18.087 | 1.000x | 6.323 | 11.708 | 16.338 | 1.000x | 2.87 | 221.896 | 1.00 | 1 / 1 | 0 |
-| Dynamic DP | 12.875 | 1.405x | 5.997 | 6.795 | 11.908 | 1.372x | 1.73 | 133.932 | 1.00 | 1 / 1 | 11 |
-| Genetic | 16.057 | 1.126x | 7.859 | 8.141 | 15.090 | 1.083x | 2.20 | 169.508 | 1.00 | 1 / 1 | 9 |
+| Implementation | Total time, s | Total speedup | Setup time, s | Measured phase time, s | Empty critical section time, s | Empty-body speedup | Avg lock wait, us | Total lock wait, s | Avg mutexes/query | Hot locks L/R |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| Naive fixed | 49.059 | 1.000x | 17.535 | 31.477 | 42.528 | 1.000x | 4.03 | 621.881 | 1.00 | 1 / 1 |
+| Dynamic DP | 34.369 | 1.427x | 13.899 | 20.395 | 29.829 | 1.426x | 1.93 | 297.405 | 1.00 | 1 / 1 |
+| Genetic | 37.792 | 1.298x | 17.170 | 20.574 | 34.050 | 1.249x | 2.30 | 354.764 | 1.00 | 1 / 1 |
 
 ### Scenario: Moving Small Window
 
 Setup queries: `640,000 + 13,440,000 timed adapt`. Measured queries:
 `49,000,000`. Query divisor: `20`.
 
-| Implementation | Total time, s | Total speedup | Setup time, s | Measured phase time, s | Empty critical section time, s | Empty-body speedup | Avg lock wait, us | Total lock wait, s | Avg mutexes/query | Hot locks L/R | Rebuild/train |
-|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| Naive fixed | 48.490 | 1.000x | 10.792 | 37.489 | 29.505 | 1.000x | 9.46 | 596.753 | 1.00 | 1 / 1 | 0 |
-| Dynamic DP | 29.018 | 1.671x | 8.700 | 20.065 | 21.509 | 1.372x | 5.61 | 354.135 | 1.00 | 16 / 1 | 28 |
-| Genetic | 33.740 | 1.437x | 9.687 | 23.850 | 23.934 | 1.233x | 6.50 | 410.102 | 1.00 | 16 / 1 | 8 |
+| Implementation | Total time, s | Total speedup | Setup time, s | Measured phase time, s | Empty critical section time, s | Empty-body speedup | Avg lock wait, us | Total lock wait, s | Avg mutexes/query | Hot locks L/R |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| Naive fixed | 64.196 | 1.000x | 14.406 | 49.608 | 33.247 | 1.000x | 12.19 | 768.755 | 1.00 | 1 / 1 |
+| Dynamic DP | 36.868 | 1.741x | 9.253 | 27.404 | 25.547 | 1.301x | 7.23 | 456.100 | 1.00 | 16 / 1 |
+| Genetic | 48.709 | 1.318x | 13.336 | 35.186 | 28.253 | 1.177x | 9.35 | 589.865 | 1.00 | 16 / 1 |
 
 ### Scenario: Uniform Random, Point Queries
 
 Setup queries: `3,200,000`. Measured queries: `60,000,000`.
-Query divisor: `2`.
+Query divisor: `2`. Conservative uniform settings:
+`DYNAMIC_LOCK_STATS_SAMPLE_RATE=1024`,
+`DYNAMIC_LOCK_REBUILD_MIN_SKEW=1000`,
+`DYNAMIC_LOCK_GENETIC_TRAINING_SAMPLE_RATE=1024`,
+`DYNAMIC_LOCK_GENETIC_PROBE_GAP=1000000000`,
+`DYNAMIC_LOCK_GENETIC_MIN_SKEW=1000`.
 
-| Implementation | Total time, s | Total speedup | Setup time, s | Measured phase time, s | Empty critical section time, s | Empty-body speedup | Avg lock wait, us | Total lock wait, s | Avg mutexes/query | Hot locks L/R | Rebuild/train |
-|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| Naive fixed | 7.665 | 1.000x | 0.421 | 7.238 | 7.654 | 1.000x | 0.34 | 21.248 | 1.00 | 1 / 1 | 0 |
-| Dynamic DP | 8.630 | 0.888x | 0.403 | 8.214 | 8.240 | 0.929x | 0.42 | 26.495 | 1.00 | 1 / 1 | 0 |
-| Genetic | 14.001 | 0.547x | 0.600 | 13.397 | 13.735 | 0.557x | 1.00 | 63.438 | 1.00 | 1 / 1 | 0 |
+| Implementation | Total time, s | Total speedup | Setup time, s | Measured phase time, s | Empty critical section time, s | Empty-body speedup | Avg lock wait, us | Total lock wait, s | Avg mutexes/query | Hot locks L/R |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| Naive fixed | 12.521 | 1.000x | 0.634 | 11.884 | 10.774 | 1.000x | 0.57 | 36.072 | 1.00 | 1 / 1 |
+| Dynamic DP | 13.564 | 0.923x | 0.727 | 12.825 | 13.106 | 0.822x | 1.73 | 109.597 | 1.00 | 1 / 1 |
+| Genetic | 14.205 | 0.881x | 0.638 | 13.562 | 13.286 | 0.811x | 1.31 | 82.837 | 1.00 | 1 / 1 |
 
 ### Scenario: Shifted Hotspot, Random-Length Ranges
 
 Setup queries: `1,600,000 + 4,800,000`. Measured queries: `4,000,000`.
 Query divisor: `1`.
 
-| Implementation | Total time, s | Total speedup | Setup time, s | Measured phase time, s | Empty critical section time, s | Empty-body speedup | Avg lock wait, us | Total lock wait, s | Avg mutexes/query | Hot locks L/R | Rebuild/train |
-|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| Naive fixed | 31.378 | 1.000x | 19.731 | 11.630 | 4.687 | 1.000x | 42.73 | 444.426 | 1.00 | 1 / 1 | 0 |
-| Dynamic DP | 27.027 | 1.161x | 16.566 | 10.425 | 5.250 | 0.893x | 36.37 | 378.299 | 1.00 | 1 / 1 | 0 |
-| Genetic | 26.937 | 1.165x | 17.056 | 9.864 | 5.170 | 0.907x | 37.07 | 385.579 | 4.05 | 16 / 16 | 1 |
+| Implementation | Total time, s | Total speedup | Setup time, s | Measured phase time, s | Empty critical section time, s | Empty-body speedup | Avg lock wait, us | Total lock wait, s | Avg mutexes/query | Hot locks L/R |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| Naive fixed | 27.214 | 1.000x | 16.866 | 10.333 | 5.854 | 1.000x | 37.16 | 386.443 | 1.00 | 1 / 1 |
+| Dynamic DP | 26.203 | 1.039x | 16.288 | 9.895 | 6.239 | 0.938x | 35.69 | 371.169 | 1.00 | 1 / 1 |
+| Genetic | 24.926 | 1.092x | 15.980 | 8.929 | 5.602 | 1.045x | 34.14 | 355.095 | 4.05 | 16 / 16 |
 
 ### Scenario: Uniform Random, Random-Length Ranges
 
 Setup queries: `1,600,000`. Measured queries: `4,000,000`.
 Query divisor: `1`.
 
-| Implementation | Total time, s | Total speedup | Setup time, s | Measured phase time, s | Empty critical section time, s | Empty-body speedup | Avg lock wait, us | Total lock wait, s | Avg mutexes/query | Hot locks L/R | Rebuild/train |
-|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| Naive fixed | 32.279 | 1.000x | 9.794 | 22.473 | 5.062 | 1.000x | 79.94 | 447.674 | 3.00 | 1 / 1 | 0 |
-| Dynamic DP | 29.846 | 1.082x | 8.202 | 21.619 | 5.114 | 0.990x | 73.43 | 411.212 | 3.00 | 1 / 1 | 0 |
-| Genetic | 34.533 | 0.935x | 9.350 | 25.170 | 5.244 | 0.965x | 86.01 | 481.638 | 3.00 | 1 / 1 | 0 |
+| Implementation | Total time, s | Total speedup | Setup time, s | Measured phase time, s | Empty critical section time, s | Empty-body speedup | Avg lock wait, us | Total lock wait, s | Avg mutexes/query | Hot locks L/R |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| Naive fixed | 21.881 | 1.000x | 6.283 | 15.587 | 4.938 | 1.000x | 52.50 | 293.994 | 3.00 | 1 / 1 |
+| Dynamic DP | 21.648 | 1.011x | 6.057 | 15.571 | 5.362 | 0.921x | 51.95 | 290.917 | 3.00 | 1 / 1 |
+| Genetic | 21.575 | 1.014x | 6.240 | 15.324 | 4.981 | 0.991x | 51.69 | 289.472 | 3.00 | 1 / 1 |
 
 ## x86/Linux Server Takeaways
 
 | Case | Total speedup | Comment |
 |---|---:|---|
-| Shifted hotspot, point queries | Dynamic 2.393x, Genetic 2.113x | Best locality case; rebuild/training cost is fully included and amortized |
-| Clustered 2 hot windows | Dynamic 2.711x, Genetic 1.739x | Both adaptive variants split the compact hot windows and reduce lock wait |
-| Clustered 4 hot windows | Dynamic 1.497x, Genetic 1.331x | Four hot windows remain positive with correct per-window splitting |
-| Clustered churn, 2 hot windows | Dynamic 2.004x, Genetic 1.186x | Online repartitioning remains positive across changing windows |
-| Clustered churn, 4 hot windows | Dynamic 1.405x, Genetic 1.126x | Weaker contention, but both adaptive variants remain above naive |
-| Moving small window | Dynamic 1.671x, Genetic 1.437x | Moving locality remains positive with all online adaptation included |
-| Uniform random, point queries | Naive baseline | No stable locality; adaptive monitoring overhead is not useful |
-| Shifted hotspot, random ranges | Dynamic 1.161x, Genetic 1.165x | Body work dominates; genetic splits the hot range but pays more empty-body locking |
-| Uniform random, random ranges | Dynamic 1.082x, Genetic 0.935x | No stable locality; genetic monitoring overhead is not useful |
+| Shifted hotspot, point queries | Dynamic 2.826x, Genetic 1.898x | Strongest locality case; full rebuild/training cost is included |
+| Clustered 2 hot windows | Dynamic 1.450x, Genetic 1.824x | Both variants remain positive, genetic is faster in this run |
+| Clustered 4 hot windows | Dynamic 1.581x, Genetic 1.315x | Larger honest run amortizes one training/repartitioning pass |
+| Clustered churn, 2 hot windows | Dynamic 1.451x, Genetic 1.621x | Online repartitioning/training remains positive across changing windows |
+| Clustered churn, 4 hot windows | Dynamic 1.427x, Genetic 1.298x | Larger honest run amortizes churn-phase rebuild/training cost |
+| Moving small window | Dynamic 1.741x, Genetic 1.318x | Moving locality remains positive with all online adaptation included |
+| Uniform random, point queries | Dynamic 0.923x, Genetic 0.881x | Conservative uniform settings avoid useless rebuild/training; no stable locality remains a weak case |
+| Shifted hotspot, random ranges | Dynamic 1.039x, Genetic 1.092x | Body work dominates; gains are small |
+| Uniform random, random ranges | Dynamic 1.011x, Genetic 1.014x | No stable locality; result is effectively neutral |

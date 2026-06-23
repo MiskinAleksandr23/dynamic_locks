@@ -122,7 +122,8 @@ public:
       return;
     }
     stop_training_thread_.store(false, std::memory_order_release);
-    next_training_probe_operation_.store(0, std::memory_order_relaxed);
+    next_training_probe_operation_.store(training_probe_gap_,
+                                         std::memory_order_relaxed);
     training_enabled_.store(true, std::memory_order_release);
     training_thread_ = std::thread([this] { TrainingLoop(); });
   }

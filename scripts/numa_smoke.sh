@@ -14,7 +14,7 @@ OUT_DIR="$(make_result_dir "smoke_node${NODE}_${THREADS}t")"
 write_topology "${OUT_DIR}"
 
 run_one_scenario "${OUT_DIR}" "node${NODE}" "${THREADS}" \
-  "clustered_4_thread_groups" "$(scenario_divisor clustered_4_thread_groups)" \
+  "shift_hotspot_point" "$(scenario_divisor shift_hotspot_point)" \
   --cpunodebind="${NODE}" --membind="${NODE}"
 
 summarize_dir "${OUT_DIR}"

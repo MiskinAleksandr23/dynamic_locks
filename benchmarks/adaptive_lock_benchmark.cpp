@@ -92,8 +92,6 @@ struct QueryStreamSpec {
   std::vector<size_t> window_begins;
   size_t window_size = 0;
   bool multi_window = false;
-  bool thread_grouped_windows = false;
-  bool thread_striped_windows = false;
 };
 
 struct PhaseInput {
@@ -160,14 +158,13 @@ std::vector<int> MakeInitialData() {
 QueryStreamSpec BuildQueries(size_t count, QueryPattern pattern,
                              TrafficSide side, size_t query_length,
                              uint64_t seed) {
-  return {count, pattern, side, query_length, seed, {}, 0, false, false, false};
+  return {count, pattern, side, query_length, seed, {}, 0, false};
 }
 
 QueryStreamSpec
 BuildMultiWindowQueries(size_t count, const std::vector<size_t> &window_begins,
                         size_t window_size, size_t max_query_length,
-                        uint64_t seed, bool thread_grouped_windows = false,
-                        bool thread_striped_windows = false) {
+                        uint64_t seed) {
   if (window_begins.empty()) {
     throw std::invalid_argument("window_begins must be non-empty");
   }
@@ -179,9 +176,7 @@ BuildMultiWindowQueries(size_t count, const std::vector<size_t> &window_begins,
           seed,
           window_begins,
           window_size,
-          true,
-          thread_grouped_windows,
-          thread_striped_windows};
+          true};
 }
 
 std::vector<size_t> MakeClusteredWindowBegins(size_t cluster_count) {
@@ -278,8 +273,24 @@ size_t QueryDivisor() {
   return divisor;
 }
 
+size_t QueryMultiplier() {
+  static const size_t multiplier =
+      ReadEnvSize("DYNAMIC_LOCK_QUERY_MULTIPLIER", 1);
+  return multiplier;
+}
+
+size_t MeasuredQueryMultiplier() {
+  static const size_t multiplier =
+      ReadEnvSize("DYNAMIC_LOCK_MEASURED_QUERY_MULTIPLIER", 1);
+  return multiplier;
+}
+
 size_t ScaleQueryCount(size_t count) {
-  return std::max(size_t{1}, count / QueryDivisor());
+  return std::max(size_t{1}, (count / QueryDivisor()) * QueryMultiplier());
+}
+
+size_t ScaleMeasuredQueryCount(size_t count) {
+  return ScaleQueryCount(count) * MeasuredQueryMultiplier();
 }
 
 double MovingWindowAdaptSecondsPerStop() {
@@ -304,8 +315,9 @@ std::vector<TimedPhaseInput> BuildMovingWindowPhases(uint64_t seed) {
              ScaleQueryCount(kMovingWindowAdaptQueriesPerStop), {begins[i]},
              kMovingWindowSize, kSmallRangeMaxLength, seed + 2 * i),
          BuildMultiWindowQueries(
-             ScaleQueryCount(kMovingWindowMeasuredQueriesPerStop), {begins[i]},
-             kMovingWindowSize, kSmallRangeMaxLength, seed + 2 * i + 1),
+             ScaleMeasuredQueryCount(kMovingWindowMeasuredQueriesPerStop),
+             {begins[i]}, kMovingWindowSize, kSmallRangeMaxLength,
+             seed + 2 * i + 1),
          adapt_seconds_per_stop});
   }
 
@@ -323,8 +335,9 @@ ScenarioInput MakeShiftScenario() {
         BuildQueries(ScaleQueryCount(kAdaptQueries), QueryPattern::kHotWindow,
                      TrafficSide::kLeft, kPointQueryLength, 12)}},
       {"measure left hotspot",
-       BuildQueries(ScaleQueryCount(kMeasuredQueries), QueryPattern::kHotWindow,
-                    TrafficSide::kLeft, kPointQueryLength, 13)},
+       BuildQueries(ScaleMeasuredQueryCount(kMeasuredQueries),
+                    QueryPattern::kHotWindow, TrafficSide::kLeft,
+                    kPointQueryLength, 13)},
       {}};
 }
 
@@ -345,62 +358,9 @@ ScenarioInput MakeClusteredWindowsScenario(size_t cluster_count,
                                     window_begins, kClusteredHotWindowSize,
                                     kPointQueryLength, seed_base + 1)}},
           {"measure clustered small windows",
-           BuildMultiWindowQueries(ScaleQueryCount(kMeasuredQueries),
+           BuildMultiWindowQueries(ScaleMeasuredQueryCount(kMeasuredQueries),
                                    window_begins, kClusteredHotWindowSize,
                                    kPointQueryLength, seed_base + 2)},
-          {},
-          window_begins};
-}
-
-ScenarioInput MakeClusteredThreadGroupsScenario(size_t cluster_count,
-                                                uint64_t seed_base) {
-  const std::vector<size_t> window_begins =
-      MakeClusteredWindowBegins(cluster_count);
-  return {"clustered_" + std::to_string(cluster_count) + "_thread_groups",
-          std::to_string(cluster_count) +
-              " hot windows; threads are split evenly across windows and "
-              "striped inside each window",
-          {{"warmup grouped clustered windows",
-            BuildMultiWindowQueries(ScaleQueryCount(kWarmupQueries),
-                                    window_begins, kClusteredHotWindowSize,
-                                    kPointQueryLength, seed_base, true, true)},
-           {"adapt grouped clustered windows",
-            BuildMultiWindowQueries(ScaleQueryCount(kAdaptQueries),
-                                    window_begins, kClusteredHotWindowSize,
-                                    kPointQueryLength, seed_base + 1, true,
-                                    true)}},
-          {"measure grouped clustered windows",
-           BuildMultiWindowQueries(ScaleQueryCount(kMeasuredQueries),
-                                   window_begins, kClusteredHotWindowSize,
-                                   kPointQueryLength, seed_base + 2, true,
-                                   true)},
-          {},
-          window_begins};
-}
-
-ScenarioInput MakeClusteredThreadGroupsContendedScenario(size_t cluster_count,
-                                                         uint64_t seed_base) {
-  const std::vector<size_t> window_begins =
-      MakeClusteredWindowBegins(cluster_count);
-  return {"clustered_" + std::to_string(cluster_count) +
-              "_thread_groups_contended",
-          std::to_string(cluster_count) +
-              " hot windows; threads are split evenly across windows and "
-              "randomize inside each assigned window",
-          {{"warmup grouped contended windows",
-            BuildMultiWindowQueries(ScaleQueryCount(kWarmupQueries),
-                                    window_begins, kClusteredHotWindowSize,
-                                    kPointQueryLength, seed_base, true, false)},
-           {"adapt grouped contended windows",
-            BuildMultiWindowQueries(ScaleQueryCount(kAdaptQueries),
-                                    window_begins, kClusteredHotWindowSize,
-                                    kPointQueryLength, seed_base + 1, true,
-                                    false)}},
-          {"measure grouped contended windows",
-           BuildMultiWindowQueries(ScaleQueryCount(kMeasuredQueries),
-                                   window_begins, kClusteredHotWindowSize,
-                                   kPointQueryLength, seed_base + 2, true,
-                                   false)},
           {},
           window_begins};
 }
@@ -417,7 +377,7 @@ ScenarioInput MakeClusteredChurnScenario(size_t cluster_count,
          BuildMultiWindowQueries(ScaleQueryCount(kChurnAdaptQueries),
                                  window_begins, kClusteredHotWindowSize,
                                  kPointQueryLength, seed_base + 10 * change),
-         BuildMultiWindowQueries(ScaleQueryCount(kChurnMeasuredQueries),
+         BuildMultiWindowQueries(ScaleMeasuredQueryCount(kChurnMeasuredQueries),
                                  window_begins, kClusteredHotWindowSize,
                                  kPointQueryLength,
                                  seed_base + 10 * change + 1),
@@ -460,8 +420,9 @@ ScenarioInput MakeRandomScenario() {
         BuildQueries(ScaleQueryCount(kWarmupQueries), QueryPattern::kUniform,
                      TrafficSide::kLeft, kPointQueryLength, 21)}},
       {"measure uniform random",
-       BuildQueries(ScaleQueryCount(kMeasuredQueries), QueryPattern::kUniform,
-                    TrafficSide::kLeft, kPointQueryLength, 22)},
+       BuildQueries(ScaleMeasuredQueryCount(kMeasuredQueries),
+                    QueryPattern::kUniform, TrafficSide::kLeft,
+                    kPointQueryLength, 22)},
       {}};
 }
 
@@ -477,7 +438,7 @@ ScenarioInput MakeShiftRandomRangeScenario() {
                          QueryPattern::kHotWindowRandomRange,
                          TrafficSide::kLeft, kRandomRangeMaxLength, 32)}},
           {"measure left hotspot random ranges",
-           BuildQueries(ScaleQueryCount(kRandomRangeMeasuredQueries),
+           BuildQueries(ScaleMeasuredQueryCount(kRandomRangeMeasuredQueries),
                         QueryPattern::kHotWindowRandomRange, TrafficSide::kLeft,
                         kRandomRangeMaxLength, 33)},
           {}};
@@ -491,7 +452,7 @@ ScenarioInput MakeRandomRangeScenario() {
                          QueryPattern::kUniformRandomRange, TrafficSide::kLeft,
                          kRandomRangeMaxLength, 41)}},
           {"measure uniform random ranges",
-           BuildQueries(ScaleQueryCount(kRandomRangeMeasuredQueries),
+           BuildQueries(ScaleMeasuredQueryCount(kRandomRangeMeasuredQueries),
                         QueryPattern::kUniformRandomRange, TrafficSide::kLeft,
                         kRandomRangeMaxLength, 42)},
           {}};
@@ -533,28 +494,9 @@ Query MakeStreamQuery(FastRng &rng, const QueryStreamSpec &spec,
 
   if (spec.multi_window) {
     const size_t window_count = spec.window_begins.size();
-    const size_t window_index =
-        spec.thread_grouped_windows
-            ? std::min(thread_index * window_count / kThreadCount,
-                       window_count - 1)
-            : (sequence_index + thread_index) % window_count;
-    size_t window_begin = spec.window_begins[window_index];
-    size_t window_size = std::max(size_t{1}, spec.window_size);
-
-    if (spec.thread_striped_windows) {
-      const size_t first_thread = window_index * kThreadCount / window_count;
-      const size_t end_thread = (window_index + 1) * kThreadCount / window_count;
-      const size_t group_threads = std::max(size_t{1}, end_thread - first_thread);
-      const size_t local_thread =
-          std::min(thread_index - first_thread, group_threads - 1);
-      const size_t window_blocks = std::max(size_t{1}, window_size / kBlockSize);
-      const size_t stripes = std::min(group_threads, window_blocks);
-      const size_t stripe_index = local_thread % stripes;
-      const size_t first_block = stripe_index * window_blocks / stripes;
-      const size_t end_block = (stripe_index + 1) * window_blocks / stripes;
-      window_begin += first_block * kBlockSize;
-      window_size = std::max(size_t{1}, (end_block - first_block) * kBlockSize);
-    }
+    const size_t window_index = (sequence_index + thread_index) % window_count;
+    const size_t window_begin = spec.window_begins[window_index];
+    const size_t window_size = std::max(size_t{1}, spec.window_size);
 
     const size_t length =
         1 + rng.Uniform(std::min(length_cap, window_size));
@@ -1138,6 +1080,8 @@ int main() {
   std::println("  moving window size: {}", kMovingWindowSize);
   std::println("  moving window stops: {}", 2 * kMovingWindowStops - 2);
   std::println("  query divisor: {}", QueryDivisor());
+  std::println("  query multiplier: {}", QueryMultiplier());
+  std::println("  measured query multiplier: {}", MeasuredQueryMultiplier());
   std::println("  rebuild interval, ms: {}", DynamicRebuildInterval().count());
   std::println("  rebuild threshold: {:.3f}", DynamicRebuildThreshold());
   std::println("  rebuild min gain: {:.3f}", DynamicRebuildMinGain());
@@ -1161,10 +1105,6 @@ int main() {
   const ScenarioInput shift_point = MakeShiftScenario();
   const ScenarioInput clustered_2_windows = MakeClusteredWindowsScenario(2, 51);
   const ScenarioInput clustered_4_windows = MakeClusteredWindowsScenario(4, 61);
-  const ScenarioInput clustered_4_thread_groups =
-      MakeClusteredThreadGroupsScenario(4, 65);
-  const ScenarioInput clustered_4_thread_groups_contended =
-      MakeClusteredThreadGroupsContendedScenario(4, 66);
   const ScenarioInput clustered_churn_2_windows =
       MakeClusteredChurnScenario(2, 71);
   const ScenarioInput clustered_churn_4_windows =
@@ -1186,8 +1126,6 @@ int main() {
       run_if_selected(shift_point);
   run_if_selected(clustered_2_windows);
   run_if_selected(clustered_4_windows);
-  run_if_selected(clustered_4_thread_groups);
-  run_if_selected(clustered_4_thread_groups_contended);
   run_if_selected(clustered_churn_2_windows);
   run_if_selected(clustered_churn_4_windows);
   run_if_selected(moving_window);

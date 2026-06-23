@@ -1,5 +1,5 @@
-REALTIME_MAIN_START_PERF_FORMAT=680913.123813848
-binary=./build/Benchmark-v700-build/adaptive_lock_naive.debra
+REALTIME_MAIN_START_PERF_FORMAT=2317874.972410580
+binary=build/Benchmark-v700-build/adaptive_lock_naive.debra
 DS_TYPENAME=DS_TYPENAME
 FIND_FUNC=FIND_FUNC
 INSERT_FUNC=INSERT_FUNC
@@ -71,14 +71,14 @@ Test stage
 binding threads...
 ACTUAL_THREAD_BINDINGS=-1,-1,-1,-1,-1,-1,-1,-1
 creating threads...
-REALTIME_START_PERF_FORMAT=680913.142079535
-REALTIME_END_PERF_FORMAT=680976.232254095
+REALTIME_START_PERF_FORMAT=2317874.989177865
+REALTIME_END_PERF_FORMAT=2317922.910940231
 
 ################################################################################
 ################################## END RUNNING #################################
 ################################################################################
 
-63.09s
+47.921s
 PRODUCING OUTPUT
 
 KEY_DEPTH_TOTAL_STAT START
@@ -87,10 +87,10 @@ KEY_DEPTH_TOTAL_STAT END
 KEY_SEARCH_TOTAL_STAT START
 KEY_SEARCH_TOTAL_STAT END
 adaptive_lock_naive_range_queries=60000000
-adaptive_lock_naive_total_lock_ms=330163
-adaptive_lock_naive_avg_lock_ms=0.00550271
+adaptive_lock_naive_total_lock_ms=249265
+adaptive_lock_naive_avg_lock_ms=0.00415442
 adaptive_lock_naive_reconfigurations=0
-adaptive_lock_naive_checksum=13873320111
+adaptive_lock_naive_checksum=13025139409
 threads_final_keysum=0
 Structural validation OK.
 
@@ -110,14 +110,14 @@ Structural validation OK.
   total queries:                 60000000
   total ops:                     60000000
   find throughput:               0
-  rq throughput:                 951022
+  rq throughput:                 1252060
   update throughput:             0
-  query throughput:              951022
-  total throughput:              951022
+  query throughput:              1252060
+  total throughput:              1252060
 
-  elapsed milliseconds:          63090
+  elapsed milliseconds:          47921
   napping milliseconds overtime: 0
 
 begin delete ds...
 end delete ds.
-REALTIME_MAIN_END_PERF_FORMAT=680976.238343826
+REALTIME_MAIN_END_PERF_FORMAT=2317922.918231842

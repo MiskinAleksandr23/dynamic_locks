@@ -1,6 +1,6 @@
 # V700 Adaptive Lock Benchmarks
 
-Date: 2026-06-02 UTC
+Date: 2026-06-23 UTC
 
 Host: `x86_64`, Linux `6.8.0-117-generic`, 8 vCPUs, `AMD EPYC Processor` under KVM/QEMU.
 
@@ -44,6 +44,10 @@ These are online V700 runs. The current workloads have `prefill.numThreads=0` an
 
 The adapter destructor only repeats an idempotent stop. It does not flush pending genetic samples or force a rebuild after the measured stage, so there is no useful adaptation work hidden outside the V700 timer.
 
+For moving-window runs, V700 also prints a bogus human-readable napping overtime
+line; the table uses `elapsed milliseconds` and `query throughput`, which match
+the real measured test stage.
+
 Adapter parameters:
 
 - `range`: `1,048,576`
@@ -67,22 +71,22 @@ The point workload uses V700 `GET_FUNC` through `find`. The range workloads use 
 
 Single-run Release snapshot. `vs naive` is `query throughput` divided by the naive throughput for the same workload. All rows reported `Structural validation OK`.
 
-| Workload | Implementation | Query throughput ops/s | vs naive | Total ops | Avg lock ms | Reconfigs/train | Wall s |
-|---|---|---:|---:|---:|---:|---:|---:|
-| Online hotspot point | naive | 1,531,901 | 1.000x | 60,000,000 | 0.003570 | 0 | 39.167 |
-| Online hotspot point | dynamic | 4,187,604 | 2.734x | 60,000,000 | 0.001112 | 3 | 14.328 |
-| Online hotspot point | genetic | 2,875,904 | 1.877x | 60,000,000 | 0.001554 | 1 | 20.863 |
-| Online hotspot short range | naive | 951,022 | 1.000x | 60,000,000 | 0.005503 | 0 | 63.090 |
-| Online hotspot short range | dynamic | 1,553,116 | 1.633x | 60,000,000 | 0.003052 | 3 | 38.632 |
-| Online hotspot short range | genetic | 1,742,210 | 1.832x | 60,000,000 | 0.002613 | 1 | 34.439 |
-| Online moving-window short range | naive | 1,011,204 | 1.000x | 112,000,000 | 0.004757 | 0 | 110.759 |
-| Online moving-window short range | dynamic | 1,790,395 | 1.771x | 112,000,000 | 0.002369 | 9 | 62.556 |
-| Online moving-window short range | genetic | 1,505,153 | 1.488x | 112,000,000 | 0.002839 | 2 | 74.411 |
+| Workload | Implementation | Query throughput ops/s | vs naive | Total ops | Avg lock ms | Wall s |
+|---|---|---:|---:|---:|---:|---:|
+| Online hotspot point | naive | 1,969,667 | 1.000x | 60,000,000 | 0.002720 | 30.462 |
+| Online hotspot point | dynamic | 5,097,706 | 2.588x | 60,000,000 | 0.000906 | 11.770 |
+| Online hotspot point | genetic | 3,400,782 | 1.727x | 60,000,000 | 0.001332 | 17.643 |
+| Online hotspot short range | naive | 1,252,060 | 1.000x | 60,000,000 | 0.004154 | 47.921 |
+| Online hotspot short range | dynamic | 1,453,065 | 1.161x | 60,000,000 | 0.003406 | 41.292 |
+| Online hotspot short range | genetic | 1,781,684 | 1.423x | 60,000,000 | 0.002353 | 33.676 |
+| Online moving-window short range | naive | 1,349,901 | 1.000x | 112,000,000 | 0.003658 | 82.969 |
+| Online moving-window short range | dynamic | 2,363,018 | 1.751x | 112,000,000 | 0.001880 | 47.397 |
+| Online moving-window short range | genetic | 1,974,194 | 1.462x | 112,000,000 | 0.002071 | 56.732 |
 
 ## Summary
 
 | Workload | Dynamic vs naive | Genetic vs naive | Best result |
 |---|---:|---:|---|
-| Online hotspot point | 2.734x | 1.877x | dynamic |
-| Online hotspot short range | 1.633x | 1.832x | genetic |
-| Online moving-window short range | 1.771x | 1.488x | dynamic |
+| Online hotspot point | 2.588x | 1.727x | dynamic |
+| Online hotspot short range | 1.161x | 1.423x | genetic |
+| Online moving-window short range | 1.751x | 1.462x | dynamic |

@@ -1,5 +1,5 @@
-REALTIME_MAIN_START_PERF_FORMAT=681020.752948039
-binary=./build/Benchmark-v700-build/adaptive_lock_genetic.debra
+REALTIME_MAIN_START_PERF_FORMAT=2317969.846380026
+binary=build/Benchmark-v700-build/adaptive_lock_genetic.debra
 DS_TYPENAME=DS_TYPENAME
 FIND_FUNC=FIND_FUNC
 INSERT_FUNC=INSERT_FUNC
@@ -71,14 +71,14 @@ Test stage
 binding threads...
 ACTUAL_THREAD_BINDINGS=-1,-1,-1,-1,-1,-1,-1,-1
 creating threads...
-REALTIME_START_PERF_FORMAT=681020.776127420
-REALTIME_END_PERF_FORMAT=681055.215129749
+REALTIME_START_PERF_FORMAT=2317969.876115767
+REALTIME_END_PERF_FORMAT=2318003.552594103
 
 ################################################################################
 ################################## END RUNNING #################################
 ################################################################################
 
-34.439s
+33.676s
 PRODUCING OUTPUT
 
 KEY_DEPTH_TOTAL_STAT START
@@ -87,10 +87,10 @@ KEY_DEPTH_TOTAL_STAT END
 KEY_SEARCH_TOTAL_STAT START
 KEY_SEARCH_TOTAL_STAT END
 adaptive_lock_genetic_range_queries=60000000
-adaptive_lock_genetic_total_lock_ms=156765
-adaptive_lock_genetic_avg_lock_ms=0.00261275
+adaptive_lock_genetic_total_lock_ms=141183
+adaptive_lock_genetic_avg_lock_ms=0.00235305
 adaptive_lock_genetic_reconfigurations=1
-adaptive_lock_genetic_checksum=2003995077
+adaptive_lock_genetic_checksum=16802881256
 threads_final_keysum=0
 Structural validation OK.
 
@@ -110,14 +110,14 @@ Structural validation OK.
   total queries:                 60000000
   total ops:                     60000000
   find throughput:               0
-  rq throughput:                 1742210
+  rq throughput:                 1781684
   update throughput:             0
-  query throughput:              1742210
-  total throughput:              1742210
+  query throughput:              1781684
+  total throughput:              1781684
 
-  elapsed milliseconds:          34439
+  elapsed milliseconds:          33676
   napping milliseconds overtime: 0
 
 begin delete ds...
 end delete ds.
-REALTIME_MAIN_END_PERF_FORMAT=681055.221638610
+REALTIME_MAIN_END_PERF_FORMAT=2318003.557092522
