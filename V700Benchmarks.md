@@ -1,7 +1,5 @@
 # V700 Adaptive Lock Benchmarks
 
-Date: 2026-06-23 UTC
-
 Host: `x86_64`, Linux `6.8.0-117-generic`, 8 vCPUs, `AMD EPYC Processor` under KVM/QEMU.
 
 Build: clang++ 18.1.3, `CMAKE_BUILD_TYPE=Release`, `BUILD_BENCHMARK_V700=ON`, `PAPI=OFF`, `OPENMP=OFF`.
@@ -33,8 +31,6 @@ Example run:
 ./build/Benchmark-v700-build/adaptive_lock_dynamic.debra \
   -json-file Benchmark-v700/cpp/microbench/json_example/adaptive_lock_v700_warmup_hotspot_point.json
 ```
-
-The `.debra` suffix is the V700 reclaimer configuration name. Our adaptive locks do not use V700 memory reclamation internally, but the framework builds all data structures through this target naming scheme.
 
 ## Method
 

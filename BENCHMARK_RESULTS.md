@@ -1,8 +1,6 @@
 # Dynamic Lock Benchmark Results
 
-Snapshots from `adaptive_lock_benchmark`. The current checked-in snapshot is
-for x86/Linux; ARM/macOS is intentionally left empty until it is rerun on that
-machine.
+Snapshots from `adaptive_lock_benchmark`.
 
 `Benchmark-v700` is vendored, but the top-level build does not build it unless
 `-DBUILD_BENCHMARK_V700=ON` is passed.
@@ -25,27 +23,7 @@ Current benchmark output names: `total_s` is "Total time", `total_x` is "Total
 speedup", `measured_s` is "Measured phase time", `lock_only_s` is "Empty
 critical section time", and `lock_x` is "Empty-body speedup".
 
-## ARM/macOS Results
-
-No ARM/macOS snapshot is recorded here yet. Re-run the current benchmark on the
-ARM machine and add the fresh results in the same online `total_s` / `total_x`
-format as the x86/Linux section.
-
 ## x86/Linux Server Configuration
-
-Date: 2026-06-23 UTC.
-
-Host: `x86_64`, Linux `6.8.0-117-generic`, 8 vCPUs, `AMD EPYC Processor`
-under KVM/QEMU.
-
-Build: clang++ 18.1.3, `CMAKE_BUILD_TYPE=Release`,
-`BUILD_BENCHMARK_V700=ON`.
-
-Current x86 numbers use the online benchmark path: `total_s` measures the full
-scenario wall time from `StartRebuilder()` to `StopRebuilder()`. Warmup, adapt,
-measured phases, online stats collection, dynamic rebuilds, genetic training,
-and stop/join time are included. Queries are generated on the fly, so large runs
-do not allocate a request array.
 
 Run command pattern:
 
@@ -204,14 +182,14 @@ Query divisor: `1`.
 
 ## x86/Linux Server Takeaways
 
-| Case | Total speedup | Comment |
-|---|---:|---|
-| Shifted hotspot, point queries | Dynamic 2.826x, Genetic 1.898x | Strongest locality case; full rebuild/training cost is included |
-| Clustered 2 hot windows | Dynamic 1.450x, Genetic 1.824x | Both variants remain positive, genetic is faster in this run |
-| Clustered 4 hot windows | Dynamic 1.581x, Genetic 1.315x | Larger honest run amortizes one training/repartitioning pass |
-| Clustered churn, 2 hot windows | Dynamic 1.451x, Genetic 1.621x | Online repartitioning/training remains positive across changing windows |
-| Clustered churn, 4 hot windows | Dynamic 1.427x, Genetic 1.298x | Larger honest run amortizes churn-phase rebuild/training cost |
-| Moving small window | Dynamic 1.741x, Genetic 1.318x | Moving locality remains positive with all online adaptation included |
-| Uniform random, point queries | Dynamic 0.923x, Genetic 0.881x | Conservative uniform settings avoid useless rebuild/training; no stable locality remains a weak case |
-| Shifted hotspot, random ranges | Dynamic 1.039x, Genetic 1.092x | Body work dominates; gains are small |
-| Uniform random, random ranges | Dynamic 1.011x, Genetic 1.014x | No stable locality; result is effectively neutral |
+| Case | Total speedup |
+|---|---:|
+| Shifted hotspot, point queries | Dynamic 2.826x, Genetic 1.898x |
+| Clustered 2 hot windows | Dynamic 1.450x, Genetic 1.824x |
+| Clustered 4 hot windows | Dynamic 1.581x, Genetic 1.315x |
+| Clustered churn, 2 hot windows | Dynamic 1.451x, Genetic 1.621x |
+| Clustered churn, 4 hot windows | Dynamic 1.427x, Genetic 1.298x |
+| Moving small window | Dynamic 1.741x, Genetic 1.318x |
+| Uniform random, point queries | Dynamic 0.923x, Genetic 0.881x |
+| Shifted hotspot, random ranges | Dynamic 1.039x, Genetic 1.092x |
+| Uniform random, random ranges | Dynamic 1.011x, Genetic 1.014x |
