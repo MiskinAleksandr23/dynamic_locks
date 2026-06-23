@@ -1,6 +1,6 @@
 # NUMA Benchmark Results
 
-Date: 2026-06-12 UTC
+Date: 2026-06-23 UTC
 
 Host: 4 NUMA nodes, 128 logical CPUs, 256 GB RAM. Each NUMA node has 32 logical
 CPUs. Node distances:
@@ -41,52 +41,33 @@ Placements:
 |---|---|
 | `node0` | `numactl --cpunodebind=0 --membind=0` |
 | `nodes01` | `numactl --cpunodebind=0,1 --interleave=0,1` |
+| `nodes0123` | `numactl --cpunodebind=0,1,2,3 --interleave=0,1,2,3` |
 
 ## Main Results
 
 These are the results to use as the main NUMA presentation table.
 
-| Placement | Threads | Scenario | Divisor | Naive total_s | Dynamic total_x | Genetic total_x | Dynamic rebuilds | Genetic trains |
-|---|---:|---|---:|---:|---:|---:|---:|---:|
-| node0 | 32 | `shift_hotspot_point` | 1 | 60.373 | 1.863x | 1.859x | 1 | 1 |
-| node0 | 32 | `moving_small_window` | 20 | 33.060 | 1.158x | 1.291x | 2 | 8 |
-| nodes01 | 32 | `shift_hotspot_point` | 4 | 18.845 | 1.191x | 1.124x | 1 | 1 |
-| nodes01 | 32 | `moving_small_window` | 20 | 37.616 | 1.261x | 1.304x | 2 | 8 |
+| Placement | Threads | Scenario | Divisor | Naive total_s | Dynamic total_x | Genetic total_x |
+|---|---:|---|---:|---:|---:|---:|
+| node0 | 32 | `shift_hotspot_point` | 1 | 60.373 | 1.863x | 1.859x |
+| node0 | 32 | `moving_small_window` | 20 | 33.060 | 1.158x | 1.291x |
+| nodes01 | 32 | `shift_hotspot_point` | 4 | 18.845 | 1.191x | 1.124x |
+| nodes01 | 32 | `moving_small_window` | 20 | 37.616 | 1.261x | 1.304x |
+| nodes01 | 64 | `shift_hotspot_point` | 4 | 23.257 | 0.913x | 1.043x |
+| nodes01 | 64 | `moving_small_window` | 40 | 26.962 | 0.993x | 1.018x |
+| nodes0123 | 128 | `shift_hotspot_point` | 8 | 12.070 | 0.920x | 0.959x |
+| nodes0123 | 128 | `moving_small_window` | 80 | 16.677 | 1.221x | 0.879x |
+| nodes0123 | 128 | `moving_small_window` | 40 | 32.961 | 1.075x | 0.922x |
 
-## Contention Diagnostics
+## Contention Details
 
-`lock_sum_s` is aggregate lock wait across workers. It can be much larger than
-wall time when many threads wait concurrently.
+`lock_sum_s` is the sum of per-thread lock wait time. When it is much larger
+than wall time, the run is dominated by waiting on shared lock state.
 
-| Placement | Threads | Scenario | Dynamic lock_sum_s | Genetic lock_sum_s | Note |
-|---|---:|---|---:|---:|---|
-| node0 | 32 | `shift_hotspot_point` | 667.979 | 690.478 | Adaptive partitioning reduces wait vs naive. |
-| node0 | 32 | `moving_small_window` | 493.147 | 468.281 | Both variants reduce aggregate lock wait. |
-| nodes01 | 32 | `shift_hotspot_point` | 304.352 | 375.834 | Positive speedup, but cross-node overhead is visible. |
-| nodes01 | 32 | `moving_small_window` | 529.811 | 520.441 | Longer moving run remains positive for both variants. |
-
-## Scaling Limit
-
-Two-node 64-thread runs show the current implementation's NUMA scaling limit.
-
-| Placement | Threads | Scenario | Divisor | Naive total_s | Dynamic total_x | Genetic total_x | Dynamic lock_sum_s | Genetic lock_sum_s |
-|---|---:|---|---:|---:|---:|---:|---:|---:|
-| nodes01 | 64 | `shift_hotspot_point` | 4 | 21.023 | 0.958x | 0.939x | 966.828 | 1125.716 |
-| nodes01 | 64 | `moving_small_window` | 40 | 25.160 | 1.129x | 1.021x | 789.463 | 949.366 |
-
-The partitioning is still learned in the 64-thread shift run (`hot(L/R)` becomes
-`16/16`), but the total runtime regresses. This points to cross-node
-synchronization and shared metadata traffic becoming more expensive than the
-benefit from repartitioning. The current implementation is not NUMA-placement
-aware: lock metadata, stats, partition maps, and data are shared across nodes.
-
-## Notes For Presentation
-
-- On a single NUMA node, adaptive repartitioning gives a strong result:
-  `1.86x` on `shift_hotspot_point`.
-- On two NUMA nodes with moderate thread count, speedups remain positive.
-- With 64 threads across two NUMA nodes, cross-node synchronization dominates
-  the shift hotspot case; this is a scaling limitation of the current
-  implementation, not a failure to identify the hotspot.
-- `moving_small_window` remains positive even across two NUMA nodes, including
-  the longer divisor-20 run.
+| Placement | Threads | Scenario | Divisor | Naive lock_sum_s | Dynamic lock_sum_s | Genetic lock_sum_s |
+|---|---:|---|---:|---:|---:|---:|
+| nodes01 | 64 | `shift_hotspot_point` | 4 | 753.481 | 1119.740 | 1067.445 |
+| nodes01 | 64 | `moving_small_window` | 40 | 902.870 | 913.163 | 1027.588 |
+| nodes0123 | 128 | `shift_hotspot_point` | 8 | 745.181 | 964.524 | 1103.993 |
+| nodes0123 | 128 | `moving_small_window` | 80 | 1040.054 | 879.680 | 1265.210 |
+| nodes0123 | 128 | `moving_small_window` | 40 | 2060.328 | 1978.666 | 2579.237 |
