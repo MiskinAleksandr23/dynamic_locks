@@ -1,5 +1,6 @@
 #pragma once
 
+#include "common/page_aligned_mutex.hpp"
 #include "genetic/genetic_partitioner.hpp"
 
 #include <algorithm>
@@ -239,6 +240,8 @@ public:
   }
 
 private:
+  using LockSlot = PageAlignedMutex<Mutex>;
+
   const size_t array_size_;
   const size_t block_size_;
   const size_t training_batch_size_;
@@ -247,7 +250,7 @@ private:
   const size_t training_probe_gap_;
   static constexpr size_t kLocalTrainingFlushSize = 64;
 
-  std::array<Mutex, kLockCnt> locks_;
+  std::array<LockSlot, kLockCnt> locks_;
   GeneticPartitioner<kLockCnt, kBlocks> partitioner_;
   std::vector<size_t> current_cuts_;
   std::array<std::atomic<size_t>, kBlocks> block_to_lock_{};
@@ -275,7 +278,7 @@ private:
 
   class RangeLockGuard {
   public:
-    RangeLockGuard(std::array<Mutex, kLockCnt> &locks, size_t first,
+    RangeLockGuard(std::array<LockSlot, kLockCnt> &locks, size_t first,
                    size_t last)
         : locks_(locks), first_(first) {
       try {
@@ -295,7 +298,7 @@ private:
     ~RangeLockGuard() { UnlockAll(); }
 
   private:
-    std::array<Mutex, kLockCnt> &locks_;
+    std::array<LockSlot, kLockCnt> &locks_;
     size_t first_;
     size_t locked_count_ = 0;
 

@@ -1,10 +1,13 @@
 #pragma once
 
+#include "common/page_aligned_mutex.hpp"
+
 #include <algorithm>
 #include <array>
 #include <atomic>
 #include <chrono>
 #include <limits>
+#include <memory>
 #include <mutex>
 #include <numeric>
 #include <thread>
@@ -15,7 +18,7 @@ public:
   explicit DynamicLock(size_t array_size, size_t stats_sample_rate = 1,
                        double min_rebuild_gain = 1.0,
                        double min_rebuild_skew = 4.0)
-      : array_size_(array_size),
+      : instance_id_(NextInstanceId()), array_size_(array_size),
         block_size_(array_size == 0 ? 1 : 1 + ((array_size - 1) / kBlocks)),
         stats_sample_rate_(std::max(stats_sample_rate, size_t{1})),
         total_lock_time_(std::chrono::nanoseconds(0)),
@@ -28,12 +31,6 @@ public:
     partitions_[kLockCnt] = kBlocks;
     RefreshBlockToLock();
 
-    for (auto &value : stats_) {
-      value.store(0, std::memory_order_relaxed);
-    }
-    for (auto &value : boundary_crossings_) {
-      value.store(0, std::memory_order_relaxed);
-    }
     last_stats_.fill(0);
   }
 
@@ -140,10 +137,8 @@ public:
 
   void ForceSaveStats() {
     std::lock_guard lock(stats_mutex_);
-    for (size_t i = 0; i < kBlocks; ++i) {
-      last_stats_[i] = stats_[i].exchange(0, std::memory_order_relaxed);
-      boundary_crossings_[i].store(0, std::memory_order_relaxed);
-    }
+    last_stats_ = SnapshotStats();
+    ResetLocalStatsUnlocked();
   }
 
   void RebuildNow() {
@@ -211,20 +206,38 @@ public:
   ~DynamicLock() { StopRebuilder(); }
 
 private:
+  using LockSlot = PageAlignedMutex<Mutex>;
+
   static constexpr size_t kBlocks = 1024;
   // Penalizes cuts that split observed range queries. Point queries do not
   // cross any boundary, so the original hotspot behavior remains unchanged.
   static constexpr size_t kBoundaryCrossingPenalty = 10'000'000;
 
+  const size_t instance_id_;
   const size_t array_size_;
   const size_t block_size_;
 
-  std::array<Mutex, kLockCnt> locks_;
+  std::array<LockSlot, kLockCnt> locks_;
   std::array<std::atomic<size_t>, kBlocks> block_to_lock_{};
-  std::array<std::atomic<size_t>, kBlocks> stats_;
-  std::array<std::atomic<size_t>, kBlocks> boundary_crossings_;
   std::array<size_t, kBlocks> last_stats_{};
   mutable Mutex stats_mutex_;
+
+  struct ThreadLocalStats {
+    std::array<std::atomic<size_t>, kBlocks> stats{};
+    std::array<std::atomic<size_t>, kBlocks> boundary_crossings{};
+
+    ThreadLocalStats() {
+      for (auto &value : stats) {
+        value.store(0, std::memory_order_relaxed);
+      }
+      for (auto &value : boundary_crossings) {
+        value.store(0, std::memory_order_relaxed);
+      }
+    }
+  };
+
+  mutable Mutex local_stats_mutex_;
+  std::vector<std::unique_ptr<ThreadLocalStats>> local_stats_;
 
   std::vector<size_t> partitions_;
   mutable Mutex partitions_mutex_;
@@ -268,7 +281,7 @@ private:
 
   class RangeLockGuard {
   public:
-    RangeLockGuard(std::array<Mutex, kLockCnt> &locks, size_t first,
+    RangeLockGuard(std::array<LockSlot, kLockCnt> &locks, size_t first,
                    size_t last)
         : locks_(locks), first_(first) {
       try {
@@ -288,7 +301,7 @@ private:
     ~RangeLockGuard() { UnlockAll(); }
 
   private:
-    std::array<Mutex, kLockCnt> &locks_;
+    std::array<LockSlot, kLockCnt> &locks_;
     size_t first_;
     size_t locked_count_ = 0;
 
@@ -307,6 +320,11 @@ private:
                                          std::memory_order_relaxed,
                                          std::memory_order_relaxed)) {
     }
+  }
+
+  static size_t NextInstanceId() {
+    static std::atomic<size_t> next_id{1};
+    return next_id.fetch_add(1, std::memory_order_relaxed);
   }
 
   void RefreshBlockToLock() {
@@ -328,33 +346,63 @@ private:
             block_to_lock_[right_block].load(std::memory_order_relaxed)};
   }
 
+  ThreadLocalStats &GetThreadLocalStats() {
+    struct ThreadLocalSlot {
+      const DynamicLock *owner;
+      size_t instance_id;
+      ThreadLocalStats *stats;
+    };
+
+    static thread_local std::vector<ThreadLocalSlot> slots;
+
+    for (const auto &slot : slots) {
+      if (slot.owner == this && slot.instance_id == instance_id_) {
+        return *slot.stats;
+      }
+    }
+
+    std::lock_guard lock(local_stats_mutex_);
+    local_stats_.push_back(std::make_unique<ThreadLocalStats>());
+    slots.push_back({this, instance_id_, local_stats_.back().get()});
+    return *slots.back().stats;
+  }
+
   void UpdateStats(size_t left, size_t right) {
     const size_t left_block = PositionToBlock(left);
     const size_t right_block = PositionToBlock(right);
+    auto &thread_stats = GetThreadLocalStats();
 
     for (size_t block = left_block; block <= right_block && block < kBlocks;
          ++block) {
-      stats_[block].fetch_add(1, std::memory_order_relaxed);
+      thread_stats.stats[block].fetch_add(1, std::memory_order_relaxed);
     }
 
     for (size_t boundary = left_block + 1;
          boundary <= right_block && boundary < kBlocks; ++boundary) {
-      boundary_crossings_[boundary].fetch_add(1, std::memory_order_relaxed);
+      thread_stats.boundary_crossings[boundary].fetch_add(
+          1, std::memory_order_relaxed);
     }
   }
 
   std::array<size_t, kBlocks> SnapshotStats() const {
     std::array<size_t, kBlocks> snapshot{};
-    for (size_t i = 0; i < kBlocks; ++i) {
-      snapshot[i] = stats_[i].load(std::memory_order_relaxed);
+    std::lock_guard lock(local_stats_mutex_);
+    for (const auto &thread_stats : local_stats_) {
+      for (size_t i = 0; i < kBlocks; ++i) {
+        snapshot[i] += thread_stats->stats[i].load(std::memory_order_relaxed);
+      }
     }
     return snapshot;
   }
 
   std::array<size_t, kBlocks> SnapshotBoundaryCrossings() const {
     std::array<size_t, kBlocks> snapshot{};
-    for (size_t i = 0; i < kBlocks; ++i) {
-      snapshot[i] = boundary_crossings_[i].load(std::memory_order_relaxed);
+    std::lock_guard lock(local_stats_mutex_);
+    for (const auto &thread_stats : local_stats_) {
+      for (size_t i = 0; i < kBlocks; ++i) {
+        snapshot[i] += thread_stats->boundary_crossings[i].load(
+            std::memory_order_relaxed);
+      }
     }
     return snapshot;
   }
@@ -493,9 +541,17 @@ private:
   void ResetCollectedStatsUnlocked(
       const std::array<size_t, kBlocks> &current_stats) {
     last_stats_ = current_stats;
-    for (size_t i = 0; i < kBlocks; ++i) {
-      stats_[i].store(0, std::memory_order_relaxed);
-      boundary_crossings_[i].store(0, std::memory_order_relaxed);
+    ResetLocalStatsUnlocked();
+  }
+
+  void ResetLocalStatsUnlocked() {
+    std::lock_guard lock(local_stats_mutex_);
+    for (auto &thread_stats : local_stats_) {
+      for (size_t i = 0; i < kBlocks; ++i) {
+        thread_stats->stats[i].store(0, std::memory_order_relaxed);
+        thread_stats->boundary_crossings[i].store(0,
+                                                  std::memory_order_relaxed);
+      }
     }
   }
 
@@ -536,10 +592,7 @@ private:
       RefreshBlockToLock();
       partition_epoch_.fetch_add(1, std::memory_order_release);
       last_stats_ = current_stats;
-      for (size_t i = 0; i < kBlocks; ++i) {
-        stats_[i].store(0, std::memory_order_relaxed);
-        boundary_crossings_[i].store(0, std::memory_order_relaxed);
-      }
+      ResetLocalStatsUnlocked();
     }
 
     rebuild_flag_ = false;

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "common/page_aligned_mutex.hpp"
+
 #include <algorithm>
 #include <array>
 #include <atomic>
@@ -93,16 +95,18 @@ public:
   }
 
 private:
+  using LockSlot = PageAlignedMutex<Mutex>;
+
   const size_t array_size_;
   const size_t block_size_;
 
-  std::array<Mutex, kLockCnt> locks_;
+  std::array<LockSlot, kLockCnt> locks_;
   std::atomic<size_t> operation_count_{0};
   std::atomic<std::chrono::nanoseconds> total_lock_time_;
 
   class RangeLockGuard {
   public:
-    RangeLockGuard(std::array<Mutex, kLockCnt> &locks, size_t first,
+    RangeLockGuard(std::array<LockSlot, kLockCnt> &locks, size_t first,
                    size_t last)
         : locks_(locks), first_(first) {
       try {
@@ -122,7 +126,7 @@ private:
     ~RangeLockGuard() { UnlockAll(); }
 
   private:
-    std::array<Mutex, kLockCnt> &locks_;
+    std::array<LockSlot, kLockCnt> &locks_;
     size_t first_;
     size_t locked_count_ = 0;
 
