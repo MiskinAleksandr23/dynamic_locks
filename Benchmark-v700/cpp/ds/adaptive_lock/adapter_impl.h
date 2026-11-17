@@ -5,7 +5,6 @@
 #include "../../../../genetic/genetic_lock.hpp"
 
 #include <algorithm>
-#include <atomic>
 #include <chrono>
 #include <cstdint>
 #include <iostream>
@@ -17,8 +16,7 @@ namespace adaptive_lock_benchmark {
 
 constexpr size_t kLockCount = 64;
 constexpr size_t kBlocks = 1024;
-constexpr auto kDynamicRebuildInterval = std::chrono::milliseconds(500);
-constexpr double kDynamicRebuildThreshold = 2.0;
+constexpr auto kDynamicRebuildInterval = std::chrono::seconds(30);
 constexpr size_t kStatsSampleRate = 64;
 constexpr double kMinSkew = 4.0;
 constexpr size_t kGeneticProbeGap = 1000000;
@@ -55,7 +53,7 @@ struct LockTraits<DynamicTag> {
     using Lock = DynamicLock<kLockCount>;
 
     static std::unique_ptr<Lock> Create(size_t array_size) {
-        return std::make_unique<Lock>(array_size, kStatsSampleRate, 1.0, kMinSkew);
+        return std::make_unique<Lock>(array_size, kStatsSampleRate);
     }
 
     static const char* Name() {
@@ -91,9 +89,9 @@ public:
           data_(array_size_, 0),
           present_(array_size_, 0),
           stored_keys_(array_size_, key_min),
-          thread_checksums_(std::max(num_threads, 1), 0),
+          thread_stats_(std::max(num_threads, 1)),
           lock_(LockTraits<LockKind>::Create(array_size_)) {
-        lock_->StartRebuilder(kDynamicRebuildInterval, kDynamicRebuildThreshold);
+        lock_->StartRebuilder(kDynamicRebuildInterval);
     }
 
     ~AdapterImpl() {
@@ -186,17 +184,19 @@ public:
             std::swap(left, right);
         }
 
+        ThreadStats* stats = tid >= 0 && static_cast<size_t>(tid) < thread_stats_.size()
+                                 ? &thread_stats_[tid] : nullptr;
+        const uint64_t query_index = stats ? stats->queries++ : 0;
         uint64_t local_checksum = 0;
         lock_->WriteQuery(left, right, [&](size_t locked_left, size_t locked_right) {
             const size_t update_index =
-                locked_left + (range_queries_.fetch_add(1, std::memory_order_relaxed) %
-                               (locked_right - locked_left + 1));
+                locked_left + (query_index % (locked_right - locked_left + 1));
             data_[update_index] += 1;
             local_checksum = data_[locked_left] ^ (data_[locked_right] << 1) ^ data_[update_index];
         });
 
-        if (tid >= 0 && static_cast<size_t>(tid) < thread_checksums_.size()) {
-            thread_checksums_[tid] += local_checksum;
+        if (stats) {
+            stats->checksum += local_checksum;
         }
 
         return 0;
@@ -204,15 +204,13 @@ public:
 
     void printSummary() {
         uint64_t checksum = 0;
-        for (uint64_t value : thread_checksums_) {
-            checksum ^= value;
+        uint64_t queries = 0;
+        for (const ThreadStats& stats : thread_stats_) {
+            checksum ^= stats.checksum;
+            queries += stats.queries;
         }
 
-        std::cout << LockTraits<LockKind>::Name() << "_range_queries=" << lock_->GetOperationCount()
-                  << std::endl;
-        std::cout << LockTraits<LockKind>::Name()
-                  << "_total_lock_ms=" << lock_->GetTotalLockTimeMs() << std::endl;
-        std::cout << LockTraits<LockKind>::Name() << "_avg_lock_ms=" << lock_->GetAvgLockTimeMs()
+        std::cout << LockTraits<LockKind>::Name() << "_range_queries=" << queries
                   << std::endl;
         std::cout << LockTraits<LockKind>::Name()
                   << "_reconfigurations=" << lock_->GetRebuildCount() << std::endl;
@@ -220,6 +218,17 @@ public:
     }
 
     bool validateStructure() {
+        // Called after workers stop; checks storage invariants, not linearizability.
+        for (size_t index = 0; index < array_size_; ++index) {
+            if (present_[index] > 1) {
+                return false;
+            }
+            if (present_[index] &&
+                (stored_keys_[index] < key_min_ || stored_keys_[index] > key_max_ ||
+                 ToIndex(stored_keys_[index]) != index)) {
+                return false;
+            }
+        }
         return true;
     }
 
@@ -263,9 +272,12 @@ private:
     std::vector<uint64_t> data_;
     std::vector<uint8_t> present_;
     std::vector<K> stored_keys_;
-    std::vector<uint64_t> thread_checksums_;
+    struct alignas(64) ThreadStats {
+        uint64_t queries = 0;
+        uint64_t checksum = 0;
+    };
+    std::vector<ThreadStats> thread_stats_;
     std::unique_ptr<typename LockTraits<LockKind>::Lock> lock_;
-    std::atomic<uint64_t> range_queries_{0};
 };
 
 }

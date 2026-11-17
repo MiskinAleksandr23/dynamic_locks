@@ -1,0 +1,23 @@
+Test project /Users/near/dynamic/build/genetic-asan
+    Start 1: dynamic_lock_tests
+1/9 Test #1: dynamic_lock_tests ...............   Passed    1.27 sec
+    Start 2: partitioner_tests
+2/9 Test #2: partitioner_tests ................   Passed    0.82 sec
+    Start 3: genetic_partitioner_tests
+3/9 Test #3: genetic_partitioner_tests ........   Passed    1.11 sec
+    Start 4: benchmark_workload_tests
+4/9 Test #4: benchmark_workload_tests .........   Passed    0.50 sec
+    Start 5: example
+5/9 Test #5: example ..........................   Passed    0.46 sec
+    Start 6: benchmark_smoke
+6/9 Test #6: benchmark_smoke ..................   Passed    2.25 sec
+    Start 7: benchmark_cyclic_smoke
+7/9 Test #7: benchmark_cyclic_smoke ...........   Passed    1.93 sec
+    Start 8: benchmark_baselines_smoke
+8/9 Test #8: benchmark_baselines_smoke ........   Passed    0.16 sec
+    Start 9: benchmark_genetic_smoke
+9/9 Test #9: benchmark_genetic_smoke ..........   Passed    5.55 sec
+
+100% tests passed out of 9
+
+Total Test time (real) =  14.06 sec

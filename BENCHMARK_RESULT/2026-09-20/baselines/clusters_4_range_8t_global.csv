@@ -1,0 +1,2 @@
+scenario,repetition,implementation,threads,operations,trace_size,unique_queries,array_size,hot_width,range_length,seed,sample_rate,rebuild_interval_ms,wall_s,cpu_s,rebuilds,rebuild_ms,read_checksum,verified,phase_wall_s,partition_cuts
+clusters_4_range,1,global,8,64000000,1048576,1048576,67108864,4194304,10000,8392123148533390784,64,30000,175.401134,369.024188,0,0,4895608511087,true,175.400984,

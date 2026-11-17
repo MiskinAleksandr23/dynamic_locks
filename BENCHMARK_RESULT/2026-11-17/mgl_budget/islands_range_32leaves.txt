@@ -1,0 +1,22 @@
+fixed/adaptive: 64 mutexes; global: 1; per_element: array_size mutexes.
+sizeof(std::mutex)=64 bytes
+8 workers, 24000000 operations/scenario, 3 repetitions
+trace_size=1048576 unique query budget per phase (all workers)
+array_size=67108864 hot_width=4194304 range_length=10000 sample_rate=64 lock_kind=mutex read_percent=0 point_percent=0 model=paper write_body=range rebuild_interval_ms=10000 seed=197
+All work from lock construction through destruction is timed; no warmup.
+Final arrays verified against a deterministic reference after every run.
+Read checksums depend on scheduling and are not equality checks.
+Stored independent worker traces repeat cyclically; identical for all implementations.
+paper bins_requested=1024 lambda=10000 min_samples=640 min_improvement=0.1
+
+islands_range
+  run=1 unique_queries=4194304 phases=4 read_operations=0 write_operations=24000000 point_operations=0 range_operations=24000000
+  run=1 mgl wall_s=32.2466 cpu_s=184.0446 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+    phase_wall_s=8.1181;8.0471;8.0424;8.0388
+  run=2 unique_queries=4194304 phases=4 read_operations=0 write_operations=24000000 point_operations=0 range_operations=24000000
+  run=2 mgl wall_s=32.4280 cpu_s=185.4075 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+    phase_wall_s=8.0005;8.0471;8.0219;8.3583
+  run=3 unique_queries=4194304 phases=4 read_operations=0 write_operations=24000000 point_operations=0 range_operations=24000000
+  run=3 mgl wall_s=33.6096 cpu_s=187.8037 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+    phase_wall_s=8.4520;8.5215;8.4007;8.2352
+  median mgl_s=32.4280

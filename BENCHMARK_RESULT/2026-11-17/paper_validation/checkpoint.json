@@ -1,0 +1,12 @@
+{
+  "status": "running",
+  "runner_session": 91597,
+  "command": "python3 scripts/paper_experiments.py --binary build/paper-release/adaptive_lock_benchmark --output BENCHMARK_RESULT/2026-11-17/paper_validation --threads 8 --repetitions 3 --seed 97 --lambda 10000",
+  "backup": "snapshots/2026-11-17-before-paper/workspace.tar.gz",
+  "validation": "Release12/12 and ASAN+UBSAN12/12 passed",
+  "scope": "paper quantiles + crossing objective CHT, 8 workloads fresh fixed; 3 repetitions; no NUMA work",
+  "notes": "Only performance runner should use CPU while active. Main code now paper by default; legacy/single explicit. Pilot default1e7 failed; lambda1e4 frozen before validation, seed97 independent from pilot seed1. Source files paper_lock.hpp,paper_partitioner.hpp,benchmarks/adaptive_lock_benchmark.cpp are frozen until validation ends.",
+  "tests": "Release12/12 andASan+UBSan12/12 final (includingbackgroundfailurecapture)",
+  "summarize_command": "python3 scripts/summarize_paper.py BENCHMARK_RESULT/2026-11-17/paper_validation",
+  "remaining": "Wait for8casesx3repsx3implementations; evaluate uniform overhead and gains, preserve losses; runsummary validateall; replace pending README withactualnumbers; markfinalbackup/versiondifferences. NoCPU-heavywork concurrently."
+}

@@ -1,0 +1,36 @@
+fixed/adaptive: 64 mutexes; global: 1; per_element: array_size mutexes.
+sizeof(std::mutex)=64 bytes
+8 workers, 64000000 operations/scenario, 3 repetitions
+trace_size=1048576 unique query budget per phase (all workers)
+array_size=67108864 hot_width=4194304 range_length=10000 sample_rate=64 lock_kind=mutex read_percent=0 point_percent=0 model=paper write_body=range rebuild_interval_ms=30000 seed=97
+All work from lock construction through destruction is timed; no warmup.
+Final arrays verified against a deterministic reference after every run.
+Read checksums depend on scheduling and are not equality checks.
+Stored independent worker traces repeat cyclically; identical for all implementations.
+paper bins_requested=1024 lambda=10000 min_samples=640 min_improvement=0.1
+
+steady_range
+  run=1 unique_queries=4194304 phases=4 read_operations=0 write_operations=64000000 point_operations=0 range_operations=64000000
+  run=1 balanced wall_s=59.4426 cpu_s=301.2259 rebuilds=1 optimizations=1 rebuild_ms=0.0810 optimize_ms=0.0173 publication_wait_ms=0.0257 publication_hold_ms=0.0020 max_publication_pause_ms=0.0289 last_window_samples=283329 read_checksum=0 verified=true
+    phase_wall_s=26.4917;12.6519;9.9851;10.3136
+  run=1 dynamic_dp wall_s=59.1165 cpu_s=302.3533 rebuilds=1 optimizations=1 rebuild_ms=0.3477 optimize_ms=0.3137 publication_wait_ms=0.0167 publication_hold_ms=0.0021 max_publication_pause_ms=0.0216 last_window_samples=314142 read_checksum=0 verified=true
+    phase_wall_s=23.9712;13.5421;10.9711;10.6319
+  run=1 fixed wall_s=99.5863 cpu_s=393.4879 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+    phase_wall_s=24.6197;26.8442;25.5736;22.5487
+  run=2 unique_queries=4194304 phases=4 read_operations=0 write_operations=64000000 point_operations=0 range_operations=64000000
+  run=2 dynamic_dp wall_s=60.7840 cpu_s=314.2098 rebuilds=1 optimizations=2 rebuild_ms=0.6638 optimize_ms=0.5803 publication_wait_ms=0.0189 publication_hold_ms=0.0036 max_publication_pause_ms=0.0231 last_window_samples=656934 read_checksum=0 verified=true
+    phase_wall_s=22.2878;15.6248;11.1191;11.7520
+  run=2 fixed wall_s=105.1424 cpu_s=408.3099 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+    phase_wall_s=26.8322;27.0007;25.8216;25.4876
+  run=2 balanced wall_s=59.8087 cpu_s=306.8982 rebuilds=1 optimizations=1 rebuild_ms=0.1103 optimize_ms=0.0190 publication_wait_ms=0.0227 publication_hold_ms=0.0023 max_publication_pause_ms=0.0277 last_window_samples=321117 read_checksum=0 verified=true
+    phase_wall_s=23.1818;14.6660;10.6037;11.3571
+  run=3 unique_queries=4194304 phases=4 read_operations=0 write_operations=64000000 point_operations=0 range_operations=64000000
+  run=3 fixed wall_s=96.6955 cpu_s=385.9754 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+    phase_wall_s=23.8976;24.5676;23.9856;24.2444
+  run=3 balanced wall_s=59.2486 cpu_s=302.5810 rebuilds=1 optimizations=1 rebuild_ms=0.1005 optimize_ms=0.0180 publication_wait_ms=0.0373 publication_hold_ms=0.0039 max_publication_pause_ms=0.0416 last_window_samples=317498 read_checksum=0 verified=true
+    phase_wall_s=23.5002;14.5638;10.5843;10.6000
+  run=3 dynamic_dp wall_s=60.4177 cpu_s=306.9804 rebuilds=1 optimizations=2 rebuild_ms=0.7668 optimize_ms=0.6509 publication_wait_ms=0.0361 publication_hold_ms=0.0021 max_publication_pause_ms=0.0406 last_window_samples=688099 read_checksum=0 verified=true
+    phase_wall_s=24.9290;12.2323;10.1457;13.1105
+  median fixed_s=99.5863
+  median balanced_s=59.4426 paired_speedup=1.6753 range=[1.6320,1.7580] cpu/fixed=0.7655
+  median dynamic_dp_s=60.4177 paired_speedup=1.6846 range=[1.6005,1.7298] cpu/fixed=0.7695

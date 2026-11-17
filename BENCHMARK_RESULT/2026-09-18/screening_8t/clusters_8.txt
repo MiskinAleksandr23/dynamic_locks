@@ -1,0 +1,16 @@
+64 mutexes, 8 workers, 2000000000 operations/scenario, 1 repetitions
+trace_size=1048576 unique query budget per phase (all workers)
+array_size=1048576 hot_width=16384 range_length=8 sample_rate=64 rebuild_interval_ms=30000 seed=1
+All work from lock construction through destruction is timed; no warmup.
+Final arrays verified against a deterministic reference after every run.
+Read checksums depend on scheduling and are not equality checks.
+Stored independent worker traces repeat cyclically; identical for all implementations.
+
+clusters_8
+  run=1 unique_queries=1048576 phases=1
+  run=1 dynamic_dp wall_s=64.4444 cpu_s=363.4179 rebuilds=1 rebuild_ms=3.6688 read_checksum=68677526625280 verified=true
+  run=1 fixed wall_s=93.3725 cpu_s=524.5627 rebuilds=0 rebuild_ms=0.0000 read_checksum=68678407187109 verified=true
+  run=1 balanced wall_s=65.4439 cpu_s=369.0251 rebuilds=1 rebuild_ms=0.0993 read_checksum=68678270362503 verified=true
+  median fixed_s=93.3725
+  median balanced_s=65.4439 paired_speedup=1.4268 range=[1.4268,1.4268] cpu/fixed=0.7035
+  median dynamic_dp_s=64.4444 paired_speedup=1.4489 range=[1.4489,1.4489] cpu/fixed=0.6928

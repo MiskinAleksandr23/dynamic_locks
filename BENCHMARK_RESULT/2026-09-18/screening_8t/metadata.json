@@ -1,0 +1,53 @@
+{
+  "started_utc": "2026-09-17T22:53:41.113623+00:00",
+  "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "logical_cpus": 11,
+  "workers": 8,
+  "sequential": true,
+  "repetitions": 1,
+  "build_validation": "cmake --build build -j 6; ctest --test-dir build --output-on-failure: 6/6 passed",
+  "source_sha256": {
+    "dynamic/dynamic_lock.hpp": "61d7665d330c8d854980b8d9f4a73467bf2db20051018aee87e91503fa64407e",
+    "dynamic/partitioner.hpp": "9def0df3aee547edf023d7bc2c05f9d363558de1ca802f03ffa78c6e96c7f6ad",
+    "common/range_lock.hpp": "bed94a5cdecd5566c806abf17c4afcf13e12732e6f8e0ce69df67be256d189e6",
+    "common/naive_lock.hpp": "e5b46a7d5989e38b8e5e0c3cddadb70cb79c2f802ddd4ea50f2a0a3f0fc04187",
+    "benchmarks/adaptive_lock_benchmark.cpp": "0844039043f3b2eb15e1f80aec7ecd0d8da419cd65e1efc77819685b68c796d8",
+    "build/adaptive_lock_benchmark": "45f274a1de00b6c9b3ddb0416c707800ad522bdc7e2b1b7a4684dd4f06bd34ae"
+  },
+  "method": [
+    "Fixed operation counts, identical input and count for all three implementations.",
+    "Wall/CPU time include construction, cold start, sampling, background rebuilding and destruction.",
+    "30 s is the background check interval, not a mandatory repartition.",
+    "No concurrent benchmark processes; 8 workers plus an adaptive background thread; no CPU affinity reservation.",
+    "All 14 retained scenarios; original geometry, phase transitions and stable seed/order identities.",
+    "Uniform extended from 32M to 5B operations to cover multiple 30 s checks.",
+    "Moving variable range reduced from 192M to 160M operations to leave margin below 3 minutes per implementation.",
+    "Other operation counts match the previous dedicated measurements.",
+    "One repetition is for screening; no confidence interval or claim of statistical significance."
+  ],
+  "finished_utc": "2026-09-17T23:56:18.537005+00:00",
+  "compiler": "Homebrew clang 22.1.0",
+  "build": "Release -O3 -DNDEBUG -std=c++20 -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk",
+  "elapsed_s": 3757.3920588493347,
+  "verified_runs": 42,
+  "core_matches_2026_09_15": true,
+  "plots": "matplotlib 3.11.2",
+  "artifact_sha256": {
+    "clusters_2.csv": "4fac67da7a79929171b907927157f3c7f3f7c633aa78e541644f2b39a9134518",
+    "clusters_2_range.csv": "34083e6578051f0b7b46b35a43e366ba141e5c11d1bb455d6d1d9b5badc147b6",
+    "clusters_4_range.csv": "9650f4cba20ba7f79c943dfbe26a5952d1c0daf36b7f3d1976fe14fb904ea89e",
+    "clusters_8.csv": "ccee9eca48a32fdfc8c3c3efa90fe3a08cb10dbd76a2a09d9fe87640fca80d6b",
+    "exchange_range.csv": "6c7a8ef718435ff1b883daab4a5bb2e2aaa3d512377af06d53ae095dd2073044",
+    "gradient_range.csv": "93096fba697c4e7f5797a5cb858e24d517c4f83a3f968949af3c98baeb1879a6",
+    "hot_with_spike.csv": "6688c322b097d0792ff097ec239613cf3b2da750d9b8e62fd0b8f8e46900f29b",
+    "islands_range.csv": "45f5cb25638ee5629642a4f14dffce71751d204d3a9b3753a2c584227dcb1fd1",
+    "moving_variable_range.csv": "90ca0e7b9291fdb4580cb2f7ff30ad8d40f2c57be20178f4c647560b6251db4f",
+    "shift.csv": "9cb8919e1daea8853eff424807044b379805d8753dbf5440a59ddb9fe6c76edb",
+    "steady_range.csv": "c4974c15ef5ca0516a5c040282094429a56ff6c20bdb681be83aa55ccec89cf4",
+    "unequal.csv": "954c2b79be5daed71e426a5a1928f539ec18f1a5d71b4363ab42269d59ac1979",
+    "unequal_widths_range.csv": "fe37ec47e4150de4d90f2d7c28cefd753959db913fe8981552516a8af23884c8",
+    "uniform.csv": "3ce2e88bc88d3181439500710a13afc8a85e842dc76cbaaaac63ffddc3343642"
+  },
+  "plot_script_sha256": "187b6ef2fc0619cfcdb28b4b6fa66cb010f5a8e2e9d99e2116fc17f7f72e278b"
+}

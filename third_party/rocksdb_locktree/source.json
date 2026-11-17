@@ -1,0 +1,324 @@
+{
+  "repository": "https://github.com/facebook/rocksdb",
+  "commit": "f16beed54628fdc0f2d8bba779f7fb0c7611fcf2",
+  "subtree": "utilities/transactions/lock/range/range_tree/lib/",
+  "downloaded_utc": "2026-11-17T15:21:01.718465+00:00",
+  "license_choice": "Apache-2.0, per upstream COPYING.APACHEv2 and file headers",
+  "upstream_modified": false,
+  "files": [
+    {
+      "path": "COPYING.AGPLv3",
+      "upstream_path": "utilities/transactions/lock/range/range_tree/lib/COPYING.AGPLv3",
+      "git_blob_sha1": "dba13ed2ddf783ee8118c6a581dbf75305f816a3",
+      "sha256": "57c8ff33c9c0cfc3ef00e650a1cc910d7ee479a8bc509f6c9209a7c2a11399d6",
+      "bytes": 34520
+    },
+    {
+      "path": "COPYING.APACHEv2",
+      "upstream_path": "utilities/transactions/lock/range/range_tree/lib/COPYING.APACHEv2",
+      "git_blob_sha1": "ecbfc770fa93911365845bf5833a3c11970164a6",
+      "sha256": "81932e77fef4cec306da54caf7d4d221dfd0f6fb6da214c712e36cb95ac47906",
+      "bytes": 10108
+    },
+    {
+      "path": "COPYING.GPLv2",
+      "upstream_path": "utilities/transactions/lock/range/range_tree/lib/COPYING.GPLv2",
+      "git_blob_sha1": "d511905c1647a1e311e8b20d5930a37a9c2531cd",
+      "sha256": "ab15fd526bd8dd18a9e77ebc139656bf4d33e97fc7238cd11bf60e2b9b8666c6",
+      "bytes": 17987
+    },
+    {
+      "path": "README",
+      "upstream_path": "utilities/transactions/lock/range/range_tree/lib/README",
+      "git_blob_sha1": "2ea86bf46906eafb766602e0ffd450ed8192cde1",
+      "sha256": "f1479a56af638cc3d7a8323679c6124af990525b0ef87ef584aabd0d993b64e4",
+      "bytes": 428
+    },
+    {
+      "path": "db.h",
+      "upstream_path": "utilities/transactions/lock/range/range_tree/lib/db.h",
+      "git_blob_sha1": "a52d31ebe7302a9f7ea7fd87fc602c17f5291904",
+      "sha256": "870fbd2c244ada3aece782bbe2957271a1df3bf3fb50705449204e99181d95a9",
+      "bytes": 2615
+    },
+    {
+      "path": "ft/comparator.h",
+      "upstream_path": "utilities/transactions/lock/range/range_tree/lib/ft/comparator.h",
+      "git_blob_sha1": "718efc623147c7a4403600c27065a350ebdeba14",
+      "sha256": "009b106da960517b3ac82d650522ab2d28782732b955eb8dd7302e7c357eae5c",
+      "bytes": 4740
+    },
+    {
+      "path": "ft/ft-status.h",
+      "upstream_path": "utilities/transactions/lock/range/range_tree/lib/ft/ft-status.h",
+      "git_blob_sha1": "1b451117214ebdf7a9205866071d8fe330774475",
+      "sha256": "aa3fd1d7370f71697f27e54fbf6bb8fad0ea30b30d9e583e79fa52701148aebf",
+      "bytes": 3329
+    },
+    {
+      "path": "locktree/concurrent_tree.cc",
+      "upstream_path": "utilities/transactions/lock/range/range_tree/lib/locktree/concurrent_tree.cc",
+      "git_blob_sha1": "181a1416de140863ddc7eac20e4fb1f81db4025b",
+      "sha256": "55dc851a94503a68d82161dd6ce55c3e0277715b9dcd2d6ff175de82ff13a3f8",
+      "bytes": 4823
+    },
+    {
+      "path": "locktree/concurrent_tree.h",
+      "upstream_path": "utilities/transactions/lock/range/range_tree/lib/locktree/concurrent_tree.h",
+      "git_blob_sha1": "e1bfb86c501c82ad4d9e7f354b42dd0fb4149979",
+      "sha256": "782ec940ee1331412d145a3bebe5310177bbc51e40e36d1da7a419c9bd5d59fa",
+      "bytes": 6858
+    },
+    {
+      "path": "locktree/keyrange.cc",
+      "upstream_path": "utilities/transactions/lock/range/range_tree/lib/locktree/keyrange.cc",
+      "git_blob_sha1": "e61dfdfac7b6641e1e736a2513710178d79d1804",
+      "sha256": "73d1f8e87441447a1818b5f6c0da6e260252d2f6a7a6b5cb81aedb0933fb90e8",
+      "bytes": 7286
+    },
+    {
+      "path": "locktree/keyrange.h",
+      "upstream_path": "utilities/transactions/lock/range/range_tree/lib/locktree/keyrange.h",
+      "git_blob_sha1": "f9aeea0c4e58fa8f0ef9f4f8719a1e5eb603b5a9",
+      "sha256": "bee7d1573bcd439506fa23ac35f24b3d5796f2ef7046077676c315c372b2246b",
+      "bytes": 5474
+    },
+    {
+      "path": "locktree/lock_request.cc",
+      "upstream_path": "utilities/transactions/lock/range/range_tree/lib/locktree/lock_request.cc",
+      "git_blob_sha1": "741d153425016cca8110782167285fa99ead7b84",
+      "sha256": "d09b2c64ef1ca24cd7aa8f701a897f2c65853b282f7c710ee07e19ec1ad39478",
+      "bytes": 17247
+    },
+    {
+      "path": "locktree/lock_request.h",
+      "upstream_path": "utilities/transactions/lock/range/range_tree/lib/locktree/lock_request.h",
+      "git_blob_sha1": "88781c184f9042cfcbde01f8644791f4bf922578",
+      "sha256": "d98de0d05981054d7e8fcb8846ce6db935ef9fbd5105ca7d4123aa1dc16c2a07",
+      "bytes": 9110
+    },
+    {
+      "path": "locktree/locktree.cc",
+      "upstream_path": "utilities/transactions/lock/range/range_tree/lib/locktree/locktree.cc",
+      "git_blob_sha1": "0d87f45af67672dadf94c5299ce48747974e3145",
+      "sha256": "6927485a501619d7ad50c19bc71b671e36ef1dd29c8a98bba81e623c9b151887",
+      "bytes": 37887
+    },
+    {
+      "path": "locktree/locktree.h",
+      "upstream_path": "utilities/transactions/lock/range/range_tree/lib/locktree/locktree.h",
+      "git_blob_sha1": "507b5599a2655c612784df53b08f55a3d521346a",
+      "sha256": "596acdb1c4f148e666ede8b3a9287d9f41e194cc9a932e311255013068a6a7ad",
+      "bytes": 23213
+    },
+    {
+      "path": "locktree/manager.cc",
+      "upstream_path": "utilities/transactions/lock/range/range_tree/lib/locktree/manager.cc",
+      "git_blob_sha1": "7e005e2159509268e8b1fe55ed8befcfe25db657",
+      "sha256": "523cf343a63e31d9678d286a2dd4d3aa28b1311546dd4aaf0ad9ba615cfcf704",
+      "bytes": 17441
+    },
+    {
+      "path": "locktree/range_buffer.cc",
+      "upstream_path": "utilities/transactions/lock/range/range_tree/lib/locktree/range_buffer.cc",
+      "git_blob_sha1": "0cbd9e19833df92e55c43e41820e97ef60502af4",
+      "sha256": "249e9423cb3592772fe7bc86c7bb2e38d8528ee676e09299a29a76ada1aad967",
+      "bytes": 8475
+    },
+    {
+      "path": "locktree/range_buffer.h",
+      "upstream_path": "utilities/transactions/lock/range/range_tree/lib/locktree/range_buffer.h",
+      "git_blob_sha1": "76e28d7477a543c1420356f98fb652bc7052c245",
+      "sha256": "bbe19c3ad6c24a580eae16e787224c89bc266d8d712ae810f91ff798c3fe8fa5",
+      "bytes": 5954
+    },
+    {
+      "path": "locktree/treenode.cc",
+      "upstream_path": "utilities/transactions/lock/range/range_tree/lib/locktree/treenode.cc",
+      "git_blob_sha1": "bbe30390133603deac81c5278d4f6090b70154f8",
+      "sha256": "28deaa58b539ef582bb0d88a81f7f48421b0782f7c517e538c1b3d9f2b5ade0c",
+      "bytes": 16358
+    },
+    {
+      "path": "locktree/treenode.h",
+      "upstream_path": "utilities/transactions/lock/range/range_tree/lib/locktree/treenode.h",
+      "git_blob_sha1": "ec25a8c583de24df065cd18d9f2527db579353a2",
+      "sha256": "06e8346c86c3b9fe8160f35a3a681f74fee14219cec805aabd9be2e76fbac176",
+      "bytes": 11030
+    },
+    {
+      "path": "locktree/txnid_set.cc",
+      "upstream_path": "utilities/transactions/lock/range/range_tree/lib/locktree/txnid_set.cc",
+      "git_blob_sha1": "d7f989043cda8a7ef898bdf55523c9f6c168f766",
+      "sha256": "c64d6dcbaacb9c9746b7b09372446e6930aa95da1734cbe0341f547bd3ee9c98",
+      "bytes": 3864
+    },
+    {
+      "path": "locktree/txnid_set.h",
+      "upstream_path": "utilities/transactions/lock/range/range_tree/lib/locktree/txnid_set.h",
+      "git_blob_sha1": "d79c24fb0c6642035b60114468ec956e1634e21a",
+      "sha256": "7ba9c93cd5669516f84503a2b3e2b6c23e01917865344e1f61442927ab205d4b",
+      "bytes": 3055
+    },
+    {
+      "path": "locktree/wfg.cc",
+      "upstream_path": "utilities/transactions/lock/range/range_tree/lib/locktree/wfg.cc",
+      "git_blob_sha1": "7f0ed3abb89eaf4e67b08e67c5f6404d99f7ce35",
+      "sha256": "a1614e4de35e93365e92647e7fae43e66e72885b6d7a03980423dea7e5a3c4df",
+      "bytes": 6586
+    },
+    {
+      "path": "locktree/wfg.h",
+      "upstream_path": "utilities/transactions/lock/range/range_tree/lib/locktree/wfg.h",
+      "git_blob_sha1": "8042021707929780cf23fa4a15a9ac3dd875244c",
+      "sha256": "0cf3888566866124f92fa91752ea5a90d8753ee85f31d4d0c77e1331bc829fc1",
+      "bytes": 4248
+    },
+    {
+      "path": "portability/memory.h",
+      "upstream_path": "utilities/transactions/lock/range/range_tree/lib/portability/memory.h",
+      "git_blob_sha1": "0a621f8e01e570d66a3c7c70b4729140feb4c44d",
+      "sha256": "b584f7341fdc64f7a16e3601a9cf89fa1298dd25f6adb070bcd144ccb2457d6e",
+      "bytes": 9481
+    },
+    {
+      "path": "portability/toku_assert_subst.h",
+      "upstream_path": "utilities/transactions/lock/range/range_tree/lib/portability/toku_assert_subst.h",
+      "git_blob_sha1": "c50a3a07fc61eb407be1b462bfe58fcce15a7521",
+      "sha256": "3f01d80bb9febf5768f84317b2a18da1f6ce90f1e364429454ec368e8edd688e",
+      "bytes": 1189
+    },
+    {
+      "path": "portability/toku_atomic.h",
+      "upstream_path": "utilities/transactions/lock/range/range_tree/lib/portability/toku_atomic.h",
+      "git_blob_sha1": "aaa2298faf4a4ebf1a86af0caf14d10c6c7e19c4",
+      "sha256": "f726a9dde3e37d381b723bd7858188aa59af503e23822efe67ee276ad8ec2c46",
+      "bytes": 5351
+    },
+    {
+      "path": "portability/toku_external_pthread.h",
+      "upstream_path": "utilities/transactions/lock/range/range_tree/lib/portability/toku_external_pthread.h",
+      "git_blob_sha1": "ad1d7bf549067b40be2669f5f8508d7e243cf106",
+      "sha256": "ea63e2cdb67d833cae6a0ce815c2f2a4580292c4af8d1d5bfc28cb6d18618882",
+      "bytes": 2739
+    },
+    {
+      "path": "portability/toku_instrumentation.h",
+      "upstream_path": "utilities/transactions/lock/range/range_tree/lib/portability/toku_instrumentation.h",
+      "git_blob_sha1": "c967e71771bbbc3651536ea14734265e4f751c0c",
+      "sha256": "f635643ed7169dcc330bc170b90bbc81ecbbc138addf482c6d221509dd230882",
+      "bytes": 9658
+    },
+    {
+      "path": "portability/toku_portability.h",
+      "upstream_path": "utilities/transactions/lock/range/range_tree/lib/portability/toku_portability.h",
+      "git_blob_sha1": "9a95b38bd5d066d6fb3ada0ffcfd125c819de770",
+      "sha256": "5347e41539250658f88213310c26995f0a71aad61ecbb4006e5ba5d5ffd8268e",
+      "bytes": 2965
+    },
+    {
+      "path": "portability/toku_pthread.h",
+      "upstream_path": "utilities/transactions/lock/range/range_tree/lib/portability/toku_pthread.h",
+      "git_blob_sha1": "571b950e111775743e253d66ceedd4064dc8183f",
+      "sha256": "3a57913d28426168c4c11b70618f864cd9cee2994f4c003ef282a651f3a6746e",
+      "bytes": 17554
+    },
+    {
+      "path": "portability/toku_race_tools.h",
+      "upstream_path": "utilities/transactions/lock/range/range_tree/lib/portability/toku_race_tools.h",
+      "git_blob_sha1": "3cb5b579021be986c1b497ecfd20c91e42fbf841",
+      "sha256": "e032d50f58e315c3b1a77f1a1f2354dfeb7e960890c2251706ac4426a8b0c1e9",
+      "bytes": 6939
+    },
+    {
+      "path": "portability/toku_time.h",
+      "upstream_path": "utilities/transactions/lock/range/range_tree/lib/portability/toku_time.h",
+      "git_blob_sha1": "8a9769dfadc8a625e4e5204c7f49942b8e6a5315",
+      "sha256": "ad12937a61330c06784386d9f856d770089433d78dea789d1f0232196840057c",
+      "bytes": 7737
+    },
+    {
+      "path": "portability/txn_subst.h",
+      "upstream_path": "utilities/transactions/lock/range/range_tree/lib/portability/txn_subst.h",
+      "git_blob_sha1": "f4013bb36c5875504d84e1fb5f1267b8668fb306",
+      "sha256": "8680f5a333caa186d33b9aa1aaeba4672d49efc8facf510a894c99c6e2c6f3d7",
+      "bytes": 978
+    },
+    {
+      "path": "standalone_port.cc",
+      "upstream_path": "utilities/transactions/lock/range/range_tree/lib/standalone_port.cc",
+      "git_blob_sha1": "b1fb736a3634647dcda08045a0a971167766fadc",
+      "sha256": "48c682bc3b734c430cbb4768f4357fbd16a82e0a07cf8d45bb357f73037baaf2",
+      "bytes": 5360
+    },
+    {
+      "path": "util/dbt.cc",
+      "upstream_path": "utilities/transactions/lock/range/range_tree/lib/util/dbt.cc",
+      "git_blob_sha1": "c20387aefbc8959c34d23e2ff035052efdaabf19",
+      "sha256": "d2c738ff6c6591f892828a8f619c191f81d403961d81df9f2bf4e0687d53446c",
+      "bytes": 4878
+    },
+    {
+      "path": "util/dbt.h",
+      "upstream_path": "utilities/transactions/lock/range/range_tree/lib/util/dbt.h",
+      "git_blob_sha1": "d86c440f86e2da534d09b312530c15194469b80f",
+      "sha256": "a8444fe1b96335f516aff200058434df9a75d02d9708e7e9dacbcd7a4c2dafae",
+      "bytes": 3551
+    },
+    {
+      "path": "util/growable_array.h",
+      "upstream_path": "utilities/transactions/lock/range/range_tree/lib/util/growable_array.h",
+      "git_blob_sha1": "39e8c091c3210e95a0990c655a12e109190d2970",
+      "sha256": "160ae656123d4f67b6929d445828dcbc9fb2934ec5a36f5675453bcf522437f6",
+      "bytes": 4614
+    },
+    {
+      "path": "util/memarena.cc",
+      "upstream_path": "utilities/transactions/lock/range/range_tree/lib/util/memarena.cc",
+      "git_blob_sha1": "087cb238d39afa26f4fa7b370f2f2d305fc97714",
+      "sha256": "3134e57d06f7296ae4de031d9e5ac9d95f79cdc6857c81a6d816ff906259f694",
+      "bytes": 6680
+    },
+    {
+      "path": "util/memarena.h",
+      "upstream_path": "utilities/transactions/lock/range/range_tree/lib/util/memarena.h",
+      "git_blob_sha1": "ddcc1144f255af8678229006aed02859b880dded",
+      "sha256": "fa2d2d62fae627c2ab9a462eb394058c288be78fc8bdc58f937329387778985a",
+      "bytes": 5031
+    },
+    {
+      "path": "util/omt.h",
+      "upstream_path": "utilities/transactions/lock/range/range_tree/lib/util/omt.h",
+      "git_blob_sha1": "f208002d32c32593510cd8769bf32d8163a37278",
+      "sha256": "a6e095e7a76f9e4e0d60cddb65694ad6f7fbfb7f8ddeb51d26b5fdfb66952ca3",
+      "bytes": 32524
+    },
+    {
+      "path": "util/omt_impl.h",
+      "upstream_path": "utilities/transactions/lock/range/range_tree/lib/util/omt_impl.h",
+      "git_blob_sha1": "e77986716530e7005abd9938f0c182005bd3aeac",
+      "sha256": "2d599eb7345358f9e5d07b8d99c2a499b59c54d17a47f8f9b996063c1557bacd",
+      "bytes": 45758
+    },
+    {
+      "path": "util/partitioned_counter.h",
+      "upstream_path": "utilities/transactions/lock/range/range_tree/lib/util/partitioned_counter.h",
+      "git_blob_sha1": "53ca5aab162ae46ec650fb40a0cd26781f17b47b",
+      "sha256": "779b08964c54c1e00e6368bfafe938cf29c8f2e3cae81f962fc79b7afc3601fd",
+      "bytes": 7086
+    },
+    {
+      "path": "util/status.h",
+      "upstream_path": "utilities/transactions/lock/range/range_tree/lib/util/status.h",
+      "git_blob_sha1": "3fd0095d0f40a73d62d5a8425d6f7a9978021b69",
+      "sha256": "9ba540af08e566299085a43178cc8f6ddae57da999461bc1aa97cf413eda8e78",
+      "bytes": 3498
+    }
+  ],
+  "status": "source_downloaded_not_built_or_run",
+  "note": "PerconaFT LockTree imported into RocksDB; not Kogan-Dice-Issa author implementation.",
+  "rocksdb_root_license": {
+    "url": "https://raw.githubusercontent.com/facebook/rocksdb/f16beed54628fdc0f2d8bba779f7fb0c7611fcf2/LICENSE.Apache",
+    "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "status": "user_paused_assistant_running_series_allowed",
+  "runner_session": 30486,
+  "manifest": "manifest.json",
+  "backup": "snapshots/2026-11-17-before-paper/workspace.tar.gz",
+  "validation": "Release12/12 + ASanUBSan12/12 after mutex-local RNG revision",
+  "previous": "paper_validation interrupted afteruniform highoverhead; preserveintermediate noincludeinfinal",
+  "pilot": "paper_pilot λ1e7/1e5/1e4/0 onsteady6m2s; chose1e4 andfrozen forvalidation",
+  "hotpath": "hot_path_check1buniform3reps; TLSavoided forexclusivequeries; sharedRWread retainsTLS",
+  "commands": [
+    "python3 scripts/paper_experiments.py --binary build/paper-release/adaptive_lock_benchmark --output BENCHMARK_RESULT/2026-11-17/paper_validation_v2 --threads 8 --repetitions 3 --seed 97 --lambda 10000 --cases uniform islands_range clusters_2 unequal_widths_range steady_range sliding_variable_range mixed_range hot_with_spike",
+    "python3 scripts/summarize_paper.py BENCHMARK_RESULT/2026-11-17/paper_validation_v2"
+  ],
+  "remaining": "Existing8casesx3reps continue in runner. Completion watcher will validate/summarize and create TABLE.md. On return inspect manifest and table, finish README/report verification and build/test updated example; do not rerun completed experiments.",
+  "user_instruction": "Assistant must stop now; existing benchmark series may finish. Do not launch additional experiments. User will return to continue.",
+  "table_watcher_session": 73247,
+  "auto_table": "TABLE.md after successful complete manifest; see table_job.json for status"
+}

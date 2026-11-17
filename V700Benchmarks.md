@@ -1,3 +1,5 @@
+> Архив результатов прежнего кода и прежней методики. Эти числа не характеризуют текущую реализацию. Актуальная методика и результаты: [BENCHMARK_RESULTS.md](BENCHMARK_RESULTS.md).
+
 # V700 Adaptive Lock Benchmarks
 
 Host: `x86_64`, Linux `6.8.0-117-generic`, 8 vCPUs, `AMD EPYC Processor` under KVM/QEMU.

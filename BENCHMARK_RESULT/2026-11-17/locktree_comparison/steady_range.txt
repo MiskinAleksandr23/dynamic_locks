@@ -1,0 +1,30 @@
+fixed/adaptive: 64 mutexes; global: 1; per_element: array_size mutexes.
+sizeof(std::mutex)=64 bytes
+8 workers, 24000000 operations/scenario, 3 repetitions
+trace_size=1048576 unique query budget per phase (all workers)
+array_size=67108864 hot_width=4194304 range_length=10000 sample_rate=64 lock_kind=mutex read_percent=0 point_percent=0 model=paper write_body=range rebuild_interval_ms=10000 seed=197
+All work from lock construction through destruction is timed; no warmup.
+Final arrays verified against a deterministic reference after every run.
+Read checksums depend on scheduling and are not equality checks.
+Stored independent worker traces repeat cyclically; identical for all implementations.
+paper bins_requested=1024 lambda=10000 min_samples=640 min_improvement=0.1
+
+steady_range
+  run=1 unique_queries=4194304 phases=4 read_operations=0 write_operations=24000000 point_operations=0 range_operations=24000000
+  run=1 balanced wall_s=21.3541 cpu_s=111.2469 rebuilds=1 optimizations=2 rebuild_ms=0.1074 optimize_ms=0.0171 publication_wait_ms=0.0366 publication_hold_ms=0.0018 max_publication_pause_ms=0.0410 last_window_samples=236010 read_checksum=0 verified=true
+    phase_wall_s=8.6391;4.6523;4.0482;4.0142
+  run=1 dynamic_dp wall_s=21.3019 cpu_s=111.3217 rebuilds=1 optimizations=2 rebuild_ms=0.8038 optimize_ms=0.7418 publication_wait_ms=0.0385 publication_hold_ms=0.0019 max_publication_pause_ms=0.0418 last_window_samples=238888 read_checksum=0 verified=true
+    phase_wall_s=8.6301;4.4609;3.9628;4.2479
+  run=1 locktree wall_s=157.1710 cpu_s=422.5910 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+    phase_wall_s=40.7331;39.9789;37.2949;39.1639
+  run=1 fixed wall_s=34.6690 cpu_s=140.4747 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+    phase_wall_s=8.8561;8.5686;8.6009;8.6433
+  run=2 unique_queries=4194304 phases=4 read_operations=0 write_operations=24000000 point_operations=0 range_operations=24000000
+  run=2 dynamic_dp wall_s=20.5730 cpu_s=106.0383 rebuilds=1 optimizations=2 rebuild_ms=0.7396 optimize_ms=0.6641 publication_wait_ms=0.0263 publication_hold_ms=0.0026 max_publication_pause_ms=0.0302 last_window_samples=259649 read_checksum=0 verified=true
+    phase_wall_s=9.3059;4.1427;3.5705;3.5536
+  run=2 locktree wall_s=152.3312 cpu_s=413.2726 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+    phase_wall_s=37.2988;37.7167;38.5441;38.7714
+  run=2 fixed wall_s=34.8514 cpu_s=140.8085 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+    phase_wall_s=8.8413;8.6449;8.7662;8.5988
+  run=2 balanced wall_s=21.8943 cpu_s=114.5122 rebuilds=1 optimizations=2 rebuild_ms=0.0875 optimize_ms=0.0126 publication_wait_ms=0.0548 publication_hold_ms=0.0021 max_publication_pause_ms=0.0572 last_window_samples=232255 read_checksum=0 verified=true
+    phase_wall_s=9.1480;4.4597;4.0850;4.2014

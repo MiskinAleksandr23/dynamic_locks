@@ -1,0 +1,31 @@
+{
+  "checked_utc": "2026-09-22T13:15:15.897913+00:00",
+  "verified_runs": 31,
+  "sources_and_binary_unchanged": true,
+  "new_measurements": [
+    "genetic",
+    "fixed"
+  ],
+  "dynamic_dp_and_balanced_rerun": false,
+  "series": {
+    "full_8t": {
+      "verified_runs": 15,
+      "manifest_sha256": "e65dc31312569e7793f7e0c62ebd76a24fd627394e5c534e18eda179b3d70262",
+      "started_utc": "2026-09-22T12:27:07.892676+00:00",
+      "finished_utc": "2026-09-22T12:46:42.534493+00:00"
+    },
+    "fixed_full_8t": {
+      "verified_runs": 15,
+      "manifest_sha256": "393b30d3e362ae16ec1fbf07486698b34c9b750d194be04a918bc5f41a6397c1",
+      "started_utc": "2026-09-22T12:46:55.195927+00:00",
+      "finished_utc": "2026-09-22T13:11:58.004121+00:00"
+    },
+    "sliding_genetic_10s_8t": {
+      "verified_runs": 1,
+      "manifest_sha256": "a9251c9880991c33e12fd223f570656627e15bf4893dc8ca5dbc5c9ca2814ec8",
+      "started_utc": "2026-09-22T13:11:58.078169+00:00",
+      "finished_utc": "2026-09-22T13:13:32.699562+00:00"
+    }
+  },
+  "sliding_10s_matches_previous_parameters": true
+}

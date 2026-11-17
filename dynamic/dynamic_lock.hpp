@@ -1,549 +1,298 @@
 #pragma once
 
+#include "common/range_lock.hpp"
+#include "dynamic/partitioner.hpp"
+#include "genetic/histogram_partitioner.hpp"
+
 #include <algorithm>
 #include <array>
 #include <atomic>
 #include <chrono>
+#include <condition_variable>
+#include <cstdint>
 #include <limits>
 #include <mutex>
-#include <numeric>
+#include <stdexcept>
 #include <thread>
 #include <vector>
+#include <utility>
+
+enum class PartitionStrategy { DynamicProgramming, Balanced, Genetic };
 
 template <size_t kLockCnt, typename Mutex = std::mutex> class DynamicLock {
-public:
-  explicit DynamicLock(size_t array_size, size_t stats_sample_rate = 1,
-                       double min_rebuild_gain = 1.0,
-                       double min_rebuild_skew = 4.0)
-      : array_size_(array_size),
-        block_size_(array_size == 0 ? 1 : 1 + ((array_size - 1) / kBlocks)),
-        stats_sample_rate_(std::max(stats_sample_rate, size_t{1})),
-        total_lock_time_(std::chrono::nanoseconds(0)),
-        min_rebuild_gain_(std::max(min_rebuild_gain, 1.0)),
-        min_rebuild_skew_(std::max(min_rebuild_skew, 1.0)) {
-    partitions_.resize(kLockCnt + 1);
-    for (size_t i = 0; i <= kLockCnt; ++i) {
-      partitions_[i] = i * kBlocks / kLockCnt;
-    }
-    partitions_[kLockCnt] = kBlocks;
-    RefreshBlockToLock();
+  static_assert(kLockCnt > 0);
+  static_assert(kLockCnt <= std::numeric_limits<size_t>::max() / 64);
+  static constexpr size_t kMaxBins = 64 * kLockCnt;
+  static constexpr double kMinimumImprovement = 0.10;
 
-    for (auto &value : stats_) {
-      value.store(0, std::memory_order_relaxed);
+public:
+  explicit DynamicLock(size_t array_size, size_t stats_sample_rate = 64,
+                       PartitionStrategy strategy = PartitionStrategy::DynamicProgramming,
+                       uint64_t genetic_seed = 123)
+      : array_size_(array_size),
+        bin_size_(array_size == 0 ? 1 : 1 + (array_size - 1) / kMaxBins),
+        bin_count_(array_size == 0 ? 0 : 1 + (array_size - 1) / bin_size_),
+        sample_threshold_(std::numeric_limits<uint64_t>::max() /
+                          std::max(stats_sample_rate, size_t{1})),
+        strategy_(strategy),
+        genetic_seed_(genetic_seed),
+        starts_(bin_count_), ends_(bin_count_) {
+    const size_t count = std::min(kLockCnt, bin_count_);
+    cuts_.push_back(0);
+    for (size_t index = 1; index <= count; ++index) {
+      cuts_.push_back(index * bin_count_ / count);
     }
-    for (auto &value : boundary_crossings_) {
-      value.store(0, std::memory_order_relaxed);
+    for (size_t index = 0; index < kLockCnt; ++index) {
+      locks_[index].sampling_state = index + 1;
     }
-    last_stats_.fill(0);
+    RefreshMapping();
   }
+
+  ~DynamicLock() { StopRebuilder(); }
+  DynamicLock(const DynamicLock &) = delete;
+  DynamicLock &operator=(const DynamicLock &) = delete;
 
   template <typename Func>
   void WriteQuery(size_t left, size_t right, Func &&func) {
+    Query<false>(left, right, std::forward<Func>(func));
+  }
+
+  template <typename Func>
+  void ReadQuery(size_t left, size_t right, Func &&func) {
+    Query<true>(left, right, std::forward<Func>(func));
+  }
+
+private:
+  template <bool Read, typename Func>
+  void Query(size_t left, size_t right, Func &&func) {
     if (array_size_ == 0) {
       return;
     }
-
-    left = std::min(left, array_size_ - 1);
-    right = std::min(right, array_size_ - 1);
-    if (left > right) {
-      std::swap(left, right);
-    }
-
-    const auto start = std::chrono::steady_clock::now();
-
-    while (true) {
-      while (pause_queries_.load(std::memory_order_acquire)) {
-        std::this_thread::yield();
-      }
-
-      const size_t epoch = partition_epoch_.load(std::memory_order_acquire);
-      if ((epoch & size_t{1}) != 0) {
+    Normalize(left, right);
+    const size_t first_bin = left / bin_size_;
+    const size_t last_bin = right / bin_size_;
+    for (;;) {
+      const size_t version = epoch_.load(std::memory_order_acquire);
+      if (version & 1) {
         std::this_thread::yield();
         continue;
       }
-      const auto [lock_start, lock_end] = FindLocksSegmentUnlocked(left, right);
-      if (lock_start > lock_end) {
+      const size_t first = bin_to_lock_[first_bin].load(std::memory_order_relaxed);
+      const size_t last = first_bin == last_bin ? first
+          : bin_to_lock_[last_bin].load(std::memory_order_relaxed);
+      if (first > last) {
         continue;
       }
-
-      if (lock_start == lock_end) {
-        std::lock_guard guard(locks_[lock_start]);
-        const size_t current_epoch =
-            partition_epoch_.load(std::memory_order_acquire);
-        if (epoch != current_epoch || (current_epoch & size_t{1}) != 0) {
-          continue;
-        }
-        AddDuration(total_lock_time_, std::chrono::steady_clock::now() - start);
-        ++operation_count_;
-        if (ShouldSampleStats()) {
-          UpdateStats(left, right);
-        }
-        func(left, right);
-        return;
-      }
-
-      RangeLockGuard guard(locks_, lock_start, lock_end);
-      const size_t current_epoch =
-          partition_epoch_.load(std::memory_order_acquire);
-      if (epoch != current_epoch || (current_epoch & size_t{1}) != 0) {
+      dynamic_lock_detail::RangeLockGuard<decltype(locks_), Read> guard(locks_, first, last);
+      if (epoch_.load(std::memory_order_relaxed) != version) {
         continue;
       }
-
-      AddDuration(total_lock_time_, std::chrono::steady_clock::now() - start);
-      ++operation_count_;
-      if (ShouldSampleStats()) {
-        UpdateStats(left, right);
+      if constexpr (Read) {
+        // Readers can share a data lock, so neither RNG state nor histogram
+        // updates may rely on exclusive ownership. Same read path for all mutex types.
+        static thread_local uint64_t sampling_state = 1;
+        if (Sample(sampling_state)) {
+          std::atomic_ref<uint64_t>(starts_[first_bin]).fetch_add(1, std::memory_order_relaxed);
+          std::atomic_ref<uint64_t>(ends_[last_bin]).fetch_add(1, std::memory_order_relaxed);
+        }
+      } else if (Sample(locks_[first].sampling_state)) {
+        // Exclusive data locks exclude readers of these bins too. The rebuilder
+        // holds every data lock exclusively before accessing/swapping counters.
+        ++starts_[first_bin];
+        ++ends_[last_bin];
       }
       func(left, right);
       return;
     }
   }
 
-  void
-  StartRebuilder(std::chrono::milliseconds interval = std::chrono::seconds(60),
-                 double change_threshold = 0.3) {
-    if (rebuild_thread_.joinable()) {
+public:
+  void StartRebuilder(std::chrono::milliseconds interval =
+                          std::chrono::milliseconds(30'000)) {
+    if (interval.count() <= 0) {
+      throw std::invalid_argument("rebuild interval must be positive");
+    }
+    std::lock_guard lifecycle(lifecycle_mutex_);
+    if (rebuilder_.joinable()) {
       return;
     }
-
-    stop_rebuilder_ = false;
-    collect_stats_.store(true, std::memory_order_release);
-    rebuilder_running_.store(true, std::memory_order_release);
-    rebuild_thread_ = std::thread([this, interval, change_threshold]() {
-      while (!stop_rebuilder_) {
-        auto slept = std::chrono::milliseconds(0);
-        while (!stop_rebuilder_ && slept < interval) {
-          const auto step =
-              std::min(std::chrono::milliseconds(50), interval - slept);
-          std::this_thread::sleep_for(step);
-          slept += step;
-        }
-        if (stop_rebuilder_) {
+    rebuilder_ = std::jthread([this, interval](std::stop_token stop) {
+      std::unique_lock sleep(sleep_mutex_);
+      while (!stop.stop_requested()) {
+        wake_.wait_for(sleep, stop, interval, [] { return false; });
+        if (stop.stop_requested()) {
           break;
         }
-
-        if (ShouldRebuild(change_threshold) && RebuildPartitions()) {
-          ++rebuild_count_;
-        }
+        sleep.unlock();
+        RebuildNow();
+        sleep.lock();
       }
     });
   }
 
   void StopRebuilder() {
-    stop_rebuilder_ = true;
-    if (rebuild_thread_.joinable()) {
-      rebuild_thread_.join();
-    }
-    rebuilder_running_.store(false, std::memory_order_release);
-    collect_stats_.store(false, std::memory_order_release);
-  }
-
-  void ForceSaveStats() {
-    std::lock_guard lock(stats_mutex_);
-    for (size_t i = 0; i < kBlocks; ++i) {
-      last_stats_[i] = stats_[i].exchange(0, std::memory_order_relaxed);
-      boundary_crossings_[i].store(0, std::memory_order_relaxed);
+    std::lock_guard lifecycle(lifecycle_mutex_);
+    if (rebuilder_.joinable()) {
+      rebuilder_.request_stop();
+      wake_.notify_all();
+      rebuilder_.join();
     }
   }
 
-  void RebuildNow() {
-    const auto current_stats = SnapshotStats();
-    const size_t total_ops =
-        std::accumulate(current_stats.begin(), current_stats.end(), size_t{0});
-    if (total_ops == 0) {
-      return;
+  bool RebuildNow() {
+    std::lock_guard rebuild(rebuild_mutex_);
+    if (bin_count_ < 2) {
+      return false;
     }
-
-    if (RebuildPartitions()) {
-      ++rebuild_count_;
+    const auto begin = std::chrono::steady_clock::now();
+    std::vector<uint64_t> starts(bin_count_), ends(bin_count_);
+    {
+      Pause pause(epoch_);
+      dynamic_lock_detail::RangeLockGuard all(locks_, 0, kLockCnt - 1);
+      starts.swap(starts_);
+      ends.swap(ends_);
     }
-  }
+    bool changed = false;
 
-  double GetAvgLockTimeMs() const {
-    const size_t operations = operation_count_.load();
-    if (operations == 0) {
-      return 0.0;
+    uint64_t samples = 0;
+    for (const auto count : starts) {
+      samples += count;
     }
-
-    const auto total = total_lock_time_.load();
-    return std::chrono::duration<double, std::milli>(total).count() /
-           operations;
+    if (samples < kLockCnt / kMinimumImprovement) {
+      Pause pause(epoch_);
+      dynamic_lock_detail::RangeLockGuard all(locks_, 0, kLockCnt - 1);
+      for (size_t bin = 0; bin < bin_count_; ++bin) {
+        starts_[bin] += starts[bin];
+        ends_[bin] += ends[bin];
+      }
+    } else {
+      std::vector<uint64_t> weights(bin_count_);
+      uint64_t active = 0;
+      long double total_weight = 0, bin_cost = 0;
+      for (size_t bin = 0; bin < bin_count_; ++bin) {
+        active += starts[bin];
+        weights[bin] = active;
+        total_weight += active;
+        bin_cost += static_cast<long double>(active) * active;
+        active -= ends[bin];
+      }
+      const auto current_cost = dynamic_lock_detail::PartitionLoadCost(weights, cuts_);
+      const auto lower_bound = std::max(bin_cost, total_weight * total_weight /
+                                                   std::min(kLockCnt, bin_count_));
+      std::vector<size_t> plan;
+      if (lower_bound < current_cost * (1.0 - kMinimumImprovement)) {
+        ++optimization_count_;
+        switch (strategy_) {
+        case PartitionStrategy::DynamicProgramming:
+          plan = dynamic_lock_detail::DynamicProgrammingPartitions(weights, kLockCnt);
+          break;
+        case PartitionStrategy::Balanced:
+          plan = dynamic_lock_detail::BalancePartitions(weights, kLockCnt);
+          break;
+        case PartitionStrategy::Genetic:
+          plan = dynamic_lock_detail::GeneticPartitions(weights, kLockCnt, cuts_, genetic_seed_);
+          break;
+        }
+      }
+      if (!plan.empty() && plan != cuts_ &&
+          dynamic_lock_detail::PartitionLoadCost(weights, plan) <
+              current_cost * (1.0 - kMinimumImprovement)) {
+        Pause pause(epoch_);
+        dynamic_lock_detail::RangeLockGuard all(locks_, 0, kLockCnt - 1);
+        cuts_ = plan;
+        RefreshMapping();
+        ++rebuild_count_;
+        changed = true;
+      }
+    }
+    rebuild_time_ += std::chrono::steady_clock::now() - begin;
+    return changed;
   }
 
-  double GetTotalLockTimeMs() const {
-    const auto total = total_lock_time_.load();
-    return std::chrono::duration<double, std::milli>(total).count();
+  size_t GetRebuildCount() const {
+    std::lock_guard lock(rebuild_mutex_);
+    return rebuild_count_;
   }
 
-  void ResetRuntimeStats() {
-    operation_count_.store(0, std::memory_order_relaxed);
-    total_lock_time_.store(std::chrono::nanoseconds(0),
-                           std::memory_order_relaxed);
+  double GetRebuildTimeMs() const {
+    std::lock_guard lock(rebuild_mutex_);
+    return std::chrono::duration<double, std::milli>(rebuild_time_).count();
   }
 
-  size_t GetRebuildCount() const { return rebuild_count_.load(); }
-  size_t GetOperationCount() const { return operation_count_.load(); }
-
-  void SetStatsSampleRate(size_t sample_rate) {
-    stats_sample_rate_ = std::max(sample_rate, size_t{1});
+  size_t GetOptimizationCount() const {
+    std::lock_guard lock(rebuild_mutex_);
+    return optimization_count_;
   }
 
   std::vector<size_t> PartitionCuts() const {
-    std::lock_guard lock(partitions_mutex_);
-    return partitions_;
+    std::lock_guard lock(rebuild_mutex_);
+    auto positions = cuts_;
+    for (auto &cut : positions) {
+      cut = cut == bin_count_ ? array_size_ : cut * bin_size_;
+    }
+    return positions;
   }
 
   size_t CountLocksForRange(size_t left, size_t right) const {
-    if (array_size_ == 0) [[unlikely]] {
+    if (array_size_ == 0) {
       return 0;
     }
+    Normalize(left, right);
+    std::lock_guard lock(rebuild_mutex_);
+    return bin_to_lock_[right / bin_size_].load(std::memory_order_relaxed) -
+               bin_to_lock_[left / bin_size_].load(std::memory_order_relaxed) + 1;
+  }
 
+private:
+  class Pause {
+  public:
+    explicit Pause(std::atomic<size_t> &epoch) : epoch_(epoch) {
+      epoch_.fetch_add(1, std::memory_order_acq_rel);
+    }
+    ~Pause() { epoch_.fetch_add(1, std::memory_order_release); }
+    Pause(const Pause &) = delete;
+    Pause &operator=(const Pause &) = delete;
+  private:
+    std::atomic<size_t> &epoch_;
+  };
+
+  bool Sample(uint64_t &state) const {
+    state ^= state >> 12;
+    state ^= state << 25;
+    state ^= state >> 27;
+    return state * UINT64_C(2685821657736338717) <= sample_threshold_;
+  }
+
+  void Normalize(size_t &left, size_t &right) const {
     left = std::min(left, array_size_ - 1);
     right = std::min(right, array_size_ - 1);
     if (left > right) {
       std::swap(left, right);
     }
-
-    std::lock_guard lock(partitions_mutex_);
-    const auto [lock_start, lock_end] = FindLocksSegmentUnlocked(left, right);
-    return lock_end - lock_start + 1;
-  }
-  ~DynamicLock() { StopRebuilder(); }
-
-private:
-  static constexpr size_t kBlocks = 1024;
-  // Penalizes cuts that split observed range queries. Point queries do not
-  // cross any boundary, so the original hotspot behavior remains unchanged.
-  static constexpr size_t kBoundaryCrossingPenalty = 10'000'000;
-
-  const size_t array_size_;
-  const size_t block_size_;
-
-  std::array<Mutex, kLockCnt> locks_;
-  std::array<std::atomic<size_t>, kBlocks> block_to_lock_{};
-  std::array<std::atomic<size_t>, kBlocks> stats_;
-  std::array<std::atomic<size_t>, kBlocks> boundary_crossings_;
-  std::array<size_t, kBlocks> last_stats_{};
-  mutable Mutex stats_mutex_;
-
-  std::vector<size_t> partitions_;
-  mutable Mutex partitions_mutex_;
-
-  std::atomic<bool> rebuild_flag_{false};
-  std::atomic<bool> collect_stats_{false};
-  std::atomic<bool> pause_queries_{false};
-  std::atomic<bool> rebuilder_running_{false};
-  std::atomic<size_t> active_queries_{0};
-  std::atomic<size_t> partition_epoch_{0};
-  std::thread rebuild_thread_;
-  std::atomic<bool> stop_rebuilder_{false};
-
-  std::atomic<size_t> rebuild_count_{0};
-  std::atomic<size_t> operation_count_{0};
-  size_t stats_sample_rate_;
-  std::atomic<std::chrono::nanoseconds> total_lock_time_;
-  const double min_rebuild_gain_;
-  const double min_rebuild_skew_;
-
-  size_t PositionToBlock(size_t pos) const {
-    return std::min(pos / block_size_, kBlocks - 1);
   }
 
-  bool ShouldSampleStats() const {
-    if (!collect_stats_.load(std::memory_order_relaxed)) {
-      return false;
-    }
-
-    if (stats_sample_rate_ <= 1) {
-      return true;
-    }
-
-    static thread_local size_t counter = 0;
-    ++counter;
-    if ((stats_sample_rate_ & (stats_sample_rate_ - 1)) == 0) {
-      return (counter & (stats_sample_rate_ - 1)) == 0;
-    }
-    return counter % stats_sample_rate_ == 0;
-  }
-
-  class RangeLockGuard {
-  public:
-    RangeLockGuard(std::array<Mutex, kLockCnt> &locks, size_t first,
-                   size_t last)
-        : locks_(locks), first_(first) {
-      try {
-        for (size_t index = first; index <= last; ++index) {
-          locks_[index].lock();
-          ++locked_count_;
-        }
-      } catch (...) {
-        UnlockAll();
-        throw;
+  void RefreshMapping() {
+    for (size_t index = 1; index < cuts_.size(); ++index) {
+      for (size_t bin = cuts_[index - 1]; bin < cuts_[index]; ++bin) {
+        bin_to_lock_[bin].store(index - 1, std::memory_order_relaxed);
       }
     }
-
-    RangeLockGuard(const RangeLockGuard &) = delete;
-    RangeLockGuard &operator=(const RangeLockGuard &) = delete;
-
-    ~RangeLockGuard() { UnlockAll(); }
-
-  private:
-    std::array<Mutex, kLockCnt> &locks_;
-    size_t first_;
-    size_t locked_count_ = 0;
-
-    void UnlockAll() {
-      while (locked_count_ > 0) {
-        --locked_count_;
-        locks_[first_ + locked_count_].unlock();
-      }
-    }
-  };
-
-  static void AddDuration(std::atomic<std::chrono::nanoseconds> &target,
-                          std::chrono::nanoseconds delta) {
-    auto current = target.load(std::memory_order_relaxed);
-    while (!target.compare_exchange_weak(current, current + delta,
-                                         std::memory_order_relaxed,
-                                         std::memory_order_relaxed)) {
-    }
   }
 
-  void RefreshBlockToLock() {
-    size_t lock_index = 0;
-    for (size_t block = 0; block < kBlocks; ++block) {
-      while (lock_index + 1 < kLockCnt &&
-             block >= partitions_[lock_index + 1]) {
-        ++lock_index;
-      }
-      block_to_lock_[block].store(lock_index, std::memory_order_relaxed);
-    }
-  }
-
-  std::pair<size_t, size_t> FindLocksSegmentUnlocked(size_t left,
-                                                     size_t right) const {
-    const size_t left_block = PositionToBlock(left);
-    const size_t right_block = PositionToBlock(right);
-    return {block_to_lock_[left_block].load(std::memory_order_relaxed),
-            block_to_lock_[right_block].load(std::memory_order_relaxed)};
-  }
-
-  void UpdateStats(size_t left, size_t right) {
-    const size_t left_block = PositionToBlock(left);
-    const size_t right_block = PositionToBlock(right);
-
-    for (size_t block = left_block; block <= right_block && block < kBlocks;
-         ++block) {
-      stats_[block].fetch_add(1, std::memory_order_relaxed);
-    }
-
-    for (size_t boundary = left_block + 1;
-         boundary <= right_block && boundary < kBlocks; ++boundary) {
-      boundary_crossings_[boundary].fetch_add(1, std::memory_order_relaxed);
-    }
-  }
-
-  std::array<size_t, kBlocks> SnapshotStats() const {
-    std::array<size_t, kBlocks> snapshot{};
-    for (size_t i = 0; i < kBlocks; ++i) {
-      snapshot[i] = stats_[i].load(std::memory_order_relaxed);
-    }
-    return snapshot;
-  }
-
-  std::array<size_t, kBlocks> SnapshotBoundaryCrossings() const {
-    std::array<size_t, kBlocks> snapshot{};
-    for (size_t i = 0; i < kBlocks; ++i) {
-      snapshot[i] = boundary_crossings_[i].load(std::memory_order_relaxed);
-    }
-    return snapshot;
-  }
-
-  bool ShouldRebuild(double threshold) {
-    std::lock_guard lock(stats_mutex_);
-    const auto current_stats = SnapshotStats();
-
-    const size_t total_ops =
-        std::accumulate(current_stats.begin(), current_stats.end(), size_t{0});
-    if (total_ops < 1000) {
-      return false;
-    }
-    if (!HasEnoughSkew(current_stats, total_ops)) {
-      ResetCollectedStatsUnlocked(current_stats);
-      return false;
-    }
-
-    const size_t last_total =
-        std::accumulate(last_stats_.begin(), last_stats_.end(), size_t{0});
-    if (last_total == 0) {
-      last_stats_ = current_stats;
-      return true;
-    }
-
-    double diff = 0.0;
-    size_t comparable_blocks = 0;
-    for (size_t i = 0; i < kBlocks; ++i) {
-      const auto old_value = static_cast<double>(last_stats_[i]);
-      const auto new_value = static_cast<double>(current_stats[i]);
-      if (old_value == 0.0 && new_value == 0.0) {
-        continue;
-      }
-
-      diff += std::abs(new_value - old_value) / std::max(old_value, 1.0);
-      comparable_blocks++;
-    }
-
-    if (comparable_blocks == 0) {
-      return false;
-    }
-
-    return diff / static_cast<double>(comparable_blocks) > threshold;
-  }
-
-  bool HasEnoughSkew(const std::array<size_t, kBlocks> &stats,
-                     size_t total_ops) const {
-    const size_t max_block = *std::max_element(stats.begin(), stats.end());
-    const double average_block =
-        static_cast<double>(total_ops) / static_cast<double>(kBlocks);
-    return average_block > 0.0 &&
-           static_cast<double>(max_block) / average_block >=
-               min_rebuild_skew_;
-  }
-
-  std::vector<size_t>
-  OptimizePartitions(const std::vector<size_t> &prefix_sum,
-                     const std::array<size_t, kBlocks> &boundary_crossings) {
-    const size_t inf = std::numeric_limits<size_t>::max();
-
-    std::vector dp(kBlocks + 1, std::vector(kLockCnt + 1, inf));
-    std::vector split(kBlocks + 1, std::vector<size_t>(kLockCnt + 1, 0));
-
-    dp[0][0] = 0;
-
-    for (size_t right = 1; right <= kBlocks; ++right) {
-      for (size_t locks = 1; locks <= kLockCnt; ++locks) {
-        for (size_t left = 0; left < right; ++left) {
-          if (dp[left][locks - 1] == inf) {
-            continue;
-          }
-
-          const size_t weight = prefix_sum[right] - prefix_sum[left];
-          const size_t cut_penalty =
-              left == 0 ? 0
-                        : kBoundaryCrossingPenalty * boundary_crossings[left];
-          const size_t candidate =
-              dp[left][locks - 1] + weight * weight + cut_penalty;
-          if (candidate < dp[right][locks]) {
-            dp[right][locks] = candidate;
-            split[right][locks] = left;
-          }
-        }
-      }
-    }
-
-    std::vector<size_t> new_partitions(kLockCnt + 1, 0);
-    new_partitions[kLockCnt] = kBlocks;
-
-    size_t current = kBlocks;
-    for (size_t locks = kLockCnt; locks > 0; --locks) {
-      new_partitions[locks - 1] = split[current][locks];
-      current = split[current][locks];
-    }
-
-    return new_partitions;
-  }
-
-  size_t PartitionCost(const std::vector<size_t> &partitions,
-                       const std::vector<size_t> &prefix_sum,
-                       const std::array<size_t, kBlocks> &boundary_crossings)
-      const {
-    size_t total = 0;
-    for (size_t lock_index = 0; lock_index < kLockCnt; ++lock_index) {
-      const size_t left = partitions[lock_index];
-      const size_t right = partitions[lock_index + 1];
-      const size_t weight = prefix_sum[right] - prefix_sum[left];
-      const size_t cut_penalty =
-          left == 0 ? 0 : kBoundaryCrossingPenalty * boundary_crossings[left];
-      total += weight * weight + cut_penalty;
-    }
-    return total;
-  }
-
-  bool HasEnoughPartitionGain(
-      const std::vector<size_t> &current_partitions,
-      const std::vector<size_t> &new_partitions,
-      const std::vector<size_t> &prefix_sum,
-      const std::array<size_t, kBlocks> &boundary_crossings) const {
-    if (new_partitions == current_partitions) {
-      return false;
-    }
-
-    const size_t current_cost =
-        PartitionCost(current_partitions, prefix_sum, boundary_crossings);
-    const size_t new_cost =
-        PartitionCost(new_partitions, prefix_sum, boundary_crossings);
-    if (new_cost == 0) {
-      return current_cost != 0;
-    }
-
-    return static_cast<long double>(current_cost) >
-           static_cast<long double>(new_cost) * min_rebuild_gain_;
-  }
-
-  void ResetCollectedStatsUnlocked(
-      const std::array<size_t, kBlocks> &current_stats) {
-    last_stats_ = current_stats;
-    for (size_t i = 0; i < kBlocks; ++i) {
-      stats_[i].store(0, std::memory_order_relaxed);
-      boundary_crossings_[i].store(0, std::memory_order_relaxed);
-    }
-  }
-
-  bool RebuildPartitions() {
-    if (rebuild_flag_.exchange(true)) {
-      return false;
-    }
-
-    const auto current_stats = SnapshotStats();
-    const auto current_boundary_crossings = SnapshotBoundaryCrossings();
-    std::vector<size_t> prefix_sum(kBlocks + 1, 0);
-    for (size_t i = 0; i < kBlocks; ++i) {
-      prefix_sum[i + 1] = prefix_sum[i] + current_stats[i];
-    }
-
-    auto new_partitions =
-        OptimizePartitions(prefix_sum, current_boundary_crossings);
-
-    {
-      std::lock_guard parts_lock(partitions_mutex_);
-      if (!HasEnoughPartitionGain(partitions_, new_partitions, prefix_sum,
-                                  current_boundary_crossings)) {
-        std::lock_guard stats_lock(stats_mutex_);
-        ResetCollectedStatsUnlocked(current_stats);
-        rebuild_flag_ = false;
-        return false;
-      }
-    }
-
-    pause_queries_.store(true, std::memory_order_release);
-    RangeLockGuard all_locks(locks_, 0, kLockCnt - 1);
-    {
-      std::lock_guard parts_lock(partitions_mutex_);
-      std::lock_guard stats_lock(stats_mutex_);
-
-      partitions_ = std::move(new_partitions);
-      partition_epoch_.fetch_add(1, std::memory_order_acq_rel);
-      RefreshBlockToLock();
-      partition_epoch_.fetch_add(1, std::memory_order_release);
-      last_stats_ = current_stats;
-      for (size_t i = 0; i < kBlocks; ++i) {
-        stats_[i].store(0, std::memory_order_relaxed);
-        boundary_crossings_[i].store(0, std::memory_order_relaxed);
-      }
-    }
-
-    rebuild_flag_ = false;
-    pause_queries_.store(false, std::memory_order_release);
-    return true;
-  }
+  const size_t array_size_, bin_size_, bin_count_;
+  const uint64_t sample_threshold_;
+  const PartitionStrategy strategy_;
+  const uint64_t genetic_seed_;
+  std::array<dynamic_lock_detail::LockSlot<Mutex>, kLockCnt> locks_;
+  std::array<std::atomic<size_t>, kMaxBins> bin_to_lock_{};
+  std::vector<uint64_t> starts_, ends_;
+  std::vector<size_t> cuts_;
+  std::atomic<size_t> epoch_{0};
+  mutable std::mutex rebuild_mutex_;
+  size_t rebuild_count_ = 0;
+  size_t optimization_count_ = 0;
+  std::chrono::steady_clock::duration rebuild_time_{};
+  std::mutex lifecycle_mutex_, sleep_mutex_;
+  std::condition_variable_any wake_;
+  std::jthread rebuilder_;
 };

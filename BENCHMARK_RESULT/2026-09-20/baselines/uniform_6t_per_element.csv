@@ -1,0 +1,2 @@
+scenario,repetition,implementation,threads,operations,trace_size,unique_queries,array_size,hot_width,range_length,seed,sample_rate,rebuild_interval_ms,wall_s,cpu_s,rebuilds,rebuild_ms,read_checksum,verified,phase_wall_s,partition_cuts
+uniform,1,per_element,6,5000000000,1048576,1048576,1048576,16384,8,10451216379200822465,64,30000,37.4743192,220.828408,0,0,95324514484299,true,37.4637938,

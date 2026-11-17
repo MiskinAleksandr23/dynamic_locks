@@ -1,0 +1,1023 @@
+Start testing: Nov 17 19:39 MSK
+----------------------------------------------------------
+1/14 Testing: multigranularity_lock_tests
+1/14 Test: multigranularity_lock_tests
+Command: "/Users/near/dynamic/build/with-mgl/multigranularity_lock_tests"
+Directory: /Users/near/dynamic/build/with-mgl
+"multigranularity_lock_tests" start time: Nov 17 19:39 MSK
+Output:
+----------------------------------------------------------
+PASS MGL bounds, S/X/IS/IX compatibility, exceptions, overlap oracle and atomic range reads
+<end of output>
+Test time =   0.68 sec
+----------------------------------------------------------
+Test Passed.
+"multigranularity_lock_tests" end time: Nov 17 19:39 MSK
+"multigranularity_lock_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+2/14 Testing: benchmark_mgl_smoke
+2/14 Test: benchmark_mgl_smoke
+Command: "/Users/near/dynamic/build/with-mgl/adaptive_lock_benchmark" "--implementations" "mgl" "--array-size" "4096" "--hot-width" "256" "--range-length" "8" "--operations" "8191" "--threads" "3" "--trace-size" "17" "--repetitions" "1" "--read-percent" "70"
+Directory: /Users/near/dynamic/build/with-mgl
+"benchmark_mgl_smoke" start time: Nov 17 19:39 MSK
+Output:
+----------------------------------------------------------
+fixed/adaptive: 64 mutexes; global: 1; per_element: array_size mutexes.
+sizeof(std::mutex)=64 bytes
+3 workers, 8191 operations/scenario, 1 repetitions
+trace_size=17 unique query budget per phase (all workers)
+array_size=4096 hot_width=256 range_length=8 sample_rate=64 lock_kind=mutex read_percent=70 point_percent=0 model=paper write_body=range rebuild_interval_ms=30000 seed=1
+All work from lock construction through destruction is timed; no warmup.
+Final arrays verified against a deterministic reference after every run.
+Read checksums depend on scheduling and are not equality checks.
+Stored independent worker traces repeat cyclically; identical for all implementations.
+paper bins_requested=1024 lambda=10000 min_samples=640 min_improvement=0.1
+
+uniform
+  run=1 unique_queries=17 phases=1 read_operations=6371 write_operations=1820 point_operations=8191 range_operations=0
+  run=1 mgl wall_s=0.0048 cpu_s=0.0135 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+  median mgl_s=0.0048
+
+clusters_2
+  run=1 unique_queries=17 phases=1 read_operations=6189 write_operations=2002 point_operations=8191 range_operations=0
+  run=1 mgl wall_s=0.0042 cpu_s=0.0116 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+  median mgl_s=0.0042
+
+clusters_8
+  run=1 unique_queries=17 phases=1 read_operations=4369 write_operations=3822 point_operations=8191 range_operations=0
+  run=1 mgl wall_s=0.0029 cpu_s=0.0083 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+  median mgl_s=0.0029
+
+unequal
+  run=1 unique_queries=17 phases=1 read_operations=5915 write_operations=2276 point_operations=8191 range_operations=0
+  run=1 mgl wall_s=0.0025 cpu_s=0.0075 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=103285 verified=true
+  median mgl_s=0.0025
+
+clusters_2_range
+  run=1 unique_queries=17 phases=1 read_operations=4733 write_operations=3458 point_operations=0 range_operations=8191
+  run=1 mgl wall_s=0.0028 cpu_s=0.0082 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=2040745 verified=true
+  median mgl_s=0.0028
+
+clusters_4_range
+  run=1 unique_queries=17 phases=1 read_operations=6098 write_operations=2093 point_operations=0 range_operations=8191
+  run=1 mgl wall_s=0.0025 cpu_s=0.0072 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=1057336 verified=true
+  median mgl_s=0.0025
+
+shift
+  run=1 unique_queries=34 phases=2 read_operations=6054 write_operations=2137 point_operations=8191 range_operations=0
+  run=1 mgl wall_s=0.0025 cpu_s=0.0073 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+    phase_wall_s=0.0012;0.0012
+  median mgl_s=0.0025
+
+steady_range
+  run=1 unique_queries=68 phases=4 read_operations=6120 write_operations=2071 point_operations=0 range_operations=8191
+  run=1 mgl wall_s=0.0026 cpu_s=0.0075 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=1746973 verified=true
+    phase_wall_s=0.0007;0.0007;0.0006;0.0005
+  median mgl_s=0.0026
+
+hot_with_spike
+  run=1 unique_queries=68 phases=4 read_operations=4959 write_operations=3232 point_operations=8191 range_operations=0
+  run=1 mgl wall_s=0.0021 cpu_s=0.0059 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=514001 verified=true
+    phase_wall_s=0.0005;0.0005;0.0005;0.0005
+  median mgl_s=0.0021
+
+islands_range
+  run=1 unique_queries=68 phases=4 read_operations=6255 write_operations=1936 point_operations=0 range_operations=8191
+  run=1 mgl wall_s=0.0023 cpu_s=0.0066 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=8535025 verified=true
+    phase_wall_s=0.0006;0.0005;0.0006;0.0005
+  median mgl_s=0.0023
+
+gradient_range
+  run=1 unique_queries=68 phases=4 read_operations=5940 write_operations=2251 point_operations=0 range_operations=8191
+  run=1 mgl wall_s=0.0023 cpu_s=0.0066 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=2378943 verified=true
+    phase_wall_s=0.0005;0.0006;0.0005;0.0006
+  median mgl_s=0.0023
+
+unequal_widths_range
+  run=1 unique_queries=68 phases=4 read_operations=5711 write_operations=2480 point_operations=0 range_operations=8191
+  run=1 mgl wall_s=0.0018 cpu_s=0.0052 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=2435487 verified=true
+    phase_wall_s=0.0005;0.0004;0.0005;0.0005
+  median mgl_s=0.0018
+
+exchange_range
+  run=1 unique_queries=34 phases=2 read_operations=6735 write_operations=1456 point_operations=0 range_operations=8191
+  run=1 mgl wall_s=0.0020 cpu_s=0.0058 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=759864 verified=true
+    phase_wall_s=0.0010;0.0010
+  median mgl_s=0.0020
+
+moving_variable_range
+  run=1 unique_queries=68 phases=4 read_operations=5915 write_operations=2276 point_operations=796 range_operations=7395
+  run=1 mgl wall_s=0.0021 cpu_s=0.0063 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=238376 verified=true
+    phase_wall_s=0.0005;0.0005;0.0005;0.0005
+  median mgl_s=0.0021
+
+sliding_variable_range
+  run=1 unique_queries=153 phases=9 read_operations=6149 write_operations=2042 point_operations=1110 range_operations=7081
+  run=1 mgl wall_s=0.0020 cpu_s=0.0060 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=123052 verified=true
+    phase_wall_s=0.0002;0.0002;0.0002;0.0002;0.0002;0.0002;0.0002;0.0002;0.0002
+  median mgl_s=0.0020
+<end of output>
+Test time =   0.40 sec
+----------------------------------------------------------
+Test Passed.
+"benchmark_mgl_smoke" end time: Nov 17 19:39 MSK
+"benchmark_mgl_smoke" time elapsed: 00:00:00
+----------------------------------------------------------
+
+3/14 Testing: paper_partitioner_tests
+3/14 Test: paper_partitioner_tests
+Command: "/Users/near/dynamic/build/with-mgl/paper_partitioner_tests"
+Directory: /Users/near/dynamic/build/with-mgl
+"paper_partitioner_tests" start time: Nov 17 19:39 MSK
+Output:
+----------------------------------------------------------
+PASS paper quantiles and exact CHT: exhaustive partitions, crossings, all K, ties, large arithmetic and validation
+<end of output>
+Test time =   0.45 sec
+----------------------------------------------------------
+Test Passed.
+"paper_partitioner_tests" end time: Nov 17 19:39 MSK
+"paper_partitioner_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+4/14 Testing: paper_lock_tests
+4/14 Test: paper_lock_tests
+Command: "/Users/near/dynamic/build/with-mgl/paper_lock_tests"
+Directory: /Users/near/dynamic/build/with-mgl
+"paper_lock_tests" start time: Nov 17 19:39 MSK
+Output:
+----------------------------------------------------------
+PASS paper range semantics, exact hit/crossing statistics, shared readers, read-only adaptation, exception recovery, stale mapping retry and concurrent publications
+<end of output>
+Test time =   0.61 sec
+----------------------------------------------------------
+Test Passed.
+"paper_lock_tests" end time: Nov 17 19:39 MSK
+"paper_lock_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+5/14 Testing: read_write_lock_tests
+5/14 Test: read_write_lock_tests
+Command: "/Users/near/dynamic/build/with-mgl/read_write_lock_tests"
+Directory: /Users/near/dynamic/build/with-mgl
+"read_write_lock_tests" start time: Nov 17 19:39 MSK
+Output:
+----------------------------------------------------------
+PASS shared reader overlap, read statistics, exceptions, mixed atomic ranges and concurrent rebuilds
+<end of output>
+Test time =   0.59 sec
+----------------------------------------------------------
+Test Passed.
+"read_write_lock_tests" end time: Nov 17 19:39 MSK
+"read_write_lock_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+6/14 Testing: dynamic_lock_tests
+6/14 Test: dynamic_lock_tests
+Command: "/Users/near/dynamic/build/with-mgl/dynamic_lock_tests"
+Directory: /Users/near/dynamic/build/with-mgl
+"dynamic_lock_tests" start time: Nov 17 19:39 MSK
+Output:
+----------------------------------------------------------
+PASS fixed: inclusive endpoints, edge sizes, exceptions and concurrency
+PASS per element: inclusive endpoints, exceptions, partial acquisition and concurrency
+PASS dynamic DP: inclusive endpoints, edge sizes, exceptions and concurrency
+PASS dynamic balanced: inclusive endpoints, edge sizes, exceptions and concurrency
+PASS genetic: inclusive endpoints, edge sizes, exceptions and concurrency
+PASS genetic: interval, stable traffic, shift and return
+PASS genetic: rebuilder start, stop, restart and destruction
+PASS genetic: manual rebuild and complete partition coverage
+PASS genetic: rebuild snapshot mutex acquisition failure
+PASS genetic: complete range and separated cluster sampling
+PASS genetic: concurrent writes, manual rebuilds and periodic rebuilds
+PASS DP: rebuilder start, stop, restart and destruction
+PASS balanced: rebuilder start, stop, restart and destruction
+PASS DP: manual rebuild and complete partition coverage
+PASS balanced: manual rebuild and complete partition coverage
+PASS DP: rebuild snapshot mutex acquisition failure
+PASS balanced: rebuild snapshot mutex acquisition failure
+PASS DP: complete range and separated cluster sampling
+PASS balanced: complete range and separated cluster sampling
+PASS DP: concurrent writes, manual rebuilds and periodic rebuilds
+PASS balanced: concurrent writes, manual rebuilds and periodic rebuilds
+<end of output>
+Test time =   0.48 sec
+----------------------------------------------------------
+Test Passed.
+"dynamic_lock_tests" end time: Nov 17 19:39 MSK
+"dynamic_lock_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+7/14 Testing: partitioner_tests
+7/14 Test: partitioner_tests
+Command: "/Users/near/dynamic/build/with-mgl/partitioner_tests"
+Directory: /Users/near/dynamic/build/with-mgl
+"partitioner_tests" start time: Nov 17 19:39 MSK
+Output:
+----------------------------------------------------------
+partitioner: exhaustive balance and original DP checks passed
+<end of output>
+Test time =   0.39 sec
+----------------------------------------------------------
+Test Passed.
+"partitioner_tests" end time: Nov 17 19:39 MSK
+"partitioner_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+8/14 Testing: genetic_partitioner_tests
+8/14 Test: genetic_partitioner_tests
+Command: "/Users/near/dynamic/build/with-mgl/genetic_partitioner_tests"
+Directory: /Users/near/dynamic/build/with-mgl
+"genetic_partitioner_tests" start time: Nov 17 19:39 MSK
+Output:
+----------------------------------------------------------
+genetic: coverage, incumbent, DP lower bound, reproducibility passed; 210 evolutionary improvements
+<end of output>
+Test time =   0.53 sec
+----------------------------------------------------------
+Test Passed.
+"genetic_partitioner_tests" end time: Nov 17 19:39 MSK
+"genetic_partitioner_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+9/14 Testing: benchmark_workload_tests
+9/14 Test: benchmark_workload_tests
+Command: "/Users/near/dynamic/build/with-mgl/benchmark_workload_tests"
+Directory: /Users/near/dynamic/build/with-mgl
+"benchmark_workload_tests" start time: Nov 17 19:39 MSK
+Output:
+----------------------------------------------------------
+New workload geometry, traffic shares, phase counts and range validation passed
+<end of output>
+Test time =   0.52 sec
+----------------------------------------------------------
+Test Passed.
+"benchmark_workload_tests" end time: Nov 17 19:39 MSK
+"benchmark_workload_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+10/14 Testing: example
+10/14 Test: example
+Command: "/Users/near/dynamic/build/with-mgl/example"
+Directory: /Users/near/dynamic/build/with-mgl
+"example" start time: Nov 17 19:39 MSK
+Output:
+----------------------------------------------------------
+All elements verified
+<end of output>
+Test time =   0.37 sec
+----------------------------------------------------------
+Test Passed.
+"example" end time: Nov 17 19:39 MSK
+"example" time elapsed: 00:00:00
+----------------------------------------------------------
+
+11/14 Testing: benchmark_smoke
+11/14 Test: benchmark_smoke
+Command: "/Users/near/dynamic/build/with-mgl/adaptive_lock_benchmark" "--operations" "8192" "--threads" "4" "--repetitions" "1"
+Directory: /Users/near/dynamic/build/with-mgl
+"benchmark_smoke" start time: Nov 17 19:39 MSK
+Output:
+----------------------------------------------------------
+fixed/adaptive: 64 mutexes; global: 1; per_element: array_size mutexes.
+sizeof(std::mutex)=64 bytes
+4 workers, 8192 operations/scenario, 1 repetitions
+trace_size=1048576 unique query budget per phase (all workers)
+array_size=1048576 hot_width=16384 range_length=8 sample_rate=64 lock_kind=mutex read_percent=0 point_percent=0 model=paper write_body=range rebuild_interval_ms=30000 seed=1
+All work from lock construction through destruction is timed; no warmup.
+Final arrays verified against a deterministic reference after every run.
+Read checksums depend on scheduling and are not equality checks.
+Stored independent worker traces repeat cyclically; identical for all implementations.
+paper bins_requested=1024 lambda=10000 min_samples=640 min_improvement=0.1
+
+uniform
+  run=1 unique_queries=8192 phases=1 read_operations=0 write_operations=8192 point_operations=8192 range_operations=0
+  run=1 fixed wall_s=0.0007 cpu_s=0.0017 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+  run=1 balanced wall_s=0.0006 cpu_s=0.0014 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+  run=1 dynamic_dp wall_s=0.0004 cpu_s=0.0010 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+  median fixed_s=0.0007
+  median balanced_s=0.0006 paired_speedup=1.1899 range=[1.1899,1.1899] cpu/fixed=0.7990
+  median dynamic_dp_s=0.0004 paired_speedup=1.5739 range=[1.5739,1.5739] cpu/fixed=0.5708
+
+clusters_2
+  run=1 unique_queries=8192 phases=1 read_operations=0 write_operations=8192 point_operations=8192 range_operations=0
+  run=1 fixed wall_s=0.0009 cpu_s=0.0027 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+  run=1 balanced wall_s=0.0007 cpu_s=0.0020 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+  run=1 dynamic_dp wall_s=0.0008 cpu_s=0.0021 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+  median fixed_s=0.0009
+  median balanced_s=0.0007 paired_speedup=1.3049 range=[1.3049,1.3049] cpu/fixed=0.7371
+  median dynamic_dp_s=0.0008 paired_speedup=1.1700 range=[1.1700,1.1700] cpu/fixed=0.7916
+
+clusters_8
+  run=1 unique_queries=8192 phases=1 read_operations=0 write_operations=8192 point_operations=8192 range_operations=0
+  run=1 dynamic_dp wall_s=0.0006 cpu_s=0.0016 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+  run=1 fixed wall_s=0.0005 cpu_s=0.0012 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+  run=1 balanced wall_s=0.0005 cpu_s=0.0013 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+  median fixed_s=0.0005
+  median balanced_s=0.0005 paired_speedup=0.9065 range=[0.9065,0.9065] cpu/fixed=1.0989
+  median dynamic_dp_s=0.0006 paired_speedup=0.8741 range=[0.8741,0.8741] cpu/fixed=1.3263
+
+unequal
+  run=1 unique_queries=8192 phases=1 read_operations=0 write_operations=8192 point_operations=8192 range_operations=0
+  run=1 fixed wall_s=0.0006 cpu_s=0.0017 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+  run=1 balanced wall_s=0.0007 cpu_s=0.0018 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+  run=1 dynamic_dp wall_s=0.0007 cpu_s=0.0019 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+  median fixed_s=0.0006
+  median balanced_s=0.0007 paired_speedup=0.8751 range=[0.8751,0.8751] cpu/fixed=1.0328
+  median dynamic_dp_s=0.0007 paired_speedup=0.9041 range=[0.9041,0.9041] cpu/fixed=1.0856
+
+clusters_2_range
+  run=1 unique_queries=8192 phases=1 read_operations=0 write_operations=8192 point_operations=0 range_operations=8192
+  run=1 dynamic_dp wall_s=0.0008 cpu_s=0.0020 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+  run=1 fixed wall_s=0.0006 cpu_s=0.0016 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+  run=1 balanced wall_s=0.0007 cpu_s=0.0018 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+  median fixed_s=0.0006
+  median balanced_s=0.0007 paired_speedup=0.8608 range=[0.8608,0.8608] cpu/fixed=1.1397
+  median dynamic_dp_s=0.0008 paired_speedup=0.7686 range=[0.7686,0.7686] cpu/fixed=1.2402
+
+clusters_4_range
+  run=1 unique_queries=8192 phases=1 read_operations=0 write_operations=8192 point_operations=0 range_operations=8192
+  run=1 fixed wall_s=0.0005 cpu_s=0.0014 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+  run=1 balanced wall_s=0.0005 cpu_s=0.0015 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+  run=1 dynamic_dp wall_s=0.0005 cpu_s=0.0013 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+  median fixed_s=0.0005
+  median balanced_s=0.0005 paired_speedup=0.9181 range=[0.9181,0.9181] cpu/fixed=1.1381
+  median dynamic_dp_s=0.0005 paired_speedup=0.9781 range=[0.9781,0.9781] cpu/fixed=0.9712
+
+shift
+  run=1 unique_queries=8192 phases=2 read_operations=0 write_operations=8192 point_operations=8192 range_operations=0
+  run=1 balanced wall_s=0.0006 cpu_s=0.0016 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+    phase_wall_s=0.0003;0.0002
+  run=1 dynamic_dp wall_s=0.0006 cpu_s=0.0015 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+    phase_wall_s=0.0002;0.0003
+  run=1 fixed wall_s=0.0004 cpu_s=0.0011 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+    phase_wall_s=0.0002;0.0002
+  median fixed_s=0.0004
+  median balanced_s=0.0006 paired_speedup=0.7246 range=[0.7246,0.7246] cpu/fixed=1.3749
+  median dynamic_dp_s=0.0006 paired_speedup=0.7669 range=[0.7669,0.7669] cpu/fixed=1.3468
+
+steady_range
+  run=1 unique_queries=8192 phases=4 read_operations=0 write_operations=8192 point_operations=0 range_operations=8192
+  run=1 balanced wall_s=0.0008 cpu_s=0.0020 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+    phase_wall_s=0.0001;0.0002;0.0002;0.0002
+  run=1 dynamic_dp wall_s=0.0006 cpu_s=0.0016 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+    phase_wall_s=0.0001;0.0001;0.0001;0.0001
+  run=1 fixed wall_s=0.0006 cpu_s=0.0015 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+    phase_wall_s=0.0001;0.0001;0.0001;0.0001
+  median fixed_s=0.0006
+  median balanced_s=0.0008 paired_speedup=0.7072 range=[0.7072,0.7072] cpu/fixed=1.3852
+  median dynamic_dp_s=0.0006 paired_speedup=0.9108 range=[0.9108,0.9108] cpu/fixed=1.0785
+
+hot_with_spike
+  run=1 unique_queries=8192 phases=4 read_operations=0 write_operations=8192 point_operations=8192 range_operations=0
+  run=1 dynamic_dp wall_s=0.0005 cpu_s=0.0013 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+    phase_wall_s=0.0001;0.0001;0.0001;0.0001
+  run=1 fixed wall_s=0.0004 cpu_s=0.0010 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+    phase_wall_s=0.0001;0.0001;0.0001;0.0001
+  run=1 balanced wall_s=0.0005 cpu_s=0.0012 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+    phase_wall_s=0.0001;0.0001;0.0001;0.0001
+  median fixed_s=0.0004
+  median balanced_s=0.0005 paired_speedup=0.9079 range=[0.9079,0.9079] cpu/fixed=1.1472
+  median dynamic_dp_s=0.0005 paired_speedup=0.8030 range=[0.8030,0.8030] cpu/fixed=1.2434
+
+islands_range
+  run=1 unique_queries=8192 phases=4 read_operations=0 write_operations=8192 point_operations=0 range_operations=8192
+  run=1 fixed wall_s=0.0005 cpu_s=0.0013 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+    phase_wall_s=0.0001;0.0001;0.0001;0.0001
+  run=1 balanced wall_s=0.0007 cpu_s=0.0019 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+    phase_wall_s=0.0001;0.0001;0.0002;0.0002
+  run=1 dynamic_dp wall_s=0.0007 cpu_s=0.0016 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+    phase_wall_s=0.0001;0.0002;0.0001;0.0001
+  median fixed_s=0.0005
+  median balanced_s=0.0007 paired_speedup=0.7660 range=[0.7660,0.7660] cpu/fixed=1.4459
+  median dynamic_dp_s=0.0007 paired_speedup=0.7966 range=[0.7966,0.7966] cpu/fixed=1.2713
+
+gradient_range
+  run=1 unique_queries=8192 phases=4 read_operations=0 write_operations=8192 point_operations=0 range_operations=8192
+  run=1 balanced wall_s=0.0006 cpu_s=0.0016 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+    phase_wall_s=0.0001;0.0002;0.0001;0.0001
+  run=1 dynamic_dp wall_s=0.0006 cpu_s=0.0014 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+    phase_wall_s=0.0001;0.0001;0.0001;0.0001
+  run=1 fixed wall_s=0.0005 cpu_s=0.0013 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+    phase_wall_s=0.0001;0.0001;0.0001;0.0001
+  median fixed_s=0.0005
+  median balanced_s=0.0006 paired_speedup=0.8054 range=[0.8054,0.8054] cpu/fixed=1.2589
+  median dynamic_dp_s=0.0006 paired_speedup=0.8763 range=[0.8763,0.8763] cpu/fixed=1.0705
+
+unequal_widths_range
+  run=1 unique_queries=8192 phases=4 read_operations=0 write_operations=8192 point_operations=0 range_operations=8192
+  run=1 dynamic_dp wall_s=0.0005 cpu_s=0.0014 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+    phase_wall_s=0.0001;0.0001;0.0001;0.0001
+  run=1 fixed wall_s=0.0004 cpu_s=0.0010 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+    phase_wall_s=0.0001;0.0001;0.0001;0.0001
+  run=1 balanced wall_s=0.0006 cpu_s=0.0014 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+    phase_wall_s=0.0001;0.0001;0.0001;0.0001
+  median fixed_s=0.0004
+  median balanced_s=0.0006 paired_speedup=0.6736 range=[0.6736,0.6736] cpu/fixed=1.3340
+  median dynamic_dp_s=0.0005 paired_speedup=0.7734 range=[0.7734,0.7734] cpu/fixed=1.3537
+
+exchange_range
+  run=1 unique_queries=8192 phases=2 read_operations=0 write_operations=8192 point_operations=0 range_operations=8192
+  run=1 fixed wall_s=0.0006 cpu_s=0.0014 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+    phase_wall_s=0.0003;0.0002
+  run=1 balanced wall_s=0.0005 cpu_s=0.0014 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+    phase_wall_s=0.0002;0.0002
+  run=1 dynamic_dp wall_s=0.0005 cpu_s=0.0014 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+    phase_wall_s=0.0002;0.0002
+  median fixed_s=0.0006
+  median balanced_s=0.0005 paired_speedup=1.0137 range=[1.0137,1.0137] cpu/fixed=1.0007
+  median dynamic_dp_s=0.0005 paired_speedup=1.0379 range=[1.0379,1.0379] cpu/fixed=1.0092
+
+moving_variable_range
+  run=1 unique_queries=8192 phases=4 read_operations=0 write_operations=8192 point_operations=1002 range_operations=7190
+  run=1 balanced wall_s=0.0006 cpu_s=0.0013 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+    phase_wall_s=0.0001;0.0001;0.0001;0.0001
+  run=1 dynamic_dp wall_s=0.0006 cpu_s=0.0015 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+    phase_wall_s=0.0001;0.0001;0.0001;0.0001
+  run=1 fixed wall_s=0.0005 cpu_s=0.0013 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+    phase_wall_s=0.0001;0.0001;0.0001;0.0001
+  median fixed_s=0.0005
+  median balanced_s=0.0006 paired_speedup=0.8780 range=[0.8780,0.8780] cpu/fixed=1.0158
+  median dynamic_dp_s=0.0006 paired_speedup=0.8789 range=[0.8789,0.8789] cpu/fixed=1.1600
+
+sliding_variable_range
+  run=1 unique_queries=8192 phases=9 read_operations=0 write_operations=8192 point_operations=1068 range_operations=7124
+  run=1 dynamic_dp wall_s=0.0007 cpu_s=0.0018 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+    phase_wall_s=0.0001;0.0001;0.0001;0.0001;0.0001;0.0001;0.0001;0.0001;0.0001
+  run=1 fixed wall_s=0.0004 cpu_s=0.0011 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+    phase_wall_s=0.0001;0.0000;0.0000;0.0000;0.0000;0.0000;0.0000;0.0001;0.0001
+  run=1 balanced wall_s=0.0006 cpu_s=0.0013 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+    phase_wall_s=0.0000;0.0001;0.0000;0.0001;0.0001;0.0000;0.0001;0.0000;0.0001
+  median fixed_s=0.0004
+  median balanced_s=0.0006 paired_speedup=0.7442 range=[0.7442,0.7442] cpu/fixed=1.1604
+  median dynamic_dp_s=0.0007 paired_speedup=0.6335 range=[0.6335,0.6335] cpu/fixed=1.6044
+<end of output>
+Test time =   0.08 sec
+----------------------------------------------------------
+Test Passed.
+"benchmark_smoke" end time: Nov 17 19:39 MSK
+"benchmark_smoke" time elapsed: 00:00:00
+----------------------------------------------------------
+
+12/14 Testing: benchmark_cyclic_smoke
+12/14 Test: benchmark_cyclic_smoke
+Command: "/Users/near/dynamic/build/with-mgl/adaptive_lock_benchmark" "--operations" "8191" "--threads" "3" "--trace-size" "17" "--repetitions" "1"
+Directory: /Users/near/dynamic/build/with-mgl
+"benchmark_cyclic_smoke" start time: Nov 17 19:39 MSK
+Output:
+----------------------------------------------------------
+fixed/adaptive: 64 mutexes; global: 1; per_element: array_size mutexes.
+sizeof(std::mutex)=64 bytes
+3 workers, 8191 operations/scenario, 1 repetitions
+trace_size=17 unique query budget per phase (all workers)
+array_size=1048576 hot_width=16384 range_length=8 sample_rate=64 lock_kind=mutex read_percent=0 point_percent=0 model=paper write_body=range rebuild_interval_ms=30000 seed=1
+All work from lock construction through destruction is timed; no warmup.
+Final arrays verified against a deterministic reference after every run.
+Read checksums depend on scheduling and are not equality checks.
+Stored independent worker traces repeat cyclically; identical for all implementations.
+paper bins_requested=1024 lambda=10000 min_samples=640 min_improvement=0.1
+
+uniform
+  run=1 unique_queries=17 phases=1 read_operations=0 write_operations=8191 point_operations=8191 range_operations=0
+  run=1 fixed wall_s=0.0001 cpu_s=0.0003 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+  run=1 balanced wall_s=0.0002 cpu_s=0.0003 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+  run=1 dynamic_dp wall_s=0.0002 cpu_s=0.0003 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+  median fixed_s=0.0001
+  median balanced_s=0.0002 paired_speedup=0.7323 range=[0.7323,0.7323] cpu/fixed=1.1237
+  median dynamic_dp_s=0.0002 paired_speedup=0.8000 range=[0.8000,0.8000] cpu/fixed=1.0535
+
+clusters_2
+  run=1 unique_queries=17 phases=1 read_operations=0 write_operations=8191 point_operations=8191 range_operations=0
+  run=1 fixed wall_s=0.0002 cpu_s=0.0003 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+  run=1 balanced wall_s=0.0003 cpu_s=0.0005 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+  run=1 dynamic_dp wall_s=0.0003 cpu_s=0.0005 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+  median fixed_s=0.0002
+  median balanced_s=0.0003 paired_speedup=0.6670 range=[0.6670,0.6670] cpu/fixed=1.6006
+  median dynamic_dp_s=0.0003 paired_speedup=0.6376 range=[0.6376,0.6376] cpu/fixed=1.6006
+
+clusters_8
+  run=1 unique_queries=17 phases=1 read_operations=0 write_operations=8191 point_operations=8191 range_operations=0
+  run=1 dynamic_dp wall_s=0.0003 cpu_s=0.0006 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+  run=1 fixed wall_s=0.0002 cpu_s=0.0004 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+  run=1 balanced wall_s=0.0004 cpu_s=0.0007 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+  median fixed_s=0.0002
+  median balanced_s=0.0004 paired_speedup=0.6156 range=[0.6156,0.6156] cpu/fixed=1.8766
+  median dynamic_dp_s=0.0003 paired_speedup=0.8832 range=[0.8832,0.8832] cpu/fixed=1.4786
+
+unequal
+  run=1 unique_queries=17 phases=1 read_operations=0 write_operations=8191 point_operations=8191 range_operations=0
+  run=1 fixed wall_s=0.0003 cpu_s=0.0005 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+  run=1 balanced wall_s=0.0003 cpu_s=0.0006 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+  run=1 dynamic_dp wall_s=0.0003 cpu_s=0.0007 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+  median fixed_s=0.0003
+  median balanced_s=0.0003 paired_speedup=0.9214 range=[0.9214,0.9214] cpu/fixed=1.1337
+  median dynamic_dp_s=0.0003 paired_speedup=0.7614 range=[0.7614,0.7614] cpu/fixed=1.3094
+
+clusters_2_range
+  run=1 unique_queries=17 phases=1 read_operations=0 write_operations=8191 point_operations=0 range_operations=8191
+  run=1 dynamic_dp wall_s=0.0003 cpu_s=0.0005 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+  run=1 fixed wall_s=0.0002 cpu_s=0.0004 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+  run=1 balanced wall_s=0.0003 cpu_s=0.0005 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+  median fixed_s=0.0002
+  median balanced_s=0.0003 paired_speedup=0.7766 range=[0.7766,0.7766] cpu/fixed=1.2734
+  median dynamic_dp_s=0.0003 paired_speedup=0.7748 range=[0.7748,0.7748] cpu/fixed=1.2593
+
+clusters_4_range
+  run=1 unique_queries=17 phases=1 read_operations=0 write_operations=8191 point_operations=0 range_operations=8191
+  run=1 fixed wall_s=0.0002 cpu_s=0.0004 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+  run=1 balanced wall_s=0.0002 cpu_s=0.0005 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+  run=1 dynamic_dp wall_s=0.0002 cpu_s=0.0004 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+  median fixed_s=0.0002
+  median balanced_s=0.0002 paired_speedup=0.8844 range=[0.8844,0.8844] cpu/fixed=1.1186
+  median dynamic_dp_s=0.0002 paired_speedup=0.9113 range=[0.9113,0.9113] cpu/fixed=1.0702
+
+shift
+  run=1 unique_queries=34 phases=2 read_operations=0 write_operations=8191 point_operations=8191 range_operations=0
+  run=1 balanced wall_s=0.0003 cpu_s=0.0006 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+    phase_wall_s=0.0001;0.0001
+  run=1 dynamic_dp wall_s=0.0003 cpu_s=0.0007 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+    phase_wall_s=0.0001;0.0001
+  run=1 fixed wall_s=0.0002 cpu_s=0.0005 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+    phase_wall_s=0.0001;0.0001
+  median fixed_s=0.0002
+  median balanced_s=0.0003 paired_speedup=0.7611 range=[0.7611,0.7611] cpu/fixed=1.2452
+  median dynamic_dp_s=0.0003 paired_speedup=0.6706 range=[0.6706,0.6706] cpu/fixed=1.4736
+
+steady_range
+  run=1 unique_queries=68 phases=4 read_operations=0 write_operations=8191 point_operations=0 range_operations=8191
+  run=1 balanced wall_s=0.0003 cpu_s=0.0007 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+    phase_wall_s=0.0001;0.0001;0.0001;0.0001
+  run=1 dynamic_dp wall_s=0.0003 cpu_s=0.0007 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+    phase_wall_s=0.0001;0.0001;0.0001;0.0001
+  run=1 fixed wall_s=0.0003 cpu_s=0.0007 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+    phase_wall_s=0.0001;0.0001;0.0001;0.0001
+  median fixed_s=0.0003
+  median balanced_s=0.0003 paired_speedup=0.9553 range=[0.9553,0.9553] cpu/fixed=1.0292
+  median dynamic_dp_s=0.0003 paired_speedup=0.9103 range=[0.9103,0.9103] cpu/fixed=1.0261
+
+hot_with_spike
+  run=1 unique_queries=68 phases=4 read_operations=0 write_operations=8191 point_operations=8191 range_operations=0
+  run=1 dynamic_dp wall_s=0.0003 cpu_s=0.0006 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+    phase_wall_s=0.0001;0.0001;0.0001;0.0001
+  run=1 fixed wall_s=0.0002 cpu_s=0.0004 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+    phase_wall_s=0.0000;0.0000;0.0000;0.0000
+  run=1 balanced wall_s=0.0003 cpu_s=0.0007 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+    phase_wall_s=0.0001;0.0001;0.0001;0.0001
+  median fixed_s=0.0002
+  median balanced_s=0.0003 paired_speedup=0.6606 range=[0.6606,0.6606] cpu/fixed=1.6709
+  median dynamic_dp_s=0.0003 paired_speedup=0.6871 range=[0.6871,0.6871] cpu/fixed=1.5955
+
+islands_range
+  run=1 unique_queries=68 phases=4 read_operations=0 write_operations=8191 point_operations=0 range_operations=8191
+  run=1 fixed wall_s=0.0003 cpu_s=0.0005 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+    phase_wall_s=0.0001;0.0001;0.0001;0.0001
+  run=1 balanced wall_s=0.0004 cpu_s=0.0008 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+    phase_wall_s=0.0001;0.0001;0.0001;0.0001
+  run=1 dynamic_dp wall_s=0.0004 cpu_s=0.0007 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+    phase_wall_s=0.0001;0.0001;0.0001;0.0001
+  median fixed_s=0.0003
+  median balanced_s=0.0004 paired_speedup=0.7853 range=[0.7853,0.7853] cpu/fixed=1.5173
+  median dynamic_dp_s=0.0004 paired_speedup=0.8637 range=[0.8637,0.8637] cpu/fixed=1.2615
+
+gradient_range
+  run=1 unique_queries=68 phases=4 read_operations=0 write_operations=8191 point_operations=0 range_operations=8191
+  run=1 balanced wall_s=0.0003 cpu_s=0.0006 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+    phase_wall_s=0.0001;0.0001;0.0000;0.0000
+  run=1 dynamic_dp wall_s=0.0003 cpu_s=0.0007 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+    phase_wall_s=0.0001;0.0001;0.0000;0.0001
+  run=1 fixed wall_s=0.0003 cpu_s=0.0005 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+    phase_wall_s=0.0001;0.0001;0.0000;0.0000
+  median fixed_s=0.0003
+  median balanced_s=0.0003 paired_speedup=0.7914 range=[0.7914,0.7914] cpu/fixed=1.1529
+  median dynamic_dp_s=0.0003 paired_speedup=0.7789 range=[0.7789,0.7789] cpu/fixed=1.3492
+
+unequal_widths_range
+  run=1 unique_queries=68 phases=4 read_operations=0 write_operations=8191 point_operations=0 range_operations=8191
+  run=1 dynamic_dp wall_s=0.0003 cpu_s=0.0005 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+    phase_wall_s=0.0000;0.0000;0.0000;0.0000
+  run=1 fixed wall_s=0.0003 cpu_s=0.0004 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+    phase_wall_s=0.0001;0.0001;0.0001;0.0000
+  run=1 balanced wall_s=0.0003 cpu_s=0.0006 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+    phase_wall_s=0.0000;0.0000;0.0000;0.0000
+  median fixed_s=0.0003
+  median balanced_s=0.0003 paired_speedup=1.3060 range=[1.3060,1.3060] cpu/fixed=1.3466
+  median dynamic_dp_s=0.0003 paired_speedup=1.3644 range=[1.3644,1.3644] cpu/fixed=1.2342
+
+exchange_range
+  run=1 unique_queries=34 phases=2 read_operations=0 write_operations=8191 point_operations=0 range_operations=8191
+  run=1 fixed wall_s=0.0003 cpu_s=0.0006 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+    phase_wall_s=0.0001;0.0001
+  run=1 balanced wall_s=0.0003 cpu_s=0.0006 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+    phase_wall_s=0.0001;0.0001
+  run=1 dynamic_dp wall_s=0.0004 cpu_s=0.0008 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+    phase_wall_s=0.0002;0.0002
+  median fixed_s=0.0003
+  median balanced_s=0.0003 paired_speedup=0.9212 range=[0.9212,0.9212] cpu/fixed=1.0272
+  median dynamic_dp_s=0.0004 paired_speedup=0.7174 range=[0.7174,0.7174] cpu/fixed=1.3606
+
+moving_variable_range
+  run=1 unique_queries=68 phases=4 read_operations=0 write_operations=8191 point_operations=796 range_operations=7395
+  run=1 balanced wall_s=0.0004 cpu_s=0.0008 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+    phase_wall_s=0.0001;0.0001;0.0001;0.0001
+  run=1 dynamic_dp wall_s=0.0004 cpu_s=0.0008 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+    phase_wall_s=0.0001;0.0001;0.0001;0.0001
+  run=1 fixed wall_s=0.0003 cpu_s=0.0008 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+    phase_wall_s=0.0000;0.0001;0.0001;0.0000
+  median fixed_s=0.0003
+  median balanced_s=0.0004 paired_speedup=0.8552 range=[0.8552,0.8552] cpu/fixed=0.9912
+  median dynamic_dp_s=0.0004 paired_speedup=0.8567 range=[0.8567,0.8567] cpu/fixed=1.0013
+
+sliding_variable_range
+  run=1 unique_queries=153 phases=9 read_operations=0 write_operations=8191 point_operations=1110 range_operations=7081
+  run=1 dynamic_dp wall_s=0.0003 cpu_s=0.0007 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+    phase_wall_s=0.0000;0.0000;0.0000;0.0000;0.0000;0.0000;0.0000;0.0000;0.0000
+  run=1 fixed wall_s=0.0002 cpu_s=0.0005 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+    phase_wall_s=0.0000;0.0000;0.0000;0.0000;0.0000;0.0000;0.0000;0.0000;0.0000
+  run=1 balanced wall_s=0.0003 cpu_s=0.0007 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+    phase_wall_s=0.0000;0.0000;0.0000;0.0000;0.0000;0.0000;0.0000;0.0000;0.0000
+  median fixed_s=0.0002
+  median balanced_s=0.0003 paired_speedup=0.7557 range=[0.7557,0.7557] cpu/fixed=1.2770
+  median dynamic_dp_s=0.0003 paired_speedup=0.7906 range=[0.7906,0.7906] cpu/fixed=1.2305
+<end of output>
+Test time =   0.04 sec
+----------------------------------------------------------
+Test Passed.
+"benchmark_cyclic_smoke" end time: Nov 17 19:39 MSK
+"benchmark_cyclic_smoke" time elapsed: 00:00:00
+----------------------------------------------------------
+
+13/14 Testing: benchmark_baselines_smoke
+13/14 Test: benchmark_baselines_smoke
+Command: "/Users/near/dynamic/build/with-mgl/adaptive_lock_benchmark" "--implementations" "global,per_element" "--array-size" "4096" "--hot-width" "256" "--range-length" "8" "--operations" "8191" "--threads" "3" "--trace-size" "17" "--repetitions" "1"
+Directory: /Users/near/dynamic/build/with-mgl
+"benchmark_baselines_smoke" start time: Nov 17 19:39 MSK
+Output:
+----------------------------------------------------------
+fixed/adaptive: 64 mutexes; global: 1; per_element: array_size mutexes.
+sizeof(std::mutex)=64 bytes
+3 workers, 8191 operations/scenario, 1 repetitions
+trace_size=17 unique query budget per phase (all workers)
+array_size=4096 hot_width=256 range_length=8 sample_rate=64 lock_kind=mutex read_percent=0 point_percent=0 model=paper write_body=range rebuild_interval_ms=30000 seed=1
+All work from lock construction through destruction is timed; no warmup.
+Final arrays verified against a deterministic reference after every run.
+Read checksums depend on scheduling and are not equality checks.
+Stored independent worker traces repeat cyclically; identical for all implementations.
+paper bins_requested=1024 lambda=10000 min_samples=640 min_improvement=0.1
+
+uniform
+  run=1 unique_queries=17 phases=1 read_operations=0 write_operations=8191 point_operations=8191 range_operations=0
+  run=1 global wall_s=0.0002 cpu_s=0.0005 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+  run=1 per_element wall_s=0.0001 cpu_s=0.0002 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+  median global_s=0.0002
+  median per_element_s=0.0001 paired_speedup=2.1268 range=[2.1268,2.1268] cpu/global=0.3616
+
+clusters_2
+  run=1 unique_queries=17 phases=1 read_operations=0 write_operations=8191 point_operations=8191 range_operations=0
+  run=1 per_element wall_s=0.0001 cpu_s=0.0002 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+  run=1 global wall_s=0.0003 cpu_s=0.0006 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+  median global_s=0.0003
+  median per_element_s=0.0001 paired_speedup=3.0510 range=[3.0510,3.0510] cpu/global=0.2871
+
+clusters_8
+  run=1 unique_queries=17 phases=1 read_operations=0 write_operations=8191 point_operations=8191 range_operations=0
+  run=1 per_element wall_s=0.0001 cpu_s=0.0002 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+  run=1 global wall_s=0.0002 cpu_s=0.0005 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+  median global_s=0.0002
+  median per_element_s=0.0001 paired_speedup=2.5972 range=[2.5972,2.5972] cpu/global=0.3143
+
+unequal
+  run=1 unique_queries=17 phases=1 read_operations=0 write_operations=8191 point_operations=8191 range_operations=0
+  run=1 global wall_s=0.0003 cpu_s=0.0005 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+  run=1 per_element wall_s=0.0001 cpu_s=0.0002 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+  median global_s=0.0003
+  median per_element_s=0.0001 paired_speedup=2.6051 range=[2.6051,2.6051] cpu/global=0.3694
+
+clusters_2_range
+  run=1 unique_queries=17 phases=1 read_operations=0 write_operations=8191 point_operations=0 range_operations=8191
+  run=1 per_element wall_s=0.0004 cpu_s=0.0008 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+  run=1 global wall_s=0.0003 cpu_s=0.0006 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+  median global_s=0.0003
+  median per_element_s=0.0004 paired_speedup=0.6743 range=[0.6743,0.6743] cpu/global=1.2568
+
+clusters_4_range
+  run=1 unique_queries=17 phases=1 read_operations=0 write_operations=8191 point_operations=0 range_operations=8191
+  run=1 global wall_s=0.0002 cpu_s=0.0004 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+  run=1 per_element wall_s=0.0004 cpu_s=0.0008 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+  median global_s=0.0002
+  median per_element_s=0.0004 paired_speedup=0.4144 range=[0.4144,0.4144] cpu/global=2.1930
+
+shift
+  run=1 unique_queries=34 phases=2 read_operations=0 write_operations=8191 point_operations=8191 range_operations=0
+  run=1 global wall_s=0.0002 cpu_s=0.0005 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+    phase_wall_s=0.0001;0.0001
+  run=1 per_element wall_s=0.0001 cpu_s=0.0002 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+    phase_wall_s=0.0000;0.0000
+  median global_s=0.0002
+  median per_element_s=0.0001 paired_speedup=1.9836 range=[1.9836,1.9836] cpu/global=0.4592
+
+steady_range
+  run=1 unique_queries=68 phases=4 read_operations=0 write_operations=8191 point_operations=0 range_operations=8191
+  run=1 per_element wall_s=0.0007 cpu_s=0.0012 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+    phase_wall_s=0.0001;0.0001;0.0002;0.0002
+  run=1 global wall_s=0.0002 cpu_s=0.0005 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+    phase_wall_s=0.0000;0.0000;0.0000;0.0001
+  median global_s=0.0002
+  median per_element_s=0.0007 paired_speedup=0.3066 range=[0.3066,0.3066] cpu/global=2.5108
+
+hot_with_spike
+  run=1 unique_queries=68 phases=4 read_operations=0 write_operations=8191 point_operations=8191 range_operations=0
+  run=1 global wall_s=0.0002 cpu_s=0.0004 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+    phase_wall_s=0.0000;0.0000;0.0000;0.0000
+  run=1 per_element wall_s=0.0002 cpu_s=0.0003 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+    phase_wall_s=0.0000;0.0000;0.0000;0.0000
+  median global_s=0.0002
+  median per_element_s=0.0002 paired_speedup=1.1179 range=[1.1179,1.1179] cpu/global=0.8638
+
+islands_range
+  run=1 unique_queries=68 phases=4 read_operations=0 write_operations=8191 point_operations=0 range_operations=8191
+  run=1 per_element wall_s=0.0011 cpu_s=0.0022 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+    phase_wall_s=0.0003;0.0003;0.0003;0.0003
+  run=1 global wall_s=0.0003 cpu_s=0.0006 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+    phase_wall_s=0.0001;0.0001;0.0001;0.0001
+  median global_s=0.0003
+  median per_element_s=0.0011 paired_speedup=0.2440 range=[0.2440,0.2440] cpu/global=3.6407
+
+gradient_range
+  run=1 unique_queries=68 phases=4 read_operations=0 write_operations=8191 point_operations=0 range_operations=8191
+  run=1 global wall_s=0.0002 cpu_s=0.0005 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+    phase_wall_s=0.0000;0.0001;0.0001;0.0000
+  run=1 per_element wall_s=0.0008 cpu_s=0.0014 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+    phase_wall_s=0.0001;0.0001;0.0002;0.0002
+  median global_s=0.0002
+  median per_element_s=0.0008 paired_speedup=0.3171 range=[0.3171,0.3171] cpu/global=2.6551
+
+unequal_widths_range
+  run=1 unique_queries=68 phases=4 read_operations=0 write_operations=8191 point_operations=0 range_operations=8191
+  run=1 per_element wall_s=0.0009 cpu_s=0.0017 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+    phase_wall_s=0.0003;0.0001;0.0002;0.0003
+  run=1 global wall_s=0.0003 cpu_s=0.0005 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+    phase_wall_s=0.0000;0.0001;0.0000;0.0001
+  median global_s=0.0003
+  median per_element_s=0.0009 paired_speedup=0.2671 range=[0.2671,0.2671] cpu/global=3.2650
+
+exchange_range
+  run=1 unique_queries=34 phases=2 read_operations=0 write_operations=8191 point_operations=0 range_operations=8191
+  run=1 global wall_s=0.0003 cpu_s=0.0006 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+    phase_wall_s=0.0001;0.0001
+  run=1 per_element wall_s=0.0008 cpu_s=0.0014 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+    phase_wall_s=0.0004;0.0002
+  median global_s=0.0003
+  median per_element_s=0.0008 paired_speedup=0.3623 range=[0.3623,0.3623] cpu/global=2.4068
+
+moving_variable_range
+  run=1 unique_queries=68 phases=4 read_operations=0 write_operations=8191 point_operations=796 range_operations=7395
+  run=1 per_element wall_s=0.0004 cpu_s=0.0007 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+    phase_wall_s=0.0000;0.0001;0.0001;0.0001
+  run=1 global wall_s=0.0003 cpu_s=0.0006 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+    phase_wall_s=0.0001;0.0000;0.0001;0.0001
+  median global_s=0.0003
+  median per_element_s=0.0004 paired_speedup=0.8861 range=[0.8861,0.8861] cpu/global=1.1901
+
+sliding_variable_range
+  run=1 unique_queries=153 phases=9 read_operations=0 write_operations=8191 point_operations=1110 range_operations=7081
+  run=1 global wall_s=0.0003 cpu_s=0.0006 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+    phase_wall_s=0.0000;0.0000;0.0000;0.0000;0.0000;0.0000;0.0000;0.0000;0.0000
+  run=1 per_element wall_s=0.0005 cpu_s=0.0009 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+    phase_wall_s=0.0001;0.0000;0.0000;0.0000;0.0000;0.0001;0.0000;0.0001;0.0000
+  median global_s=0.0003
+  median per_element_s=0.0005 paired_speedup=0.5932 range=[0.5932,0.5932] cpu/global=1.5318
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"benchmark_baselines_smoke" end time: Nov 17 19:39 MSK
+"benchmark_baselines_smoke" time elapsed: 00:00:00
+----------------------------------------------------------
+
+14/14 Testing: benchmark_genetic_smoke
+14/14 Test: benchmark_genetic_smoke
+Command: "/Users/near/dynamic/build/with-mgl/adaptive_lock_benchmark" "--model" "legacy" "--write-body" "single" "--implementations" "fixed,balanced,dynamic_dp,genetic" "--operations" "65537" "--threads" "3" "--trace-size" "257" "--repetitions" "1" "--rebuild-ms" "1"
+Directory: /Users/near/dynamic/build/with-mgl
+"benchmark_genetic_smoke" start time: Nov 17 19:39 MSK
+Output:
+----------------------------------------------------------
+fixed/adaptive: 64 mutexes; global: 1; per_element: array_size mutexes.
+sizeof(std::mutex)=64 bytes
+3 workers, 65537 operations/scenario, 1 repetitions
+trace_size=257 unique query budget per phase (all workers)
+array_size=1048576 hot_width=16384 range_length=8 sample_rate=64 lock_kind=mutex read_percent=0 point_percent=0 model=legacy write_body=single rebuild_interval_ms=1 seed=1
+All work from lock construction through destruction is timed; no warmup.
+Final arrays verified against a deterministic reference after every run.
+Read checksums depend on scheduling and are not equality checks.
+Stored independent worker traces repeat cyclically; identical for all implementations.
+
+uniform
+  run=1 unique_queries=257 phases=1 read_operations=0 write_operations=65537 point_operations=65537 range_operations=0
+  run=1 fixed wall_s=0.0006 cpu_s=0.0016 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=34432426 verified=true
+  run=1 balanced wall_s=0.0008 cpu_s=0.0020 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=34432426 verified=true
+  run=1 dynamic_dp wall_s=0.0007 cpu_s=0.0018 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=34432426 verified=true
+  run=1 genetic wall_s=0.0006 cpu_s=0.0016 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=34432426 verified=true
+  median fixed_s=0.0006
+  median balanced_s=0.0008 paired_speedup=0.7029 range=[0.7029,0.7029] cpu/fixed=1.2782
+  median dynamic_dp_s=0.0007 paired_speedup=0.8019 range=[0.8019,0.8019] cpu/fixed=1.1455
+  median genetic_s=0.0006 paired_speedup=0.9671 range=[0.9671,0.9671] cpu/fixed=1.0449
+
+clusters_2
+  run=1 unique_queries=257 phases=1 read_operations=0 write_operations=65537 point_operations=65537 range_operations=0
+  run=1 genetic wall_s=0.0019 cpu_s=0.0039 rebuilds=0 optimizations=0 rebuild_ms=0.0140 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=34862270 verified=true
+  run=1 fixed wall_s=0.0014 cpu_s=0.0030 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=34853904 verified=true
+  run=1 balanced wall_s=0.0017 cpu_s=0.0039 rebuilds=1 optimizations=1 rebuild_ms=0.3422 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=34848490 verified=true
+  run=1 dynamic_dp wall_s=0.0034 cpu_s=0.0058 rebuilds=1 optimizations=1 rebuild_ms=2.0961 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=34841756 verified=true
+  median fixed_s=0.0014
+  median balanced_s=0.0017 paired_speedup=0.7959 range=[0.7959,0.7959] cpu/fixed=1.2838
+  median dynamic_dp_s=0.0034 paired_speedup=0.4059 range=[0.4059,0.4059] cpu/fixed=1.8999
+  median genetic_s=0.0019 paired_speedup=0.7454 range=[0.7454,0.7454] cpu/fixed=1.2963
+
+clusters_8
+  run=1 unique_queries=257 phases=1 read_operations=0 write_operations=65537 point_operations=65537 range_operations=0
+  run=1 balanced wall_s=0.0009 cpu_s=0.0025 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=32836069 verified=true
+  run=1 dynamic_dp wall_s=0.0010 cpu_s=0.0025 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=32836069 verified=true
+  run=1 genetic wall_s=0.0010 cpu_s=0.0026 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=32836069 verified=true
+  run=1 fixed wall_s=0.0012 cpu_s=0.0029 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=32836069 verified=true
+  median fixed_s=0.0012
+  median balanced_s=0.0009 paired_speedup=1.3047 range=[1.3047,1.3047] cpu/fixed=0.8667
+  median dynamic_dp_s=0.0010 paired_speedup=1.2625 range=[1.2625,1.2625] cpu/fixed=0.8747
+  median genetic_s=0.0010 paired_speedup=1.2169 range=[1.2169,1.2169] cpu/fixed=0.8996
+
+unequal
+  run=1 unique_queries=257 phases=1 read_operations=0 write_operations=65537 point_operations=65537 range_operations=0
+  run=1 dynamic_dp wall_s=0.0022 cpu_s=0.0049 rebuilds=0 optimizations=0 rebuild_ms=0.0083 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=35128613 verified=true
+  run=1 genetic wall_s=0.0021 cpu_s=0.0047 rebuilds=0 optimizations=0 rebuild_ms=0.0075 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=35099677 verified=true
+  run=1 fixed wall_s=0.0017 cpu_s=0.0039 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=35105069 verified=true
+  run=1 balanced wall_s=0.0016 cpu_s=0.0039 rebuilds=1 optimizations=1 rebuild_ms=0.1205 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=35101157 verified=true
+  median fixed_s=0.0017
+  median balanced_s=0.0016 paired_speedup=1.0878 range=[1.0878,1.0878] cpu/fixed=0.9814
+  median dynamic_dp_s=0.0022 paired_speedup=0.7834 range=[0.7834,0.7834] cpu/fixed=1.2597
+  median genetic_s=0.0021 paired_speedup=0.8233 range=[0.8233,0.8233] cpu/fixed=1.1942
+
+clusters_2_range
+  run=1 unique_queries=257 phases=1 read_operations=0 write_operations=65537 point_operations=0 range_operations=65537
+  run=1 genetic wall_s=0.0017 cpu_s=0.0039 rebuilds=1 optimizations=1 rebuild_ms=0.3085 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=34313700 verified=true
+  run=1 fixed wall_s=0.0014 cpu_s=0.0029 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=34307540 verified=true
+  run=1 balanced wall_s=0.0015 cpu_s=0.0036 rebuilds=1 optimizations=1 rebuild_ms=0.0623 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=34294082 verified=true
+  run=1 dynamic_dp wall_s=0.0032 cpu_s=0.0058 rebuilds=1 optimizations=1 rebuild_ms=2.0924 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=34298961 verified=true
+  median fixed_s=0.0014
+  median balanced_s=0.0015 paired_speedup=0.9102 range=[0.9102,0.9102] cpu/fixed=1.2075
+  median dynamic_dp_s=0.0032 paired_speedup=0.4201 range=[0.4201,0.4201] cpu/fixed=1.9705
+  median genetic_s=0.0017 paired_speedup=0.7810 range=[0.7810,0.7810] cpu/fixed=1.3363
+
+clusters_4_range
+  run=1 unique_queries=257 phases=1 read_operations=0 write_operations=65537 point_operations=0 range_operations=65537
+  run=1 fixed wall_s=0.0013 cpu_s=0.0028 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=34998238 verified=true
+  run=1 balanced wall_s=0.0014 cpu_s=0.0034 rebuilds=1 optimizations=1 rebuild_ms=0.0687 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=34891795 verified=true
+  run=1 dynamic_dp wall_s=0.0037 cpu_s=0.0055 rebuilds=1 optimizations=1 rebuild_ms=2.3586 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=34991302 verified=true
+  run=1 genetic wall_s=0.0015 cpu_s=0.0037 rebuilds=1 optimizations=1 rebuild_ms=0.2985 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=34961242 verified=true
+  median fixed_s=0.0013
+  median balanced_s=0.0014 paired_speedup=0.9096 range=[0.9096,0.9096] cpu/fixed=1.2133
+  median dynamic_dp_s=0.0037 paired_speedup=0.3442 range=[0.3442,0.3442] cpu/fixed=1.9664
+  median genetic_s=0.0015 paired_speedup=0.8623 range=[0.8623,0.8623] cpu/fixed=1.3239
+
+shift
+  run=1 unique_queries=514 phases=2 read_operations=0 write_operations=65537 point_operations=65537 range_operations=0
+  run=1 dynamic_dp wall_s=0.0025 cpu_s=0.0057 rebuilds=0 optimizations=0 rebuild_ms=0.0063 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=17017584 verified=true
+    phase_wall_s=0.0011;0.0013
+  run=1 genetic wall_s=0.0024 cpu_s=0.0046 rebuilds=0 optimizations=0 rebuild_ms=0.0049 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=17017584 verified=true
+    phase_wall_s=0.0014;0.0009
+  run=1 fixed wall_s=0.0023 cpu_s=0.0050 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=17017584 verified=true
+    phase_wall_s=0.0011;0.0011
+  run=1 balanced wall_s=0.0027 cpu_s=0.0059 rebuilds=1 optimizations=1 rebuild_ms=0.0953 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=17017584 verified=true
+    phase_wall_s=0.0012;0.0013
+  median fixed_s=0.0023
+  median balanced_s=0.0027 paired_speedup=0.8635 range=[0.8635,0.8635] cpu/fixed=1.1745
+  median dynamic_dp_s=0.0025 paired_speedup=0.9069 range=[0.9069,0.9069] cpu/fixed=1.1222
+  median genetic_s=0.0024 paired_speedup=0.9676 range=[0.9676,0.9676] cpu/fixed=0.9036
+
+steady_range
+  run=1 unique_queries=1028 phases=4 read_operations=0 write_operations=65537 point_operations=0 range_operations=65537
+  run=1 balanced wall_s=0.0027 cpu_s=0.0053 rebuilds=1 optimizations=1 rebuild_ms=0.0847 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=12993043 verified=true
+    phase_wall_s=0.0007;0.0007;0.0006;0.0006
+  run=1 dynamic_dp wall_s=0.0044 cpu_s=0.0086 rebuilds=1 optimizations=1 rebuild_ms=1.8210 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=12987479 verified=true
+    phase_wall_s=0.0008;0.0007;0.0007;0.0008
+  run=1 genetic wall_s=0.0022 cpu_s=0.0043 rebuilds=0 optimizations=0 rebuild_ms=0.0076 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=12981819 verified=true
+    phase_wall_s=0.0005;0.0006;0.0003;0.0007
+  run=1 fixed wall_s=0.0028 cpu_s=0.0062 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=12985277 verified=true
+    phase_wall_s=0.0007;0.0008;0.0006;0.0006
+  median fixed_s=0.0028
+  median balanced_s=0.0027 paired_speedup=1.0227 range=[1.0227,1.0227] cpu/fixed=0.8529
+  median dynamic_dp_s=0.0044 paired_speedup=0.6405 range=[0.6405,0.6405] cpu/fixed=1.3899
+  median genetic_s=0.0022 paired_speedup=1.2910 range=[1.2910,1.2910] cpu/fixed=0.6888
+
+hot_with_spike
+  run=1 unique_queries=1028 phases=4 read_operations=0 write_operations=65537 point_operations=65537 range_operations=0
+  run=1 dynamic_dp wall_s=0.0047 cpu_s=0.0080 rebuilds=1 optimizations=1 rebuild_ms=2.1344 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=742776162 verified=true
+    phase_wall_s=0.0007;0.0007;0.0006;0.0007
+  run=1 genetic wall_s=0.0028 cpu_s=0.0062 rebuilds=1 optimizations=1 rebuild_ms=0.1072 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=743192871 verified=true
+    phase_wall_s=0.0007;0.0006;0.0007;0.0006
+  run=1 fixed wall_s=0.0021 cpu_s=0.0046 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=744522403 verified=true
+    phase_wall_s=0.0005;0.0005;0.0005;0.0005
+  run=1 balanced wall_s=0.0021 cpu_s=0.0041 rebuilds=0 optimizations=0 rebuild_ms=0.0165 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=741880991 verified=true
+    phase_wall_s=0.0007;0.0007;0.0003;0.0004
+  median fixed_s=0.0021
+  median balanced_s=0.0021 paired_speedup=0.9941 range=[0.9941,0.9941] cpu/fixed=0.8920
+  median dynamic_dp_s=0.0047 paired_speedup=0.4482 range=[0.4482,0.4482] cpu/fixed=1.7422
+  median genetic_s=0.0028 paired_speedup=0.7596 range=[0.7596,0.7596] cpu/fixed=1.3539
+
+islands_range
+  run=1 unique_queries=1028 phases=4 read_operations=0 write_operations=65537 point_operations=0 range_operations=65537
+  run=1 genetic wall_s=0.0029 cpu_s=0.0067 rebuilds=1 optimizations=1 rebuild_ms=0.1057 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=25732718 verified=true
+    phase_wall_s=0.0009;0.0008;0.0008;0.0004
+  run=1 fixed wall_s=0.0028 cpu_s=0.0062 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=25779188 verified=true
+    phase_wall_s=0.0008;0.0006;0.0007;0.0007
+  run=1 balanced wall_s=0.0028 cpu_s=0.0061 rebuilds=1 optimizations=1 rebuild_ms=0.1887 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=25658833 verified=true
+    phase_wall_s=0.0006;0.0005;0.0009;0.0008
+  run=1 dynamic_dp wall_s=0.0044 cpu_s=0.0096 rebuilds=1 optimizations=1 rebuild_ms=1.8975 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=25756431 verified=true
+    phase_wall_s=0.0009;0.0009;0.0009;0.0008
+  median fixed_s=0.0028
+  median balanced_s=0.0028 paired_speedup=0.9948 range=[0.9948,0.9948] cpu/fixed=0.9846
+  median dynamic_dp_s=0.0044 paired_speedup=0.6350 range=[0.6350,0.6350] cpu/fixed=1.5633
+  median genetic_s=0.0029 paired_speedup=0.9667 range=[0.9667,0.9667] cpu/fixed=1.0849
+
+gradient_range
+  run=1 unique_queries=1028 phases=4 read_operations=0 write_operations=65537 point_operations=0 range_operations=65537
+  run=1 fixed wall_s=0.0025 cpu_s=0.0053 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=14315539 verified=true
+    phase_wall_s=0.0007;0.0006;0.0006;0.0007
+  run=1 balanced wall_s=0.0028 cpu_s=0.0065 rebuilds=1 optimizations=1 rebuild_ms=0.1348 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=14259969 verified=true
+    phase_wall_s=0.0008;0.0009;0.0008;0.0003
+  run=1 dynamic_dp wall_s=0.0043 cpu_s=0.0078 rebuilds=1 optimizations=1 rebuild_ms=1.9373 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=14246633 verified=true
+    phase_wall_s=0.0007;0.0007;0.0007;0.0006
+  run=1 genetic wall_s=0.0028 cpu_s=0.0064 rebuilds=1 optimizations=1 rebuild_ms=0.1137 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=14277694 verified=true
+    phase_wall_s=0.0006;0.0008;0.0008;0.0005
+  median fixed_s=0.0025
+  median balanced_s=0.0028 paired_speedup=0.8971 range=[0.8971,0.8971] cpu/fixed=1.2209
+  median dynamic_dp_s=0.0043 paired_speedup=0.5890 range=[0.5890,0.5890] cpu/fixed=1.4630
+  median genetic_s=0.0028 paired_speedup=0.9138 range=[0.9138,0.9138] cpu/fixed=1.1940
+
+unequal_widths_range
+  run=1 unique_queries=1028 phases=4 read_operations=0 write_operations=65537 point_operations=0 range_operations=65537
+  run=1 balanced wall_s=0.0016 cpu_s=0.0040 rebuilds=1 optimizations=1 rebuild_ms=0.1666 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=15278446 verified=true
+    phase_wall_s=0.0004;0.0004;0.0005;0.0003
+  run=1 dynamic_dp wall_s=0.0033 cpu_s=0.0061 rebuilds=1 optimizations=1 rebuild_ms=1.9971 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=15283565 verified=true
+    phase_wall_s=0.0005;0.0004;0.0004;0.0005
+  run=1 genetic wall_s=0.0016 cpu_s=0.0038 rebuilds=1 optimizations=1 rebuild_ms=0.1047 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=15277779 verified=true
+    phase_wall_s=0.0004;0.0004;0.0004;0.0003
+  run=1 fixed wall_s=0.0015 cpu_s=0.0034 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=15270023 verified=true
+    phase_wall_s=0.0004;0.0003;0.0004;0.0003
+  median fixed_s=0.0015
+  median balanced_s=0.0016 paired_speedup=0.9030 range=[0.9030,0.9030] cpu/fixed=1.1870
+  median dynamic_dp_s=0.0033 paired_speedup=0.4464 range=[0.4464,0.4464] cpu/fixed=1.8127
+  median genetic_s=0.0016 paired_speedup=0.9253 range=[0.9253,0.9253] cpu/fixed=1.1396
+
+exchange_range
+  run=1 unique_queries=514 phases=2 read_operations=0 write_operations=65537 point_operations=0 range_operations=65537
+  run=1 dynamic_dp wall_s=0.0044 cpu_s=0.0078 rebuilds=1 optimizations=1 rebuild_ms=1.8215 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=18572315 verified=true
+    phase_wall_s=0.0013;0.0013
+  run=1 genetic wall_s=0.0029 cpu_s=0.0068 rebuilds=1 optimizations=1 rebuild_ms=0.2764 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=18605878 verified=true
+    phase_wall_s=0.0014;0.0014
+  run=1 fixed wall_s=0.0027 cpu_s=0.0060 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=18627359 verified=true
+    phase_wall_s=0.0014;0.0013
+  run=1 balanced wall_s=0.0026 cpu_s=0.0059 rebuilds=1 optimizations=1 rebuild_ms=0.0587 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=18624945 verified=true
+    phase_wall_s=0.0012;0.0014
+  median fixed_s=0.0027
+  median balanced_s=0.0026 paired_speedup=1.0315 range=[1.0315,1.0315] cpu/fixed=0.9908
+  median dynamic_dp_s=0.0044 paired_speedup=0.6198 range=[0.6198,0.6198] cpu/fixed=1.2962
+  median genetic_s=0.0029 paired_speedup=0.9405 range=[0.9405,0.9405] cpu/fixed=1.1297
+
+moving_variable_range
+  run=1 unique_queries=1028 phases=4 read_operations=0 write_operations=65537 point_operations=8298 range_operations=57239
+  run=1 genetic wall_s=0.0029 cpu_s=0.0065 rebuilds=1 optimizations=1 rebuild_ms=0.0965 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=9524134 verified=true
+    phase_wall_s=0.0008;0.0009;0.0009;0.0002
+  run=1 fixed wall_s=0.0029 cpu_s=0.0064 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=9480358 verified=true
+    phase_wall_s=0.0007;0.0007;0.0006;0.0008
+  run=1 balanced wall_s=0.0029 cpu_s=0.0065 rebuilds=1 optimizations=1 rebuild_ms=0.0943 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=9528501 verified=true
+    phase_wall_s=0.0008;0.0009;0.0009;0.0003
+  run=1 dynamic_dp wall_s=0.0045 cpu_s=0.0097 rebuilds=1 optimizations=1 rebuild_ms=1.9414 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=9491617 verified=true
+    phase_wall_s=0.0009;0.0008;0.0008;0.0009
+  median fixed_s=0.0029
+  median balanced_s=0.0029 paired_speedup=1.0067 range=[1.0067,1.0067] cpu/fixed=1.0207
+  median dynamic_dp_s=0.0045 paired_speedup=0.6514 range=[0.6514,0.6514] cpu/fixed=1.5294
+  median genetic_s=0.0029 paired_speedup=1.0204 range=[1.0204,1.0204] cpu/fixed=1.0246
+
+sliding_variable_range
+  run=1 unique_queries=2313 phases=9 read_operations=0 write_operations=65537 point_operations=9018 range_operations=56519
+  run=1 fixed wall_s=0.0022 cpu_s=0.0044 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=4404820 verified=true
+    phase_wall_s=0.0002;0.0003;0.0002;0.0003;0.0002;0.0002;0.0002;0.0003;0.0002
+  run=1 balanced wall_s=0.0028 cpu_s=0.0062 rebuilds=1 optimizations=1 rebuild_ms=0.0430 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=4406818 verified=true
+    phase_wall_s=0.0004;0.0003;0.0002;0.0002;0.0004;0.0003;0.0002;0.0004;0.0002
+  run=1 dynamic_dp wall_s=0.0045 cpu_s=0.0085 rebuilds=1 optimizations=1 rebuild_ms=1.9825 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=4404471 verified=true
+    phase_wall_s=0.0004;0.0003;0.0002;0.0003;0.0004;0.0003;0.0003;0.0004;0.0004
+  run=1 genetic wall_s=0.0028 cpu_s=0.0066 rebuilds=1 optimizations=1 rebuild_ms=0.2527 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=4395932 verified=true
+    phase_wall_s=0.0003;0.0003;0.0002;0.0003;0.0005;0.0003;0.0002;0.0004;0.0004
+  median fixed_s=0.0022
+  median balanced_s=0.0028 paired_speedup=0.7833 range=[0.7833,0.7833] cpu/fixed=1.4083
+  median dynamic_dp_s=0.0045 paired_speedup=0.4824 range=[0.4824,0.4824] cpu/fixed=1.9077
+  median genetic_s=0.0028 paired_speedup=0.7684 range=[0.7684,0.7684] cpu/fixed=1.4904
+<end of output>
+Test time =   0.18 sec
+----------------------------------------------------------
+Test Passed.
+"benchmark_genetic_smoke" end time: Nov 17 19:39 MSK
+"benchmark_genetic_smoke" time elapsed: 00:00:00
+----------------------------------------------------------
+
+End testing: Nov 17 19:39 MSK

@@ -1,0 +1,30 @@
+fixed/adaptive: 64 mutexes; global: 1; per_element: array_size mutexes.
+sizeof(std::mutex)=64 bytes
+8 workers, 1000000 operations/scenario, 3 repetitions
+trace_size=1048576 unique query budget per phase (all workers)
+array_size=67108864 hot_width=4194304 range_length=10000 sample_rate=64 rebuild_interval_ms=100 seed=1
+All work from lock construction through destruction is timed; no warmup.
+Final arrays verified against a deterministic reference after every run.
+Read checksums depend on scheduling and are not equality checks.
+Stored independent worker traces repeat cyclically; identical for all implementations.
+
+clusters_2_range
+  run=1 unique_queries=1000000 phases=1
+  run=1 genetic wall_s=0.7247 cpu_s=4.6015 rebuilds=1 optimizations=1 rebuild_ms=0.3456 read_checksum=2387913628 verified=true
+  run=1 fixed wall_s=0.9411 cpu_s=4.7496 rebuilds=0 optimizations=0 rebuild_ms=0.0000 read_checksum=2387907320 verified=true
+  run=1 balanced wall_s=0.7610 cpu_s=4.6246 rebuilds=1 optimizations=1 rebuild_ms=0.3873 read_checksum=2387927970 verified=true
+  run=1 dynamic_dp wall_s=0.8010 cpu_s=4.7607 rebuilds=1 optimizations=1 rebuild_ms=2.7400 read_checksum=2387929702 verified=true
+  run=2 unique_queries=1000000 phases=1
+  run=2 fixed wall_s=1.0578 cpu_s=4.9644 rebuilds=0 optimizations=0 rebuild_ms=0.0000 read_checksum=2387249284 verified=true
+  run=2 balanced wall_s=0.8728 cpu_s=4.7626 rebuilds=2 optimizations=4 rebuild_ms=0.6172 read_checksum=2387251208 verified=true
+  run=2 dynamic_dp wall_s=0.8018 cpu_s=4.2266 rebuilds=1 optimizations=1 rebuild_ms=2.7768 read_checksum=2387274729 verified=true
+  run=2 genetic wall_s=0.8191 cpu_s=4.3710 rebuilds=1 optimizations=1 rebuild_ms=0.4737 read_checksum=2387263866 verified=true
+  run=3 unique_queries=1000000 phases=1
+  run=3 balanced wall_s=0.8142 cpu_s=4.5862 rebuilds=2 optimizations=2 rebuild_ms=0.3296 read_checksum=2387479160 verified=true
+  run=3 dynamic_dp wall_s=0.7867 cpu_s=4.6207 rebuilds=1 optimizations=1 rebuild_ms=2.5628 read_checksum=2387481187 verified=true
+  run=3 genetic wall_s=0.8371 cpu_s=4.5255 rebuilds=1 optimizations=1 rebuild_ms=0.4015 read_checksum=2387485107 verified=true
+  run=3 fixed wall_s=1.1062 cpu_s=5.0058 rebuilds=0 optimizations=0 rebuild_ms=0.0000 read_checksum=2387456119 verified=true
+  median fixed_s=1.0578
+  median balanced_s=0.8142 paired_speedup=1.2366 range=[1.2120,1.3586] cpu/fixed=0.9594
+  median dynamic_dp_s=0.8010 paired_speedup=1.3193 range=[1.1749,1.4061] cpu/fixed=0.9231
+  median genetic_s=0.8191 paired_speedup=1.2986 range=[1.2914,1.3215] cpu/fixed=0.9040

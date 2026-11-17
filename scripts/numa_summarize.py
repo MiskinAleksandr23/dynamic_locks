@@ -1,88 +1,106 @@
 #!/usr/bin/env python3
+"""Display every raw repetition, including failed/incomplete NUMA suites."""
 
-import re
+import csv
+import math
 import sys
 from pathlib import Path
 
 
-ROW_RE = re.compile(
-    r"^\s*(naive|dynamic|genetic)\s+"
-    r"([0-9.]+)\s+([0-9.]+)\s+([0-9.]+)\s+([0-9.]+)\s+"
-    r"([0-9.]+)\s+([0-9.]+)\s+([0-9.]+)\s+([0-9.]+)\s+"
-    r"([0-9.]+)\s+(\d+)\s*/\s*(\d+)\s+(\d+)\s*$"
-)
+REQUIRED = {"scenario", "repetition", "implementation", "wall_s", "cpu_s",
+            "rebuilds", "rebuild_ms", "verified"}
 
 
-def parse_file(path: Path):
-    scenario = None
-    rows = {}
+def cell(value):
+    return str(value).replace("|", "\\|").replace("\n", " ") if value else "—"
+
+
+def positive_number(value):
+    try:
+        number = float(value)
+        return number if math.isfinite(number) and number > 0 else None
+    except (TypeError, ValueError):
+        return None
+
+
+def verified(row):
+    return (row.get("verified") or "").lower() in {"1", "true", "yes"}
+
+
+def summarize(path):
     status_path = path.with_suffix(".status")
     status = status_path.read_text().strip() if status_path.exists() else "UNKNOWN"
+    print(f"\n## {cell(path.stem)}\n\nStatus: **{cell(status)}**\n")
+    if not path.exists():
+        print("No raw CSV results. See the retained `.txt` log.\n")
+        return False
+    with path.open(newline="") as source:
+        reader = csv.DictReader(source)
+        if not REQUIRED.issubset(reader.fieldnames or []):
+            print("CSV schema missing required fields; raw results retained.\n")
+            return False
+        rows = list(reader)
+    if not rows:
+        print("CSV has no completed measurements.\n")
+        return False
 
-    for line in path.read_text(errors="replace").splitlines():
-        if line.startswith("scenario: "):
-            scenario = line.split(":", 1)[1].strip()
-            continue
-        match = ROW_RE.match(line)
-        if not match:
-            continue
-        impl = match.group(1)
-        rows[impl] = {
-            "total_s": float(match.group(2)),
-            "total_x": float(match.group(3)),
-            "setup_s": float(match.group(4)),
-            "measured_s": float(match.group(5)),
-            "lock_only_s": float(match.group(6)),
-            "lock_x": float(match.group(7)),
-            "avg_lock_us": float(match.group(8)),
-            "lock_sum_s": float(match.group(9)),
-            "avg_mutex": float(match.group(10)),
-            "hot_l": int(match.group(11)),
-            "hot_r": int(match.group(12)),
-            "rebuilds": int(match.group(13)),
-        }
+    # Match only the same scenario/repetition/configuration. No averaging hides a loss.
+    pairing = ("scenario", "repetition", "threads", "operations", "array_size",
+               "hot_width", "range_length", "seed", "sample_rate", "rebuild_interval_ms",
+               "trace_size", "unique_queries")
+    fixed = {}
+    groups = {}
+    for row in rows:
+        key = tuple(row.get(field) for field in pairing)
+        groups.setdefault(key, set()).add(row.get("implementation"))
+        if row.get("implementation") == "fixed":
+            fixed.setdefault(key, []).append(row)
 
-    return {
-        "file": path.name,
-        "scenario": scenario or path.stem,
-        "status": status,
-        "rows": rows,
-    }
+    print("| Scenario | Repeat | Lock | Wall s | CPU s | Speedup | Rebuilds | Rebuild ms | Verified |")
+    print("|---|---:|---|---:|---:|---:|---:|---:|---|")
+    for row in rows:
+        speedup = "—"
+        baseline = fixed.get(tuple(row.get(field) for field in pairing), [])
+        if row.get("implementation") in {"balanced", "dynamic_dp", "dynamic"} and len(baseline) == 1:
+            fixed_wall = positive_number(baseline[0].get("wall_s"))
+            dynamic_wall = positive_number(row.get("wall_s"))
+            if verified(row) and verified(baseline[0]) and fixed_wall and dynamic_wall:
+                speedup = f"{fixed_wall / dynamic_wall:.3f}x"
+        fields = [row.get("scenario"), row.get("repetition"), row.get("implementation"),
+                  row.get("wall_s"), row.get("cpu_s"), speedup, row.get("rebuilds"),
+                  row.get("rebuild_ms"), row.get("verified")]
+        print("| " + " | ".join(cell(value) for value in fields) + " |")
+    expected = {"fixed", "balanced", "dynamic_dp"}
+    if any(row.get("implementation") == "dynamic" for row in rows):
+        expected = {"fixed", "dynamic"}  # Retained CSV from the former two-way runner.
+    for key, recorded in groups.items():
+        for missing in sorted(expected - recorded):
+            fields = [key[0], key[1], missing, "—", "—", "—", "—", "—", "MISSING"]
+            print("| " + " | ".join(cell(value) for value in fields) + " |")
+    return True
 
 
-def main() -> int:
+def main():
     root = Path(sys.argv[1]) if len(sys.argv) > 1 else Path(".")
-    files = sorted(root.glob("*.txt"))
-    files = [p for p in files if p.name != "topology.txt"]
-
-    print(f"# NUMA Benchmark Summary\n")
-    print(f"Directory: `{root}`\n")
-    print(
-        "| File | Status | Scenario | Naive total_s | Dynamic total_x | Genetic total_x | "
-        "Dynamic rebuilds | Genetic trains | Dynamic lock_sum_s | Genetic lock_sum_s |"
-    )
-    print("|---|---|---|---:|---:|---:|---:|---:|---:|---:|")
-
-    for path in files:
-        parsed = parse_file(path)
-        rows = parsed["rows"]
-        naive = rows.get("naive", {})
-        dynamic = rows.get("dynamic", {})
-        genetic = rows.get("genetic", {})
-        print(
-            f"| `{parsed['file']}` | {parsed['status']} | `{parsed['scenario']}` | "
-            f"{naive.get('total_s', 0.0):.3f} | "
-            f"{dynamic.get('total_x', 0.0):.3f} | "
-            f"{genetic.get('total_x', 0.0):.3f} | "
-            f"{dynamic.get('rebuilds', 0)} | "
-            f"{genetic.get('rebuilds', 0)} | "
-            f"{dynamic.get('lock_sum_s', 0.0):.3f} | "
-            f"{genetic.get('lock_sum_s', 0.0):.3f} |"
-        )
-
-    print("\nUse `total_x` as the headline speedup. If `lock_sum_s` is orders of "
-          "magnitude larger than wall time, the run is dominated by waiting.")
-    return 0
+    print(f"# NUMA benchmark results\n\nDirectory: `{root}`\n")
+    print("Speedup = fixed wall time / variant wall time for the same verified repetition. "
+          "balanced and dynamic_dp are each compared with that repetition’s fixed run. "
+          "Wall time includes online adaptation. Failed suite results are incomplete; "
+          "missing measurements are shown as —. All recorded repetitions appear below. "
+          "The raw CSV files retain parameters, checksums and phase timings.")
+    paths = {path.with_suffix(".csv") for pattern in ("*.csv", "*.status", "*.txt")
+             for path in root.glob(pattern) if path.name != "topology.txt"}
+    if not paths:
+        print("\nNo benchmark results found.")
+        return 1
+    valid = True
+    for path in sorted(paths):
+        try:
+            valid = summarize(path) and valid
+        except (OSError, csv.Error) as error:
+            print(f"\nCannot read `{path.name}`: {error}")
+            valid = False
+    return 0 if valid else 1
 
 
 if __name__ == "__main__":

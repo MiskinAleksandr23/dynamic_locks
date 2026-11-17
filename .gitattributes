@@ -1,0 +1,2 @@
+# Preserve the measured CSV bytes used by the experiment manifests.
+BENCHMARK_RESULT/**/*.csv -text

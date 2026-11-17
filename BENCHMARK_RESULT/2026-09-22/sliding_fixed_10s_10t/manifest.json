@@ -1,0 +1,59 @@
+{
+  "profile": "full",
+  "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+  "started_utc": "2026-09-22T14:27:15.413792+00:00",
+  "threads": 10,
+  "implementations": [
+    "fixed"
+  ],
+  "machine": "arm64",
+  "sequential": true,
+  "sha256": {
+    "/Users/near/dynamic/build/genetic-release/adaptive_lock_benchmark": "a9b03cd25b3e2110a55f4dc66aba89659728561ca3c10e6cbd8ba1039c4c7c81",
+    "/Users/near/dynamic/genetic/histogram_partitioner.hpp": "37943213f5082b562bce171448ba674b4e9204764ba85a4f5439766d0149a61b",
+    "/Users/near/dynamic/dynamic/dynamic_lock.hpp": "455b3f2b2aa9051ade093abdcf0715471329810c07a35e8964c2c6c0c2413bac",
+    "/Users/near/dynamic/dynamic/partitioner.hpp": "9def0df3aee547edf023d7bc2c05f9d363558de1ca802f03ffa78c6e96c7f6ad",
+    "/Users/near/dynamic/common/range_lock.hpp": "bed94a5cdecd5566c806abf17c4afcf13e12732e6f8e0ce69df67be256d189e6",
+    "/Users/near/dynamic/common/naive_lock.hpp": "e5b46a7d5989e38b8e5e0c3cddadb70cb79c2f802ddd4ea50f2a0a3f0fc04187",
+    "/Users/near/dynamic/benchmarks/adaptive_lock_benchmark.cpp": "07fa54e8213da662b647cf03c9b8431b6da21c0194dd65adcd7b36d4a58e5b43"
+  },
+  "runs": [
+    {
+      "scenario": "sliding_variable_range",
+      "command": [
+        "/Users/near/dynamic/build/genetic-release/adaptive_lock_benchmark",
+        "--implementations",
+        "fixed",
+        "--scenario",
+        "sliding_variable_range",
+        "--threads",
+        "10",
+        "--operations",
+        "180000000",
+        "--repetitions",
+        "1",
+        "--array-size",
+        "67108864",
+        "--hot-width",
+        "4194304",
+        "--range-length",
+        "10000",
+        "--sample-rate",
+        "64",
+        "--rebuild-ms",
+        "10000",
+        "--trace-size",
+        "1048576",
+        "--seed",
+        "1",
+        "--csv",
+        "/Users/near/dynamic/BENCHMARK_RESULT/2026-09-22/sliding_fixed_10s_10t/sliding_variable_range.csv"
+      ],
+      "status": "complete",
+      "started_utc": "2026-09-22T14:27:15.415652+00:00",
+      "returncode": 0,
+      "finished_utc": "2026-09-22T14:30:03.666607+00:00"
+    }
+  ],
+  "finished_utc": "2026-09-22T14:30:03.667643+00:00"
+}

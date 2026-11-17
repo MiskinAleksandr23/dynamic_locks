@@ -1,0 +1,15 @@
+fixed/adaptive: 64 mutexes; global: 1; per_element: array_size mutexes.
+sizeof(std::mutex)=64 bytes
+6 workers, 180000000 operations/scenario, 1 repetitions
+trace_size=1048576 unique query budget per phase (all workers)
+array_size=67108864 hot_width=4194304 range_length=10000 sample_rate=64 rebuild_interval_ms=10000 seed=1
+All work from lock construction through destruction is timed; no warmup.
+Final arrays verified against a deterministic reference after every run.
+Read checksums depend on scheduling and are not equality checks.
+Stored independent worker traces repeat cyclically; identical for all implementations.
+
+sliding_variable_range
+  run=1 unique_queries=9437184 phases=9
+  run=1 genetic wall_s=92.2723 cpu_s=384.7426 rebuilds=9 optimizations=9 rebuild_ms=1.1036 read_checksum=29574705806806 verified=true
+    phase_wall_s=12.0759;9.9968;10.0725;10.0224;10.0332;10.0338;10.0004;10.0240;10.0133
+  median genetic_s=92.2723

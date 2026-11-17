@@ -1,0 +1,22 @@
+fixed/adaptive: 64 mutexes; global: 1; per_element: array_size mutexes.
+sizeof(std::mutex)=64 bytes
+8 workers, 6000000 operations/scenario, 1 repetitions
+trace_size=1048576 unique query budget per phase (all workers)
+array_size=67108864 hot_width=4194304 range_length=10000 sample_rate=64 lock_kind=mutex read_percent=0 point_percent=0 model=paper write_body=range rebuild_interval_ms=2000 seed=1
+All work from lock construction through destruction is timed; no warmup.
+Final arrays verified against a deterministic reference after every run.
+Read checksums depend on scheduling and are not equality checks.
+Stored independent worker traces repeat cyclically; identical for all implementations.
+paper bins_requested=1024 lambda=10000000 min_samples=640 min_improvement=0.1
+
+steady_range
+  run=1 unique_queries=4194304 phases=4 read_operations=0 write_operations=6000000 point_operations=0 range_operations=6000000
+  run=1 balanced wall_s=9.4341 cpu_s=37.2880 rebuilds=0 optimizations=4 rebuild_ms=0.5943 optimize_ms=0.4866 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 sampled_queries=19646 read_checksum=0 verified=true
+    phase_wall_s=2.2959;2.3359;2.4084;2.3936
+  run=1 dynamic_dp wall_s=17.2853 cpu_s=36.8046 rebuilds=1 optimizations=8 rebuild_ms=1.9698 optimize_ms=1.8773 publication_wait_ms=0.0078 publication_hold_ms=0.0029 max_publication_pause_ms=0.0150 sampled_queries=10184 read_checksum=0 verified=true
+    phase_wall_s=2.8195;4.9471;4.7660;4.7525
+  run=1 fixed wall_s=8.2678 cpu_s=34.3435 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 sampled_queries=0 read_checksum=0 verified=true
+    phase_wall_s=2.0518;2.0769;2.0719;2.0671
+  median fixed_s=8.2678
+  median balanced_s=9.4341 paired_speedup=0.8764 range=[0.8764,0.8764] cpu/fixed=1.0857
+  median dynamic_dp_s=17.2853 paired_speedup=0.4783 range=[0.4783,0.4783] cpu/fixed=1.0717

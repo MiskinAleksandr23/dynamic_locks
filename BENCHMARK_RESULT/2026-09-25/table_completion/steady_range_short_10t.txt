@@ -1,0 +1,30 @@
+fixed/adaptive: 64 mutexes; global: 1; per_element: array_size mutexes.
+sizeof(std::mutex)=64 bytes
+10 workers, 1000000 operations/scenario, 1 repetitions
+trace_size=1048576 unique query budget per phase (all workers)
+array_size=67108864 hot_width=4194304 range_length=10000 sample_rate=64 rebuild_interval_ms=100 seed=1
+All work from lock construction through destruction is timed; no warmup.
+Final arrays verified against a deterministic reference after every run.
+Read checksums depend on scheduling and are not equality checks.
+Stored independent worker traces repeat cyclically; identical for all implementations.
+
+steady_range
+  run=1 unique_queries=1000000 phases=4
+  run=1 balanced wall_s=0.6999 cpu_s=3.7160 rebuilds=1 optimizations=1 rebuild_ms=0.2435 read_checksum=4777415457 verified=true
+    phase_wall_s=0.2235;0.1597;0.1591;0.1575
+  run=1 dynamic_dp wall_s=0.7348 cpu_s=4.5406 rebuilds=1 optimizations=1 rebuild_ms=2.9695 read_checksum=4777402685 verified=true
+    phase_wall_s=0.2285;0.1609;0.1590;0.1861
+  run=1 genetic wall_s=0.8049 cpu_s=4.3702 rebuilds=1 optimizations=1 rebuild_ms=0.5113 read_checksum=4777436786 verified=true
+    phase_wall_s=0.2473;0.1872;0.1902;0.1800
+  run=1 global wall_s=4.1693 cpu_s=12.7728 rebuilds=0 optimizations=0 rebuild_ms=0.0000 read_checksum=4777391772 verified=true
+    phase_wall_s=0.9938;1.0503;1.0729;1.0520
+  run=1 per_element wall_s=15.9413 cpu_s=95.5694 rebuilds=0 optimizations=0 rebuild_ms=0.0000 read_checksum=4777398580 verified=true
+    phase_wall_s=3.6584;3.7950;3.4920;4.0688
+  run=1 fixed wall_s=1.7606 cpu_s=8.5953 rebuilds=0 optimizations=0 rebuild_ms=0.0000 read_checksum=4777409493 verified=true
+    phase_wall_s=0.5181;0.4076;0.4210;0.4138
+  median fixed_s=1.7606
+  median balanced_s=0.6999 paired_speedup=2.5156 range=[2.5156,2.5156] cpu/fixed=0.4323
+  median dynamic_dp_s=0.7348 paired_speedup=2.3960 range=[2.3960,2.3960] cpu/fixed=0.5283
+  median genetic_s=0.8049 paired_speedup=2.1873 range=[2.1873,2.1873] cpu/fixed=0.5084
+  median global_s=4.1693 paired_speedup=0.4223 range=[0.4223,0.4223] cpu/fixed=1.4860
+  median per_element_s=15.9413 paired_speedup=0.1104 range=[0.1104,0.1104] cpu/fixed=11.1188

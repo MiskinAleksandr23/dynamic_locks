@@ -1,0 +1,38 @@
+{
+  "status": "complete",
+  "started_utc": "2026-09-18T10:38:04.640852+00:00",
+  "reference": "../sliding_10s_8t",
+  "source_sha256": {
+    "dynamic/dynamic_lock.hpp": "61d7665d330c8d854980b8d9f4a73467bf2db20051018aee87e91503fa64407e",
+    "dynamic/partitioner.hpp": "9def0df3aee547edf023d7bc2c05f9d363558de1ca802f03ffa78c6e96c7f6ad",
+    "common/range_lock.hpp": "bed94a5cdecd5566c806abf17c4afcf13e12732e6f8e0ce69df67be256d189e6",
+    "common/naive_lock.hpp": "e5b46a7d5989e38b8e5e0c3cddadb70cb79c2f802ddd4ea50f2a0a3f0fc04187",
+    "benchmarks/adaptive_lock_benchmark.cpp": "c005131a94792b1cd09b2e32ed2744357753d3e620d5919ca9ee6ee670f10a11",
+    "tests/benchmark_workload_test.cpp": "16cbc85f99eff9231eef139e333cc4cd056dbad74dc1819e09f875c9a9e4b12e",
+    "build/adaptive_lock_benchmark": "108f7225916fd8517eb6a34d43f43cbf1e14fe39b1b57e63c8ea3da53b4aeff7"
+  },
+  "workers": [
+    4
+  ],
+  "repetitions": 1,
+  "sequential": true,
+  "geometry": {
+    "residences": 9,
+    "moves": 8,
+    "window_elements": 4194304,
+    "step_elements": 1048576,
+    "adjacent_overlap": 0.75,
+    "operations_per_residence_total": 20000000
+  },
+  "validation": "Same source and binary as the 8-worker experiment; its Release build and 6/6 CTest passed.",
+  "method": "Only worker count and output path differ from the reference command. Fixed total work; matched inputs per triple; whole lock lifetime timed. Update only numeric cells in the existing sliding_variable_range row after each verified triple.",
+  "requested_workers_initially": [
+    4,
+    6,
+    10
+  ],
+  "verified_runs": 3,
+  "finished_utc": "2026-09-18T10:44:59.534032+00:00",
+  "scope_change": "User limited the experiment to the completed 4-worker triple. The 6-worker child was terminated, and 10 workers were not started.",
+  "elapsed_s": 315.03812313079834
+}

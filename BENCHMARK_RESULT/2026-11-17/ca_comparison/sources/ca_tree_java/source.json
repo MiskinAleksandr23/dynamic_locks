@@ -1,0 +1,68 @@
+{
+  "repository": "https://github.com/kjellwinblad/JavaRQBench",
+  "commit": "df871bafbf3ea5b08e3fcda17f47e6bb3fb5040d",
+  "license": "GPL-3.0-or-later according to source headers",
+  "upstream_modified": false,
+  "files": [
+    {
+      "path": "README.md",
+      "sha256": "616cfa0a2ba349171832ec9cbdcd69e42dbf275f50d23f490f85ad5d6455cb17",
+      "git_blob_sha1": "5502ee1674daec69fc3ce4cb0bb01297584cd0ef"
+    },
+    {
+      "path": "src/main/java/se/uu/collection/AVLTreeMapSTD.java",
+      "sha256": "27e82d46b2df0ceb8aef44d6028fe1ddc1831cc8723e7e654bb00da7455ef9c3",
+      "git_blob_sha1": "93500c9b681f10e32a3c9225e211759e5cba6ffc"
+    },
+    {
+      "path": "src/main/java/se/uu/collection/AnyKeyProviding.java",
+      "sha256": "f95fc55c5943617115eaba8d5ddb0ddabede9c06e8b8d380e7b461b05b2761b1",
+      "git_blob_sha1": "9c5bb266193260c5816a5b773cd6744017866651"
+    },
+    {
+      "path": "src/main/java/se/uu/collection/CATreeMapSTDR.java",
+      "sha256": "78c622a4a942185e0ee0084f4e1e6397e008b70ab7d64cdfa691dfdb1cbc3225",
+      "git_blob_sha1": "4dc673d2ae49c3f73f1a7132af0bee31b7758511"
+    },
+    {
+      "path": "src/main/java/se/uu/collection/Invalidatable.java",
+      "sha256": "753aad04baf4e3ace6d63e2a2bcc80b1e22ef83bdc56c5329828a9ebdafcd6d5",
+      "git_blob_sha1": "46ee6ed2af8e76a0b069a6df792dd62dfb5a561c"
+    },
+    {
+      "path": "src/main/java/se/uu/collection/LongStack.java",
+      "sha256": "bfb95e6c91402db061d624cf66960f25e68dfe9dcf019eeca3d95473ce780012",
+      "git_blob_sha1": "0e65e1b66facd79017feb20eedbda54faf823f66"
+    },
+    {
+      "path": "src/main/java/se/uu/collection/RangeQueryMap.java",
+      "sha256": "8f1d180677a7656ac392720ee248355df2a5ff103887983c06f86342ef8e0bb2",
+      "git_blob_sha1": "126c800526bb1b44f9225548ff349004fe497911"
+    },
+    {
+      "path": "src/main/java/se/uu/collection/RangeUpdateMap.java",
+      "sha256": "ca07d4bfb9f3327eef191ffd811e918afe285b5df1e637c1d723bdfb8c55e0a9",
+      "git_blob_sha1": "3657eb4786dc677cb3cedc32be07afda8078dd95"
+    },
+    {
+      "path": "src/main/java/se/uu/collection/SeqRWLock.java",
+      "sha256": "c37a912c484f91bdb8ccf73a76a558129e29405a8faa41b65ab5b383613e30f1",
+      "git_blob_sha1": "24105d86bf0234a47b432f6ddbf2f95716a63c4e"
+    },
+    {
+      "path": "src/main/java/se/uu/collection/SplitableAndJoinableMap.java",
+      "sha256": "e6149db61b16293ec75406747993188450e3e7399b7dad3d6a0aee8731816fd5",
+      "git_blob_sha1": "b1226aa5d5eb45febe08b637770ba5e1ff2db458"
+    },
+    {
+      "path": "src/main/java/se/uu/collection/Stack.java",
+      "sha256": "6228a461dc10470ef41e9e643b836ad5206c306e4bd495f88ffca5f22bda2676",
+      "git_blob_sha1": "f58d709a2582a52fb14065dbd5b5e8355f83657f"
+    },
+    {
+      "path": "LICENCE",
+      "sha256": "c53a65c2fd561c87eaabf1072ef5dcab8653042bc15308465f52413585eb6271",
+      "git_blob_sha1": "20d40b6bceca3a6c0237d7455ebf1820aeff3680"
+    }
+  ]
+}

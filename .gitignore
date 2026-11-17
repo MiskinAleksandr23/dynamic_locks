@@ -3,3 +3,8 @@
 /.idea/
 /.vscode/
 __pycache__/
+.DS_Store
+/.cache/
+/snapshots/2026-11-17-before-paper/
+/BENCHMARK_RESULT/**/measured_binary
+/BENCHMARK_RESULT/**/*.class

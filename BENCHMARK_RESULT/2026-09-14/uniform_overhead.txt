@@ -1,0 +1,41 @@
+# command: ./build/adaptive_lock_benchmark --threads 8 --seed 1 --rebuild-ms 30000 --sample-rate 64 --trace-size 1048576 --scenario uniform --operations 32000000 --repetitions 7 --csv BENCHMARK_RESULT/2026-09-14/uniform_overhead.csv
+64 mutexes, 8 workers, 32000000 operations/scenario, 7 repetitions
+trace_size=1048576 unique query budget per phase (all workers)
+array_size=1048576 hot_width=16384 range_length=8 sample_rate=64 rebuild_interval_ms=30000 seed=1
+All work from lock construction through destruction is timed; no warmup.
+Final arrays verified against a deterministic reference after every run.
+Read checksums depend on scheduling and are not equality checks.
+Stored independent worker traces repeat cyclically; identical for all implementations.
+
+uniform
+  run=1 unique_queries=1048576 phases=1
+  run=1 fixed wall_s=0.4488 cpu_s=2.5887 rebuilds=0 rebuild_ms=0.0000 read_checksum=3841563702 verified=true
+  run=1 balanced wall_s=0.4617 cpu_s=2.6705 rebuilds=0 rebuild_ms=0.0000 read_checksum=3841556279 verified=true
+  run=1 dynamic_dp wall_s=0.4038 cpu_s=2.3029 rebuilds=0 rebuild_ms=0.0000 read_checksum=3841545818 verified=true
+  run=2 unique_queries=1048576 phases=1
+  run=2 balanced wall_s=0.4835 cpu_s=2.8047 rebuilds=0 rebuild_ms=0.0000 read_checksum=3844985437 verified=true
+  run=2 dynamic_dp wall_s=0.4824 cpu_s=2.7916 rebuilds=0 rebuild_ms=0.0000 read_checksum=3844943581 verified=true
+  run=2 fixed wall_s=0.4344 cpu_s=2.4979 rebuilds=0 rebuild_ms=0.0000 read_checksum=3844977251 verified=true
+  run=3 unique_queries=1048576 phases=1
+  run=3 dynamic_dp wall_s=0.4357 cpu_s=2.5232 rebuilds=0 rebuild_ms=0.0000 read_checksum=3843780602 verified=true
+  run=3 fixed wall_s=0.3458 cpu_s=1.9799 rebuilds=0 rebuild_ms=0.0000 read_checksum=3843771455 verified=true
+  run=3 balanced wall_s=0.3337 cpu_s=1.8915 rebuilds=0 rebuild_ms=0.0000 read_checksum=3843767521 verified=true
+  run=4 unique_queries=1048576 phases=1
+  run=4 fixed wall_s=0.3904 cpu_s=2.2481 rebuilds=0 rebuild_ms=0.0000 read_checksum=3837919802 verified=true
+  run=4 balanced wall_s=0.4123 cpu_s=2.4043 rebuilds=0 rebuild_ms=0.0000 read_checksum=3837920724 verified=true
+  run=4 dynamic_dp wall_s=0.4035 cpu_s=2.3425 rebuilds=0 rebuild_ms=0.0000 read_checksum=3837982237 verified=true
+  run=5 unique_queries=1048576 phases=1
+  run=5 balanced wall_s=0.4499 cpu_s=2.5940 rebuilds=0 rebuild_ms=0.0000 read_checksum=3840910053 verified=true
+  run=5 dynamic_dp wall_s=0.4186 cpu_s=2.4297 rebuilds=0 rebuild_ms=0.0000 read_checksum=3840929354 verified=true
+  run=5 fixed wall_s=0.3770 cpu_s=2.1669 rebuilds=0 rebuild_ms=0.0000 read_checksum=3840903611 verified=true
+  run=6 unique_queries=1048576 phases=1
+  run=6 dynamic_dp wall_s=0.3971 cpu_s=2.3097 rebuilds=0 rebuild_ms=0.0000 read_checksum=3840711898 verified=true
+  run=6 fixed wall_s=0.3404 cpu_s=1.9288 rebuilds=0 rebuild_ms=0.0000 read_checksum=3840754630 verified=true
+  run=6 balanced wall_s=0.3895 cpu_s=2.2543 rebuilds=0 rebuild_ms=0.0000 read_checksum=3840723219 verified=true
+  run=7 unique_queries=1048576 phases=1
+  run=7 fixed wall_s=0.3801 cpu_s=2.1841 rebuilds=0 rebuild_ms=0.0000 read_checksum=3839060082 verified=true
+  run=7 balanced wall_s=0.5257 cpu_s=3.0165 rebuilds=0 rebuild_ms=0.0000 read_checksum=3839068894 verified=true
+  run=7 dynamic_dp wall_s=0.6780 cpu_s=3.9316 rebuilds=0 rebuild_ms=0.0000 read_checksum=3839029192 verified=true
+  median fixed_s=0.3801
+  median balanced_s=0.4499 paired_speedup=0.8984 range=[0.7230,1.0364] cpu/fixed=1.1228
+  median dynamic_dp_s=0.4186 paired_speedup=0.9005 range=[0.5606,1.1116] cpu/fixed=1.1213

@@ -1,0 +1,2 @@
+scenario,repetition,implementation,threads,operations,trace_size,unique_queries,array_size,hot_width,range_length,seed,sample_rate,rebuild_interval_ms,wall_s,cpu_s,rebuilds,rebuild_ms,read_checksum,verified,phase_wall_s,partition_cuts,optimizations
+hot_with_spike,1,fixed,8,2000000000,1048576,4194304,1048576,16384,1,9509663594007654709,64,30000,84.8335728,538.869432,0,0,721322497476662549,true,21.2534898;21.0126108;20.6878127;21.8794885,,0

@@ -1,0 +1,50 @@
+{
+  "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+  "commands": [
+    {
+      "command": [
+        "sysctl",
+        "-n",
+        "machdep.cpu.brand_string"
+      ],
+      "returncode": 0,
+      "output": "Apple M3 Pro\n"
+    },
+    {
+      "command": [
+        "sysctl",
+        "-n",
+        "hw.memsize"
+      ],
+      "returncode": 0,
+      "output": "19327352832\n"
+    },
+    {
+      "command": [
+        "sysctl",
+        "-n",
+        "hw.physicalcpu"
+      ],
+      "returncode": 0,
+      "output": "11\n"
+    },
+    {
+      "command": [
+        "sysctl",
+        "-n",
+        "hw.logicalcpu"
+      ],
+      "returncode": 0,
+      "output": "11\n"
+    },
+    {
+      "command": [
+        "sw_vers"
+      ],
+      "returncode": 0,
+      "output": "ProductName:\t\tmacOS\nProductVersion:\t\t26.6\nBuildVersion:\t\t25G72\n"
+    }
+  ],
+  "workers": 8,
+  "affinity": "OS scheduled on local Mac; no P/E-core pinning"
+}

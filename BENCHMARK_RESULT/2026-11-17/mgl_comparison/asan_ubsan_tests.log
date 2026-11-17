@@ -1,0 +1,19 @@
+Start testing: Nov 17 19:39 MSK
+----------------------------------------------------------
+1/14 Testing: multigranularity_lock_tests
+1/14 Test: multigranularity_lock_tests
+Command: "/Users/near/dynamic/build/mgl-asan/multigranularity_lock_tests"
+Directory: /Users/near/dynamic/build/mgl-asan
+"multigranularity_lock_tests" start time: Nov 17 19:39 MSK
+Output:
+----------------------------------------------------------
+PASS MGL bounds, S/X/IS/IX compatibility, exceptions, overlap oracle and atomic range reads
+<end of output>
+Test time =   1.33 sec
+----------------------------------------------------------
+Test Passed.
+"multigranularity_lock_tests" end time: Nov 17 19:39 MSK
+"multigranularity_lock_tests" time elapsed: 00:00:01
+----------------------------------------------------------
+
+End testing: Nov 17 19:39 MSK

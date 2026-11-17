@@ -1,38 +1,37 @@
-#include "dynamic/dynamic_lock.hpp"
+#include "dynamic/paper_lock.hpp"
 
-static constexpr int kLockSize = 1 << 20;
-static constexpr int kLocks = 64;
-static constexpr int kThreadCnt = 8;
+#include <algorithm>
+#include <iostream>
+#include <stdexcept>
+#include <thread>
+#include <vector>
 
 int main() {
-    std::vector<std::thread> ThreadPoll;
-    ThreadPoll.reserve(kThreadCnt);
-
-    std::vector data(kLockSize, 0);
-    
-    // Пример запроса: прибавление 1 на отрезке
-    auto AddOneToPoint = [&data](int left, int right) {
-        for (int idx = left; idx < right; ++idx) {
-            ++data[idx];
-        }
-    };
-
-    // Не владаеет данными, нужен только размер "охраняемых" данных
-    DynamicLock<kLocks> lock(kLockSize);
-
-    for (int idx = 0; idx < kThreadCnt; ++idx) {
-        ThreadPoll.emplace_back([&lock, &AddOneToPoint] {
-            // Каждый поток будет делать прибавления в точках последовательно
-            for (int i = 0; i < kLockSize; ++i) {
-                lock.WriteQuery(i, i + 1, AddOneToPoint);
-            }
+  constexpr size_t size = 1 << 16;
+  constexpr size_t threads = 4;
+  std::vector<size_t> data(size, 0);
+  PaperRangeLock<64> lock(size);
+  lock.StartRebuilder();
+  std::vector<std::thread> workers;
+  for (size_t worker = 0; worker < threads; ++worker) {
+    workers.emplace_back([&] {
+      for (size_t index = 0; index < size; ++index) {
+        // Both endpoints are inclusive; a point is [index,index].
+        lock.WriteQuery(index, index, [&](size_t left, size_t right) {
+          for (size_t point = left; point <= right; ++point) {
+            ++data[point];
+          }
         });
-    }
-    for (auto &&th: ThreadPoll) {
-        th.join();
-    }
-
-    if (!std::ranges::all_of(data, [](int value) { return value == kThreadCnt; })) {
-        throw std::runtime_error("Incorrect result");
-    }
+      }
+    });
+  }
+  for (auto &worker : workers) {
+    worker.join();
+  }
+  lock.StopRebuilder();
+  lock.RethrowBackgroundError();
+  if (!std::ranges::all_of(data, [](size_t value) { return value == threads; })) {
+    throw std::runtime_error("incorrect array");
+  }
+  std::cout << "All elements verified\n";
 }

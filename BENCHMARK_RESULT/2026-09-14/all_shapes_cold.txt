@@ -1,0 +1,548 @@
+# command: ./build/adaptive_lock_benchmark --threads 8 --seed 1 --rebuild-ms 30000 --sample-rate 64 --trace-size 1048576 --scenario all --operations 2000000 --repetitions 3 --csv BENCHMARK_RESULT/2026-09-14/all_shapes_cold.csv
+64 mutexes, 8 workers, 2000000 operations/scenario, 3 repetitions
+trace_size=1048576 unique query budget per phase (all workers)
+array_size=1048576 hot_width=16384 range_length=8 sample_rate=64 rebuild_interval_ms=30000 seed=1
+All work from lock construction through destruction is timed; no warmup.
+Final arrays verified against a deterministic reference after every run.
+Read checksums depend on scheduling and are not equality checks.
+Stored independent worker traces repeat cyclically; identical for all implementations.
+
+uniform
+  run=1 unique_queries=1048576 phases=1
+  run=1 fixed wall_s=0.0479 cpu_s=0.2828 rebuilds=0 rebuild_ms=0.0000 read_checksum=11428054 verified=true
+  run=1 balanced wall_s=0.0477 cpu_s=0.2874 rebuilds=0 rebuild_ms=0.0000 read_checksum=11429122 verified=true
+  run=1 dynamic_dp wall_s=0.0466 cpu_s=0.2776 rebuilds=0 rebuild_ms=0.0000 read_checksum=11428152 verified=true
+  run=2 unique_queries=1048576 phases=1
+  run=2 balanced wall_s=0.0495 cpu_s=0.2985 rebuilds=0 rebuild_ms=0.0000 read_checksum=11445376 verified=true
+  run=2 dynamic_dp wall_s=0.0494 cpu_s=0.2896 rebuilds=0 rebuild_ms=0.0000 read_checksum=11445351 verified=true
+  run=2 fixed wall_s=0.0470 cpu_s=0.2730 rebuilds=0 rebuild_ms=0.0000 read_checksum=11446198 verified=true
+  run=3 unique_queries=1048576 phases=1
+  run=3 dynamic_dp wall_s=0.0419 cpu_s=0.2429 rebuilds=0 rebuild_ms=0.0000 read_checksum=11449908 verified=true
+  run=3 fixed wall_s=0.0349 cpu_s=0.1912 rebuilds=0 rebuild_ms=0.0000 read_checksum=11450185 verified=true
+  run=3 balanced wall_s=0.0510 cpu_s=0.2982 rebuilds=0 rebuild_ms=0.0000 read_checksum=11450119 verified=true
+  median fixed_s=0.0470
+  median balanced_s=0.0495 paired_speedup=0.9491 range=[0.6846,1.0059] cpu/fixed=1.0932
+  median dynamic_dp_s=0.0466 paired_speedup=0.9500 range=[0.8328,1.0280] cpu/fixed=1.0606
+
+hot_left
+  run=1 unique_queries=1048576 phases=1
+  run=1 balanced wall_s=0.1423 cpu_s=0.8763 rebuilds=0 rebuild_ms=0.0000 read_checksum=492134698 verified=true
+  run=1 dynamic_dp wall_s=0.1331 cpu_s=0.8699 rebuilds=0 rebuild_ms=0.0000 read_checksum=492113409 verified=true
+  run=1 fixed wall_s=0.1016 cpu_s=0.6601 rebuilds=0 rebuild_ms=0.0000 read_checksum=492129228 verified=true
+  run=2 unique_queries=1048576 phases=1
+  run=2 dynamic_dp wall_s=0.1288 cpu_s=0.8556 rebuilds=0 rebuild_ms=0.0000 read_checksum=492380302 verified=true
+  run=2 fixed wall_s=0.1141 cpu_s=0.7646 rebuilds=0 rebuild_ms=0.0000 read_checksum=492374634 verified=true
+  run=2 balanced wall_s=0.1265 cpu_s=0.8415 rebuilds=0 rebuild_ms=0.0000 read_checksum=492387332 verified=true
+  run=3 unique_queries=1048576 phases=1
+  run=3 fixed wall_s=0.1034 cpu_s=0.6796 rebuilds=0 rebuild_ms=0.0000 read_checksum=492051099 verified=true
+  run=3 balanced wall_s=0.1183 cpu_s=0.7740 rebuilds=0 rebuild_ms=0.0000 read_checksum=492057544 verified=true
+  run=3 dynamic_dp wall_s=0.1179 cpu_s=0.7741 rebuilds=0 rebuild_ms=0.0000 read_checksum=492063701 verified=true
+  median fixed_s=0.1034
+  median balanced_s=0.1265 paired_speedup=0.8744 range=[0.7140,0.9022] cpu/fixed=1.1389
+  median dynamic_dp_s=0.1288 paired_speedup=0.8775 range=[0.7634,0.8859] cpu/fixed=1.1390
+
+hot_right
+  run=1 unique_queries=1048576 phases=1
+  run=1 dynamic_dp wall_s=0.1175 cpu_s=0.7698 rebuilds=0 rebuild_ms=0.0000 read_checksum=492240926 verified=true
+  run=1 fixed wall_s=0.1043 cpu_s=0.6988 rebuilds=0 rebuild_ms=0.0000 read_checksum=492250081 verified=true
+  run=1 balanced wall_s=0.1318 cpu_s=0.8634 rebuilds=0 rebuild_ms=0.0000 read_checksum=492253404 verified=true
+  run=2 unique_queries=1048576 phases=1
+  run=2 fixed wall_s=0.1337 cpu_s=0.8902 rebuilds=0 rebuild_ms=0.0000 read_checksum=491574186 verified=true
+  run=2 balanced wall_s=0.1406 cpu_s=0.8951 rebuilds=0 rebuild_ms=0.0000 read_checksum=491567370 verified=true
+  run=2 dynamic_dp wall_s=0.1318 cpu_s=0.8618 rebuilds=0 rebuild_ms=0.0000 read_checksum=491583490 verified=true
+  run=3 unique_queries=1048576 phases=1
+  run=3 balanced wall_s=0.1131 cpu_s=0.7294 rebuilds=0 rebuild_ms=0.0000 read_checksum=491957936 verified=true
+  run=3 dynamic_dp wall_s=0.1149 cpu_s=0.7473 rebuilds=0 rebuild_ms=0.0000 read_checksum=491952126 verified=true
+  run=3 fixed wall_s=0.1020 cpu_s=0.6729 rebuilds=0 rebuild_ms=0.0000 read_checksum=491959679 verified=true
+  median fixed_s=0.1043
+  median balanced_s=0.1318 paired_speedup=0.9014 range=[0.7917,0.9508] cpu/fixed=1.0839
+  median dynamic_dp_s=0.1175 paired_speedup=0.8877 range=[0.8876,1.0139] cpu/fixed=1.1016
+
+clusters_2
+  run=1 unique_queries=1048576 phases=1
+  run=1 fixed wall_s=0.0970 cpu_s=0.5861 rebuilds=0 rebuild_ms=0.0000 read_checksum=247979978 verified=true
+  run=1 balanced wall_s=0.1061 cpu_s=0.6207 rebuilds=0 rebuild_ms=0.0000 read_checksum=247969770 verified=true
+  run=1 dynamic_dp wall_s=0.1084 cpu_s=0.6447 rebuilds=0 rebuild_ms=0.0000 read_checksum=247970672 verified=true
+  run=2 unique_queries=1048576 phases=1
+  run=2 balanced wall_s=0.1119 cpu_s=0.6670 rebuilds=0 rebuild_ms=0.0000 read_checksum=247892422 verified=true
+  run=2 dynamic_dp wall_s=0.1089 cpu_s=0.6444 rebuilds=0 rebuild_ms=0.0000 read_checksum=247897907 verified=true
+  run=2 fixed wall_s=0.1012 cpu_s=0.3905 rebuilds=0 rebuild_ms=0.0000 read_checksum=247920720 verified=true
+  run=3 unique_queries=1048576 phases=1
+  run=3 dynamic_dp wall_s=0.1640 cpu_s=0.9365 rebuilds=0 rebuild_ms=0.0000 read_checksum=247981723 verified=true
+  run=3 fixed wall_s=0.0813 cpu_s=0.3517 rebuilds=0 rebuild_ms=0.0000 read_checksum=248022310 verified=true
+  run=3 balanced wall_s=0.1178 cpu_s=0.7030 rebuilds=0 rebuild_ms=0.0000 read_checksum=247971396 verified=true
+  median fixed_s=0.0970
+  median balanced_s=0.1119 paired_speedup=0.9043 range=[0.6898,0.9141] cpu/fixed=1.7080
+  median dynamic_dp_s=0.1089 paired_speedup=0.8949 range=[0.4955,0.9293] cpu/fixed=1.6502
+
+clusters_4
+  run=1 unique_queries=1048576 phases=1
+  run=1 balanced wall_s=0.0901 cpu_s=0.5166 rebuilds=0 rebuild_ms=0.0000 read_checksum=125956036 verified=true
+  run=1 dynamic_dp wall_s=0.0873 cpu_s=0.4840 rebuilds=0 rebuild_ms=0.0000 read_checksum=125956822 verified=true
+  run=1 fixed wall_s=0.0743 cpu_s=0.4258 rebuilds=0 rebuild_ms=0.0000 read_checksum=125955113 verified=true
+  run=2 unique_queries=1048576 phases=1
+  run=2 dynamic_dp wall_s=0.0830 cpu_s=0.4701 rebuilds=0 rebuild_ms=0.0000 read_checksum=125881453 verified=true
+  run=2 fixed wall_s=0.0659 cpu_s=0.3350 rebuilds=0 rebuild_ms=0.0000 read_checksum=125880549 verified=true
+  run=2 balanced wall_s=0.0655 cpu_s=0.2597 rebuilds=0 rebuild_ms=0.0000 read_checksum=125880492 verified=true
+  run=3 unique_queries=1048576 phases=1
+  run=3 fixed wall_s=0.0659 cpu_s=0.3043 rebuilds=0 rebuild_ms=0.0000 read_checksum=125853277 verified=true
+  run=3 balanced wall_s=0.0995 cpu_s=0.5546 rebuilds=0 rebuild_ms=0.0000 read_checksum=125862011 verified=true
+  run=3 dynamic_dp wall_s=0.0845 cpu_s=0.3938 rebuilds=0 rebuild_ms=0.0000 read_checksum=125858645 verified=true
+  median fixed_s=0.0659
+  median balanced_s=0.0901 paired_speedup=0.8240 range=[0.6625,1.0061] cpu/fixed=1.2132
+  median dynamic_dp_s=0.0845 paired_speedup=0.7938 range=[0.7804,0.8510] cpu/fixed=1.2940
+
+clusters_8
+  run=1 unique_queries=1048576 phases=1
+  run=1 dynamic_dp wall_s=0.0977 cpu_s=0.5470 rebuilds=0 rebuild_ms=0.0000 read_checksum=64862003 verified=true
+  run=1 fixed wall_s=0.0682 cpu_s=0.3021 rebuilds=0 rebuild_ms=0.0000 read_checksum=64862312 verified=true
+  run=1 balanced wall_s=0.1033 cpu_s=0.4123 rebuilds=0 rebuild_ms=0.0000 read_checksum=64872450 verified=true
+  run=2 unique_queries=1048576 phases=1
+  run=2 fixed wall_s=0.0719 cpu_s=0.3034 rebuilds=0 rebuild_ms=0.0000 read_checksum=64901457 verified=true
+  run=2 balanced wall_s=0.0784 cpu_s=0.2467 rebuilds=0 rebuild_ms=0.0000 read_checksum=64910850 verified=true
+  run=2 dynamic_dp wall_s=0.1030 cpu_s=0.3472 rebuilds=0 rebuild_ms=0.0000 read_checksum=64908164 verified=true
+  run=3 unique_queries=1048576 phases=1
+  run=3 balanced wall_s=0.0960 cpu_s=0.5069 rebuilds=0 rebuild_ms=0.0000 read_checksum=64860691 verified=true
+  run=3 dynamic_dp wall_s=0.0583 cpu_s=0.2999 rebuilds=0 rebuild_ms=0.0000 read_checksum=64865204 verified=true
+  run=3 fixed wall_s=0.0497 cpu_s=0.2577 rebuilds=0 rebuild_ms=0.0000 read_checksum=64864594 verified=true
+  median fixed_s=0.0682
+  median balanced_s=0.0960 paired_speedup=0.6603 range=[0.5174,0.9160] cpu/fixed=1.3648
+  median dynamic_dp_s=0.0977 paired_speedup=0.6986 range=[0.6978,0.8517] cpu/fixed=1.1639
+
+unequal
+  run=1 unique_queries=1048576 phases=1
+  run=1 fixed wall_s=0.0900 cpu_s=0.4714 rebuilds=0 rebuild_ms=0.0000 read_checksum=257246119 verified=true
+  run=1 balanced wall_s=0.1024 cpu_s=0.5239 rebuilds=0 rebuild_ms=0.0000 read_checksum=257245043 verified=true
+  run=1 dynamic_dp wall_s=0.1016 cpu_s=0.5190 rebuilds=0 rebuild_ms=0.0000 read_checksum=257236982 verified=true
+  run=2 unique_queries=1048576 phases=1
+  run=2 balanced wall_s=0.0897 cpu_s=0.4672 rebuilds=0 rebuild_ms=0.0000 read_checksum=257719109 verified=true
+  run=2 dynamic_dp wall_s=0.0964 cpu_s=0.5502 rebuilds=0 rebuild_ms=0.0000 read_checksum=257716182 verified=true
+  run=2 fixed wall_s=0.0797 cpu_s=0.4421 rebuilds=0 rebuild_ms=0.0000 read_checksum=257712741 verified=true
+  run=3 unique_queries=1048576 phases=1
+  run=3 dynamic_dp wall_s=0.1066 cpu_s=0.6596 rebuilds=0 rebuild_ms=0.0000 read_checksum=257735677 verified=true
+  run=3 fixed wall_s=0.0937 cpu_s=0.5982 rebuilds=0 rebuild_ms=0.0000 read_checksum=257730479 verified=true
+  run=3 balanced wall_s=0.1097 cpu_s=0.6952 rebuilds=0 rebuild_ms=0.0000 read_checksum=257731738 verified=true
+  median fixed_s=0.0900
+  median balanced_s=0.1024 paired_speedup=0.8782 range=[0.8547,0.8888] cpu/fixed=1.1113
+  median dynamic_dp_s=0.1016 paired_speedup=0.8795 range=[0.8273,0.8850] cpu/fixed=1.1026
+
+moving
+  run=1 unique_queries=2000000 phases=8
+  run=1 balanced wall_s=0.1119 cpu_s=0.7170 rebuilds=0 rebuild_ms=0.0000 read_checksum=61022110 verified=true
+    phase_wall_s=0.0142;0.0146;0.0131;0.0144;0.0131;0.0144;0.0143;0.0136
+  run=1 dynamic_dp wall_s=0.1099 cpu_s=0.7000 rebuilds=0 rebuild_ms=0.0000 read_checksum=61023913 verified=true
+    phase_wall_s=0.0129;0.0141;0.0139;0.0131;0.0139;0.0138;0.0140;0.0141
+  run=1 fixed wall_s=0.0962 cpu_s=0.6224 rebuilds=0 rebuild_ms=0.0000 read_checksum=61021415 verified=true
+    phase_wall_s=0.0116;0.0116;0.0120;0.0123;0.0121;0.0122;0.0119;0.0123
+  run=2 unique_queries=2000000 phases=8
+  run=2 dynamic_dp wall_s=0.1131 cpu_s=0.7164 rebuilds=0 rebuild_ms=0.0000 read_checksum=61070555 verified=true
+    phase_wall_s=0.0145;0.0132;0.0142;0.0138;0.0139;0.0136;0.0165;0.0132
+  run=2 fixed wall_s=0.0936 cpu_s=0.6067 rebuilds=0 rebuild_ms=0.0000 read_checksum=61068127 verified=true
+    phase_wall_s=0.0128;0.0115;0.0117;0.0113;0.0112;0.0122;0.0116;0.0113
+  run=2 balanced wall_s=0.1093 cpu_s=0.6989 rebuilds=0 rebuild_ms=0.0000 read_checksum=61064016 verified=true
+    phase_wall_s=0.0135;0.0143;0.0142;0.0136;0.0137;0.0141;0.0136;0.0121
+  run=3 unique_queries=2000000 phases=8
+  run=3 fixed wall_s=0.0918 cpu_s=0.5894 rebuilds=0 rebuild_ms=0.0000 read_checksum=61098005 verified=true
+    phase_wall_s=0.0105;0.0124;0.0116;0.0122;0.0119;0.0113;0.0102;0.0115
+  run=3 balanced wall_s=0.1125 cpu_s=0.7229 rebuilds=0 rebuild_ms=0.0000 read_checksum=61097536 verified=true
+    phase_wall_s=0.0148;0.0128;0.0139;0.0144;0.0142;0.0144;0.0138;0.0140
+  run=3 dynamic_dp wall_s=0.1093 cpu_s=0.7007 rebuilds=0 rebuild_ms=0.0000 read_checksum=61093790 verified=true
+    phase_wall_s=0.0139;0.0139;0.0136;0.0138;0.0140;0.0128;0.0131;0.0141
+  median fixed_s=0.0936
+  median balanced_s=0.1119 paired_speedup=0.8568 range=[0.8160,0.8601] cpu/fixed=1.1520
+  median dynamic_dp_s=0.1099 paired_speedup=0.8399 range=[0.8280,0.8753] cpu/fixed=1.1807
+
+churn
+  run=1 unique_queries=2000000 phases=6
+  run=1 dynamic_dp wall_s=0.0772 cpu_s=0.4395 rebuilds=0 rebuild_ms=0.0000 read_checksum=37307079 verified=true
+    phase_wall_s=0.0134;0.0127;0.0135;0.0119;0.0125;0.0131
+  run=1 fixed wall_s=0.0712 cpu_s=0.4081 rebuilds=0 rebuild_ms=0.0000 read_checksum=37305321 verified=true
+    phase_wall_s=0.0121;0.0119;0.0119;0.0112;0.0123;0.0117
+  run=1 balanced wall_s=0.0782 cpu_s=0.4444 rebuilds=0 rebuild_ms=0.0000 read_checksum=37303581 verified=true
+    phase_wall_s=0.0131;0.0129;0.0132;0.0123;0.0133;0.0133
+  run=2 unique_queries=2000000 phases=6
+  run=2 fixed wall_s=0.0727 cpu_s=0.4171 rebuilds=0 rebuild_ms=0.0000 read_checksum=37292852 verified=true
+    phase_wall_s=0.0122;0.0122;0.0121;0.0114;0.0129;0.0117
+  run=2 balanced wall_s=0.0774 cpu_s=0.4417 rebuilds=0 rebuild_ms=0.0000 read_checksum=37293241 verified=true
+    phase_wall_s=0.0127;0.0128;0.0132;0.0120;0.0129;0.0136
+  run=2 dynamic_dp wall_s=0.0781 cpu_s=0.4443 rebuilds=0 rebuild_ms=0.0000 read_checksum=37293365 verified=true
+    phase_wall_s=0.0126;0.0130;0.0136;0.0123;0.0134;0.0131
+  run=3 unique_queries=2000000 phases=6
+  run=3 balanced wall_s=0.0792 cpu_s=0.4525 rebuilds=0 rebuild_ms=0.0000 read_checksum=37282279 verified=true
+    phase_wall_s=0.0143;0.0128;0.0133;0.0126;0.0132;0.0129
+  run=3 dynamic_dp wall_s=0.0771 cpu_s=0.4362 rebuilds=0 rebuild_ms=0.0000 read_checksum=37283311 verified=true
+    phase_wall_s=0.0122;0.0136;0.0129;0.0120;0.0131;0.0131
+  run=3 fixed wall_s=0.0706 cpu_s=0.4047 rebuilds=0 rebuild_ms=0.0000 read_checksum=37281017 verified=true
+    phase_wall_s=0.0114;0.0120;0.0114;0.0111;0.0128;0.0118
+  median fixed_s=0.0712
+  median balanced_s=0.0782 paired_speedup=0.9096 range=[0.8920,0.9396] cpu/fixed=1.0892
+  median dynamic_dp_s=0.0772 paired_speedup=0.9219 range=[0.9160,0.9307] cpu/fixed=1.0770
+
+uniform_range
+  run=1 unique_queries=1048576 phases=1
+  run=1 fixed wall_s=0.0284 cpu_s=0.1643 rebuilds=0 rebuild_ms=0.0000 read_checksum=64883421 verified=true
+  run=1 balanced wall_s=0.0276 cpu_s=0.1588 rebuilds=0 rebuild_ms=0.0000 read_checksum=64881340 verified=true
+  run=1 dynamic_dp wall_s=0.0264 cpu_s=0.1508 rebuilds=0 rebuild_ms=0.0000 read_checksum=64880685 verified=true
+  run=2 unique_queries=1048576 phases=1
+  run=2 balanced wall_s=0.0294 cpu_s=0.1685 rebuilds=0 rebuild_ms=0.0000 read_checksum=64845848 verified=true
+  run=2 dynamic_dp wall_s=0.0288 cpu_s=0.1661 rebuilds=0 rebuild_ms=0.0000 read_checksum=64846944 verified=true
+  run=2 fixed wall_s=0.0267 cpu_s=0.1527 rebuilds=0 rebuild_ms=0.0000 read_checksum=64847335 verified=true
+  run=3 unique_queries=1048576 phases=1
+  run=3 dynamic_dp wall_s=0.0241 cpu_s=0.1344 rebuilds=0 rebuild_ms=0.0000 read_checksum=64939705 verified=true
+  run=3 fixed wall_s=0.0278 cpu_s=0.1593 rebuilds=0 rebuild_ms=0.0000 read_checksum=64943927 verified=true
+  run=3 balanced wall_s=0.0287 cpu_s=0.1665 rebuilds=0 rebuild_ms=0.0000 read_checksum=64940808 verified=true
+  median fixed_s=0.0278
+  median balanced_s=0.0287 paired_speedup=0.9700 range=[0.9084,1.0303] cpu/fixed=1.0451
+  median dynamic_dp_s=0.0264 paired_speedup=1.0761 range=[0.9266,1.1540] cpu/fixed=0.9177
+
+hot_range
+  run=1 unique_queries=1048576 phases=1
+  run=1 balanced wall_s=0.1338 cpu_s=0.8650 rebuilds=0 rebuild_ms=0.0000 read_checksum=3910852746 verified=true
+  run=1 dynamic_dp wall_s=0.1366 cpu_s=0.8939 rebuilds=0 rebuild_ms=0.0000 read_checksum=3910821134 verified=true
+  run=1 fixed wall_s=0.1302 cpu_s=0.8664 rebuilds=0 rebuild_ms=0.0000 read_checksum=3910812480 verified=true
+  run=2 unique_queries=1048576 phases=1
+  run=2 dynamic_dp wall_s=0.1323 cpu_s=0.8649 rebuilds=0 rebuild_ms=0.0000 read_checksum=3914102103 verified=true
+  run=2 fixed wall_s=0.1241 cpu_s=0.8060 rebuilds=0 rebuild_ms=0.0000 read_checksum=3914024108 verified=true
+  run=2 balanced wall_s=0.1211 cpu_s=0.7382 rebuilds=0 rebuild_ms=0.0000 read_checksum=3914072799 verified=true
+  run=3 unique_queries=1048576 phases=1
+  run=3 fixed wall_s=0.1212 cpu_s=0.7721 rebuilds=0 rebuild_ms=0.0000 read_checksum=3910912289 verified=true
+  run=3 balanced wall_s=0.1321 cpu_s=0.8465 rebuilds=0 rebuild_ms=0.0000 read_checksum=3910989235 verified=true
+  run=3 dynamic_dp wall_s=0.1354 cpu_s=0.8795 rebuilds=0 rebuild_ms=0.0000 read_checksum=3910961845 verified=true
+  median fixed_s=0.1241
+  median balanced_s=0.1321 paired_speedup=0.9727 range=[0.9175,1.0248] cpu/fixed=0.9984
+  median dynamic_dp_s=0.1354 paired_speedup=0.9382 range=[0.8951,0.9529] cpu/fixed=1.0731
+
+clusters_2_range
+  run=1 unique_queries=1048576 phases=1
+  run=1 dynamic_dp wall_s=0.1275 cpu_s=0.7552 rebuilds=0 rebuild_ms=0.0000 read_checksum=1957568300 verified=true
+  run=1 fixed wall_s=0.1198 cpu_s=0.7201 rebuilds=0 rebuild_ms=0.0000 read_checksum=1957544866 verified=true
+  run=1 balanced wall_s=0.1258 cpu_s=0.7476 rebuilds=0 rebuild_ms=0.0000 read_checksum=1957613142 verified=true
+  run=2 unique_queries=1048576 phases=1
+  run=2 fixed wall_s=0.1208 cpu_s=0.7321 rebuilds=0 rebuild_ms=0.0000 read_checksum=1957043215 verified=true
+  run=2 balanced wall_s=0.1498 cpu_s=0.8913 rebuilds=0 rebuild_ms=0.0000 read_checksum=1957066019 verified=true
+  run=2 dynamic_dp wall_s=0.1349 cpu_s=0.7979 rebuilds=0 rebuild_ms=0.0000 read_checksum=1957028529 verified=true
+  run=3 unique_queries=1048576 phases=1
+  run=3 balanced wall_s=0.1212 cpu_s=0.7104 rebuilds=0 rebuild_ms=0.0000 read_checksum=1956631272 verified=true
+  run=3 dynamic_dp wall_s=0.1232 cpu_s=0.7276 rebuilds=0 rebuild_ms=0.0000 read_checksum=1956627523 verified=true
+  run=3 fixed wall_s=0.1212 cpu_s=0.7348 rebuilds=0 rebuild_ms=0.0000 read_checksum=1956679267 verified=true
+  median fixed_s=0.1208
+  median balanced_s=0.1258 paired_speedup=0.9521 range=[0.8066,1.0004] cpu/fixed=1.0383
+  median dynamic_dp_s=0.1275 paired_speedup=0.9398 range=[0.8955,0.9840] cpu/fixed=1.0487
+
+clusters_4_range
+  run=1 unique_queries=1048576 phases=1
+  run=1 fixed wall_s=0.0925 cpu_s=0.5395 rebuilds=0 rebuild_ms=0.0000 read_checksum=980327921 verified=true
+  run=1 balanced wall_s=0.0993 cpu_s=0.5693 rebuilds=0 rebuild_ms=0.0000 read_checksum=980333831 verified=true
+  run=1 dynamic_dp wall_s=0.1014 cpu_s=0.5850 rebuilds=0 rebuild_ms=0.0000 read_checksum=980308243 verified=true
+  run=2 unique_queries=1048576 phases=1
+  run=2 balanced wall_s=0.0968 cpu_s=0.5541 rebuilds=0 rebuild_ms=0.0000 read_checksum=979751998 verified=true
+  run=2 dynamic_dp wall_s=0.0968 cpu_s=0.5529 rebuilds=0 rebuild_ms=0.0000 read_checksum=979735093 verified=true
+  run=2 fixed wall_s=0.0923 cpu_s=0.5349 rebuilds=0 rebuild_ms=0.0000 read_checksum=979705507 verified=true
+  run=3 unique_queries=1048576 phases=1
+  run=3 dynamic_dp wall_s=0.0985 cpu_s=0.5656 rebuilds=0 rebuild_ms=0.0000 read_checksum=981207183 verified=true
+  run=3 fixed wall_s=0.0928 cpu_s=0.5451 rebuilds=0 rebuild_ms=0.0000 read_checksum=981200316 verified=true
+  run=3 balanced wall_s=0.0994 cpu_s=0.5716 rebuilds=0 rebuild_ms=0.0000 read_checksum=981201981 verified=true
+  median fixed_s=0.0925
+  median balanced_s=0.0993 paired_speedup=0.9331 range=[0.9318,0.9531] cpu/fixed=1.0487
+  median dynamic_dp_s=0.0985 paired_speedup=0.9415 range=[0.9123,0.9536] cpu/fixed=1.0376
+
+moving_range
+  run=1 unique_queries=2000000 phases=8
+  run=1 balanced wall_s=0.1340 cpu_s=0.8608 rebuilds=0 rebuild_ms=0.0000 read_checksum=488260965 verified=true
+    phase_wall_s=0.0164;0.0167;0.0170;0.0168;0.0165;0.0172;0.0168;0.0165
+  run=1 dynamic_dp wall_s=0.1279 cpu_s=0.8062 rebuilds=0 rebuild_ms=0.0000 read_checksum=488266453 verified=true
+    phase_wall_s=0.0138;0.0163;0.0165;0.0167;0.0165;0.0161;0.0175;0.0144
+  run=1 fixed wall_s=0.1257 cpu_s=0.8148 rebuilds=0 rebuild_ms=0.0000 read_checksum=488279726 verified=true
+    phase_wall_s=0.0145;0.0151;0.0163;0.0163;0.0159;0.0158;0.0162;0.0155
+  run=2 unique_queries=2000000 phases=8
+  run=2 dynamic_dp wall_s=0.1293 cpu_s=0.8152 rebuilds=0 rebuild_ms=0.0000 read_checksum=488515755 verified=true
+    phase_wall_s=0.0171;0.0172;0.0171;0.0161;0.0161;0.0165;0.0156;0.0135
+  run=2 fixed wall_s=0.1569 cpu_s=0.9653 rebuilds=0 rebuild_ms=0.0000 read_checksum=488497462 verified=true
+    phase_wall_s=0.0118;0.0199;0.0161;0.0233;0.0204;0.0256;0.0204;0.0192
+  run=2 balanced wall_s=0.1658 cpu_s=1.0204 rebuilds=0 rebuild_ms=0.0000 read_checksum=488504114 verified=true
+    phase_wall_s=0.0231;0.0213;0.0215;0.0214;0.0196;0.0183;0.0174;0.0232
+  run=3 unique_queries=2000000 phases=8
+  run=3 fixed wall_s=0.1423 cpu_s=0.9033 rebuilds=0 rebuild_ms=0.0000 read_checksum=488255082 verified=true
+    phase_wall_s=0.0216;0.0182;0.0193;0.0169;0.0161;0.0172;0.0160;0.0169
+  run=3 balanced wall_s=0.1484 cpu_s=0.9330 rebuilds=0 rebuild_ms=0.0000 read_checksum=488240911 verified=true
+    phase_wall_s=0.0176;0.0200;0.0184;0.0173;0.0163;0.0168;0.0178;0.0241
+  run=3 dynamic_dp wall_s=0.1798 cpu_s=1.0728 rebuilds=0 rebuild_ms=0.0000 read_checksum=488209023 verified=true
+    phase_wall_s=0.0270;0.0243;0.0248;0.0255;0.0249;0.0216;0.0187;0.0129
+  median fixed_s=0.1423
+  median balanced_s=0.1484 paired_speedup=0.9464 range=[0.9381,0.9586] cpu/fixed=1.0564
+  median dynamic_dp_s=0.1293 paired_speedup=0.9828 range=[0.7916,1.2133] cpu/fixed=0.9894
+
+uniform_variable_range
+  run=1 unique_queries=1048576 phases=1
+  run=1 dynamic_dp wall_s=0.0719 cpu_s=0.3727 rebuilds=0 rebuild_ms=0.0000 read_checksum=38146313 verified=true
+  run=1 fixed wall_s=0.0584 cpu_s=0.3310 rebuilds=0 rebuild_ms=0.0000 read_checksum=38145333 verified=true
+  run=1 balanced wall_s=0.0432 cpu_s=0.2466 rebuilds=0 rebuild_ms=0.0000 read_checksum=38142842 verified=true
+  run=2 unique_queries=1048576 phases=1
+  run=2 fixed wall_s=0.0631 cpu_s=0.3291 rebuilds=0 rebuild_ms=0.0000 read_checksum=38126379 verified=true
+  run=2 balanced wall_s=0.0464 cpu_s=0.2493 rebuilds=0 rebuild_ms=0.0000 read_checksum=38126125 verified=true
+  run=2 dynamic_dp wall_s=0.0323 cpu_s=0.1500 rebuilds=0 rebuild_ms=0.0000 read_checksum=38123174 verified=true
+  run=3 unique_queries=1048576 phases=1
+  run=3 balanced wall_s=0.0334 cpu_s=0.1368 rebuilds=0 rebuild_ms=0.0000 read_checksum=38107886 verified=true
+  run=3 dynamic_dp wall_s=0.0439 cpu_s=0.1755 rebuilds=0 rebuild_ms=0.0000 read_checksum=38099876 verified=true
+  run=3 fixed wall_s=0.0391 cpu_s=0.1538 rebuilds=0 rebuild_ms=0.0000 read_checksum=38108373 verified=true
+  median fixed_s=0.0584
+  median balanced_s=0.0432 paired_speedup=1.3519 range=[1.1699,1.3617] cpu/fixed=0.7577
+  median dynamic_dp_s=0.0439 paired_speedup=0.8899 range=[0.8123,1.9554] cpu/fixed=1.1262
+
+hot_variable_range
+  run=1 unique_queries=1048576 phases=1
+  run=1 fixed wall_s=0.1043 cpu_s=0.5602 rebuilds=0 rebuild_ms=0.0000 read_checksum=2198899234 verified=true
+  run=1 balanced wall_s=0.1288 cpu_s=0.7191 rebuilds=0 rebuild_ms=0.0000 read_checksum=2198809375 verified=true
+  run=1 dynamic_dp wall_s=0.1364 cpu_s=0.7188 rebuilds=0 rebuild_ms=0.0000 read_checksum=2198977678 verified=true
+  run=2 unique_queries=1048576 phases=1
+  run=2 balanced wall_s=0.1443 cpu_s=0.8982 rebuilds=0 rebuild_ms=0.0000 read_checksum=2201866343 verified=true
+  run=2 dynamic_dp wall_s=0.1470 cpu_s=0.9363 rebuilds=0 rebuild_ms=0.0000 read_checksum=2201911286 verified=true
+  run=2 fixed wall_s=0.1027 cpu_s=0.5880 rebuilds=0 rebuild_ms=0.0000 read_checksum=2201915611 verified=true
+  run=3 unique_queries=1048576 phases=1
+  run=3 dynamic_dp wall_s=0.1151 cpu_s=0.6798 rebuilds=0 rebuild_ms=0.0000 read_checksum=2202690658 verified=true
+  run=3 fixed wall_s=0.1511 cpu_s=0.7266 rebuilds=0 rebuild_ms=0.0000 read_checksum=2202851254 verified=true
+  run=3 balanced wall_s=0.1214 cpu_s=0.7298 rebuilds=0 rebuild_ms=0.0000 read_checksum=2202688347 verified=true
+  median fixed_s=0.1043
+  median balanced_s=0.1288 paired_speedup=0.8098 range=[0.7120,1.2445] cpu/fixed=1.2835
+  median dynamic_dp_s=0.1364 paired_speedup=0.7648 range=[0.6986,1.3130] cpu/fixed=1.2830
+
+true_contention
+  run=1 unique_queries=1048576 phases=1
+  run=1 balanced wall_s=0.0567 cpu_s=0.3386 rebuilds=0 rebuild_ms=0.0000 read_checksum=7996389506681 verified=true
+  run=1 dynamic_dp wall_s=0.0566 cpu_s=0.3238 rebuilds=0 rebuild_ms=0.0000 read_checksum=7996573046968 verified=true
+  run=1 fixed wall_s=0.0434 cpu_s=0.1906 rebuilds=0 rebuild_ms=0.0000 read_checksum=7996547552575 verified=true
+  run=2 unique_queries=1048576 phases=1
+  run=2 dynamic_dp wall_s=0.0649 cpu_s=0.2562 rebuilds=0 rebuild_ms=0.0000 read_checksum=8000631153710 verified=true
+  run=2 fixed wall_s=0.0320 cpu_s=0.0558 rebuilds=0 rebuild_ms=0.0000 read_checksum=8000387520710 verified=true
+  run=2 balanced wall_s=0.0563 cpu_s=0.2956 rebuilds=0 rebuild_ms=0.0000 read_checksum=8001484537258 verified=true
+  run=3 unique_queries=1048576 phases=1
+  run=3 fixed wall_s=0.0480 cpu_s=0.2587 rebuilds=0 rebuild_ms=0.0000 read_checksum=8002094116166 verified=true
+  run=3 balanced wall_s=0.0587 cpu_s=0.3136 rebuilds=0 rebuild_ms=0.0000 read_checksum=8001879009412 verified=true
+  run=3 dynamic_dp wall_s=0.0524 cpu_s=0.2731 rebuilds=0 rebuild_ms=0.0000 read_checksum=8001936524077 verified=true
+  median fixed_s=0.0434
+  median balanced_s=0.0567 paired_speedup=0.7646 range=[0.5685,0.8180] cpu/fixed=1.7766
+  median dynamic_dp_s=0.0566 paired_speedup=0.7667 range=[0.4937,0.9162] cpu/fixed=1.6988
+
+recovery
+  run=1 unique_queries=2000000 phases=2
+  run=1 dynamic_dp wall_s=0.0978 cpu_s=0.6107 rebuilds=0 rebuild_ms=0.0000 read_checksum=127605587 verified=true
+    phase_wall_s=0.0707;0.0269
+  run=1 fixed wall_s=0.0904 cpu_s=0.5226 rebuilds=0 rebuild_ms=0.0000 read_checksum=127605541 verified=true
+    phase_wall_s=0.0663;0.0239
+  run=1 balanced wall_s=0.0824 cpu_s=0.3476 rebuilds=0 rebuild_ms=0.0000 read_checksum=127623128 verified=true
+    phase_wall_s=0.0532;0.0290
+  run=2 unique_queries=2000000 phases=2
+  run=2 fixed wall_s=0.0726 cpu_s=0.4027 rebuilds=0 rebuild_ms=0.0000 read_checksum=127860049 verified=true
+    phase_wall_s=0.0472;0.0253
+  run=2 balanced wall_s=0.1129 cpu_s=0.6719 rebuilds=0 rebuild_ms=0.0000 read_checksum=127859136 verified=true
+    phase_wall_s=0.0823;0.0304
+  run=2 dynamic_dp wall_s=0.1032 cpu_s=0.6194 rebuilds=0 rebuild_ms=0.0000 read_checksum=127865437 verified=true
+    phase_wall_s=0.0768;0.0262
+  run=3 unique_queries=2000000 phases=2
+  run=3 balanced wall_s=0.1011 cpu_s=0.6185 rebuilds=0 rebuild_ms=0.0000 read_checksum=127802973 verified=true
+    phase_wall_s=0.0778;0.0232
+  run=3 dynamic_dp wall_s=0.1046 cpu_s=0.6102 rebuilds=0 rebuild_ms=0.0000 read_checksum=127806062 verified=true
+    phase_wall_s=0.0810;0.0235
+  run=3 fixed wall_s=0.0873 cpu_s=0.5299 rebuilds=0 rebuild_ms=0.0000 read_checksum=127802934 verified=true
+    phase_wall_s=0.0667;0.0205
+  median fixed_s=0.0873
+  median balanced_s=0.1011 paired_speedup=0.8637 range=[0.6436,1.0973] cpu/fixed=1.1671
+  median dynamic_dp_s=0.1032 paired_speedup=0.8347 range=[0.7040,0.9238] cpu/fixed=1.1686
+
+hot_middle
+  run=1 unique_queries=1048576 phases=1
+  run=1 fixed wall_s=0.1135 cpu_s=0.6724 rebuilds=0 rebuild_ms=0.0000 read_checksum=492191277 verified=true
+  run=1 balanced wall_s=0.1532 cpu_s=0.9014 rebuilds=0 rebuild_ms=0.0000 read_checksum=492173350 verified=true
+  run=1 dynamic_dp wall_s=0.1408 cpu_s=0.8198 rebuilds=0 rebuild_ms=0.0000 read_checksum=492174243 verified=true
+  run=2 unique_queries=1048576 phases=1
+  run=2 balanced wall_s=0.1240 cpu_s=0.7362 rebuilds=0 rebuild_ms=0.0000 read_checksum=492195142 verified=true
+  run=2 dynamic_dp wall_s=0.1245 cpu_s=0.7370 rebuilds=0 rebuild_ms=0.0000 read_checksum=492200451 verified=true
+  run=2 fixed wall_s=0.0985 cpu_s=0.5875 rebuilds=0 rebuild_ms=0.0000 read_checksum=492196665 verified=true
+  run=3 unique_queries=1048576 phases=1
+  run=3 dynamic_dp wall_s=0.1193 cpu_s=0.7029 rebuilds=0 rebuild_ms=0.0000 read_checksum=492260916 verified=true
+  run=3 fixed wall_s=0.1057 cpu_s=0.6105 rebuilds=0 rebuild_ms=0.0000 read_checksum=492267521 verified=true
+  run=3 balanced wall_s=0.1274 cpu_s=0.7483 rebuilds=0 rebuild_ms=0.0000 read_checksum=492257642 verified=true
+  median fixed_s=0.1057
+  median balanced_s=0.1274 paired_speedup=0.7945 range=[0.7407,0.8298] cpu/fixed=1.2532
+  median dynamic_dp_s=0.1245 paired_speedup=0.8063 range=[0.7918,0.8862] cpu/fixed=1.2193
+
+hot_with_cold
+  run=1 unique_queries=1048576 phases=1
+  run=1 balanced wall_s=0.1200 cpu_s=0.6883 rebuilds=0 rebuild_ms=0.0000 read_checksum=401349136 verified=true
+  run=1 dynamic_dp wall_s=0.1272 cpu_s=0.7740 rebuilds=0 rebuild_ms=0.0000 read_checksum=401353970 verified=true
+  run=1 fixed wall_s=0.1580 cpu_s=1.0189 rebuilds=0 rebuild_ms=0.0000 read_checksum=401339445 verified=true
+  run=2 unique_queries=1048576 phases=1
+  run=2 dynamic_dp wall_s=0.1839 cpu_s=1.1959 rebuilds=0 rebuild_ms=0.0000 read_checksum=400437933 verified=true
+  run=2 fixed wall_s=0.1478 cpu_s=0.9547 rebuilds=0 rebuild_ms=0.0000 read_checksum=400441729 verified=true
+  run=2 balanced wall_s=0.1620 cpu_s=1.0230 rebuilds=0 rebuild_ms=0.0000 read_checksum=400439850 verified=true
+  run=3 unique_queries=1048576 phases=1
+  run=3 fixed wall_s=0.1612 cpu_s=1.0487 rebuilds=0 rebuild_ms=0.0000 read_checksum=400928624 verified=true
+  run=3 balanced wall_s=0.1747 cpu_s=1.1015 rebuilds=0 rebuild_ms=0.0000 read_checksum=400930937 verified=true
+  run=3 dynamic_dp wall_s=0.1802 cpu_s=1.1544 rebuilds=0 rebuild_ms=0.0000 read_checksum=400930454 verified=true
+  median fixed_s=0.1580
+  median balanced_s=0.1620 paired_speedup=0.9228 range=[0.9124,1.3166] cpu/fixed=1.0504
+  median dynamic_dp_s=0.1802 paired_speedup=0.8949 range=[0.8041,1.2424] cpu/fixed=1.1007
+
+clusters_16
+  run=1 unique_queries=1048576 phases=1
+  run=1 dynamic_dp wall_s=0.0878 cpu_s=0.5083 rebuilds=0 rebuild_ms=0.0000 read_checksum=34336327 verified=true
+  run=1 fixed wall_s=0.0784 cpu_s=0.3975 rebuilds=0 rebuild_ms=0.0000 read_checksum=34335775 verified=true
+  run=1 balanced wall_s=0.0646 cpu_s=0.3667 rebuilds=0 rebuild_ms=0.0000 read_checksum=34335599 verified=true
+  run=2 unique_queries=1048576 phases=1
+  run=2 fixed wall_s=0.0475 cpu_s=0.2723 rebuilds=0 rebuild_ms=0.0000 read_checksum=34347329 verified=true
+  run=2 balanced wall_s=0.0544 cpu_s=0.3123 rebuilds=0 rebuild_ms=0.0000 read_checksum=34347363 verified=true
+  run=2 dynamic_dp wall_s=0.0453 cpu_s=0.2593 rebuilds=0 rebuild_ms=0.0000 read_checksum=34347536 verified=true
+  run=3 unique_queries=1048576 phases=1
+  run=3 balanced wall_s=0.0543 cpu_s=0.3114 rebuilds=0 rebuild_ms=0.0000 read_checksum=34311799 verified=true
+  run=3 dynamic_dp wall_s=0.0341 cpu_s=0.1861 rebuilds=0 rebuild_ms=0.0000 read_checksum=34311648 verified=true
+  run=3 fixed wall_s=0.0464 cpu_s=0.2656 rebuilds=0 rebuild_ms=0.0000 read_checksum=34312504 verified=true
+  median fixed_s=0.0475
+  median balanced_s=0.0544 paired_speedup=0.8726 range=[0.8543,1.2131] cpu/fixed=1.1470
+  median dynamic_dp_s=0.0453 paired_speedup=1.0480 range=[0.8931,1.3595] cpu/fixed=0.9524
+
+clusters_4_variable_range
+  run=1 unique_queries=1048576 phases=1
+  run=1 fixed wall_s=0.1116 cpu_s=0.6437 rebuilds=0 rebuild_ms=0.0000 read_checksum=553525085 verified=true
+  run=1 balanced wall_s=0.1222 cpu_s=0.6967 rebuilds=0 rebuild_ms=0.0000 read_checksum=553523549 verified=true
+  run=1 dynamic_dp wall_s=0.1163 cpu_s=0.6798 rebuilds=0 rebuild_ms=0.0000 read_checksum=553512760 verified=true
+  run=2 unique_queries=1048576 phases=1
+  run=2 balanced wall_s=0.1106 cpu_s=0.6339 rebuilds=0 rebuild_ms=0.0000 read_checksum=553143732 verified=true
+  run=2 dynamic_dp wall_s=0.1199 cpu_s=0.6881 rebuilds=0 rebuild_ms=0.0000 read_checksum=553149084 verified=true
+  run=2 fixed wall_s=0.1260 cpu_s=0.7256 rebuilds=0 rebuild_ms=0.0000 read_checksum=553135163 verified=true
+  run=3 unique_queries=1048576 phases=1
+  run=3 dynamic_dp wall_s=0.1226 cpu_s=0.7141 rebuilds=0 rebuild_ms=0.0000 read_checksum=553083906 verified=true
+  run=3 fixed wall_s=0.1425 cpu_s=0.7843 rebuilds=0 rebuild_ms=0.0000 read_checksum=553082099 verified=true
+  run=3 balanced wall_s=0.1401 cpu_s=0.7351 rebuilds=0 rebuild_ms=0.0000 read_checksum=553107977 verified=true
+  median fixed_s=0.1260
+  median balanced_s=0.1222 paired_speedup=1.0175 range=[0.9137,1.1392] cpu/fixed=0.9373
+  median dynamic_dp_s=0.1199 paired_speedup=1.0512 range=[0.9596,1.1627] cpu/fixed=0.9484
+
+shift
+  run=1 unique_queries=2000000 phases=2
+  run=1 balanced wall_s=0.1398 cpu_s=0.8609 rebuilds=0 rebuild_ms=0.0000 read_checksum=244049129 verified=true
+    phase_wall_s=0.0753;0.0642
+  run=1 dynamic_dp wall_s=0.1323 cpu_s=0.7285 rebuilds=0 rebuild_ms=0.0000 read_checksum=244045352 verified=true
+    phase_wall_s=0.0552;0.0769
+  run=1 fixed wall_s=0.1155 cpu_s=0.7253 rebuilds=0 rebuild_ms=0.0000 read_checksum=244044751 verified=true
+    phase_wall_s=0.0551;0.0602
+  run=2 unique_queries=2000000 phases=2
+  run=2 dynamic_dp wall_s=0.1587 cpu_s=0.9935 rebuilds=0 rebuild_ms=0.0000 read_checksum=244086392 verified=true
+    phase_wall_s=0.0776;0.0809
+  run=2 fixed wall_s=0.1302 cpu_s=0.8587 rebuilds=0 rebuild_ms=0.0000 read_checksum=244082126 verified=true
+    phase_wall_s=0.0708;0.0592
+  run=2 balanced wall_s=0.1343 cpu_s=0.8617 rebuilds=0 rebuild_ms=0.0000 read_checksum=244080507 verified=true
+    phase_wall_s=0.0654;0.0687
+  run=3 unique_queries=2000000 phases=2
+  run=3 fixed wall_s=0.1191 cpu_s=0.7808 rebuilds=0 rebuild_ms=0.0000 read_checksum=244132980 verified=true
+    phase_wall_s=0.0614;0.0576
+  run=3 balanced wall_s=0.1329 cpu_s=0.8548 rebuilds=0 rebuild_ms=0.0000 read_checksum=244130850 verified=true
+    phase_wall_s=0.0654;0.0674
+  run=3 dynamic_dp wall_s=0.1337 cpu_s=0.8694 rebuilds=0 rebuild_ms=0.0000 read_checksum=244132485 verified=true
+    phase_wall_s=0.0679;0.0657
+  median fixed_s=0.1191
+  median balanced_s=0.1343 paired_speedup=0.8959 range=[0.8263,0.9694] cpu/fixed=1.0948
+  median dynamic_dp_s=0.1337 paired_speedup=0.8733 range=[0.8202,0.8906] cpu/fixed=1.1135
+
+shift_range
+  run=1 unique_queries=2000000 phases=2
+  run=1 dynamic_dp wall_s=0.1658 cpu_s=1.0853 rebuilds=0 rebuild_ms=0.0000 read_checksum=1952719094 verified=true
+    phase_wall_s=0.0833;0.0824
+  run=1 fixed wall_s=0.1518 cpu_s=0.9979 rebuilds=0 rebuild_ms=0.0000 read_checksum=1952718664 verified=true
+    phase_wall_s=0.0744;0.0773
+  run=1 balanced wall_s=0.1623 cpu_s=1.0621 rebuilds=0 rebuild_ms=0.0000 read_checksum=1952772462 verified=true
+    phase_wall_s=0.0830;0.0792
+  run=2 unique_queries=2000000 phases=2
+  run=2 fixed wall_s=0.1511 cpu_s=0.9938 rebuilds=0 rebuild_ms=0.0000 read_checksum=1954916008 verified=true
+    phase_wall_s=0.0767;0.0742
+  run=2 balanced wall_s=0.1593 cpu_s=1.0398 rebuilds=0 rebuild_ms=0.0000 read_checksum=1954983576 verified=true
+    phase_wall_s=0.0781;0.0811
+  run=2 dynamic_dp wall_s=0.1608 cpu_s=1.0429 rebuilds=0 rebuild_ms=0.0000 read_checksum=1954943406 verified=true
+    phase_wall_s=0.0817;0.0789
+  run=3 unique_queries=2000000 phases=2
+  run=3 balanced wall_s=0.1590 cpu_s=1.0379 rebuilds=0 rebuild_ms=0.0000 read_checksum=1952803857 verified=true
+    phase_wall_s=0.0782;0.0806
+  run=3 dynamic_dp wall_s=0.1653 cpu_s=1.0882 rebuilds=0 rebuild_ms=0.0000 read_checksum=1952773016 verified=true
+    phase_wall_s=0.0821;0.0831
+  run=3 fixed wall_s=0.1505 cpu_s=0.9956 rebuilds=0 rebuild_ms=0.0000 read_checksum=1952746451 verified=true
+    phase_wall_s=0.0754;0.0749
+  median fixed_s=0.1511
+  median balanced_s=0.1593 paired_speedup=0.9468 range=[0.9351,0.9482] cpu/fixed=1.0463
+  median dynamic_dp_s=0.1653 paired_speedup=0.9157 range=[0.9104,0.9396] cpu/fixed=1.0876
+
+steady_point
+  run=1 unique_queries=2000000 phases=4
+  run=1 fixed wall_s=0.1155 cpu_s=0.7524 rebuilds=0 rebuild_ms=0.0000 read_checksum=488256378 verified=true
+    phase_wall_s=0.0278;0.0299;0.0294;0.0282
+  run=1 balanced wall_s=0.1324 cpu_s=0.8469 rebuilds=0 rebuild_ms=0.0000 read_checksum=488253459 verified=true
+    phase_wall_s=0.0316;0.0322;0.0336;0.0348
+  run=1 dynamic_dp wall_s=0.1314 cpu_s=0.8488 rebuilds=0 rebuild_ms=0.0000 read_checksum=488255517 verified=true
+    phase_wall_s=0.0310;0.0336;0.0327;0.0340
+  run=2 unique_queries=2000000 phases=4
+  run=2 balanced wall_s=0.1301 cpu_s=0.8427 rebuilds=0 rebuild_ms=0.0000 read_checksum=487752123 verified=true
+    phase_wall_s=0.0328;0.0325;0.0313;0.0334
+  run=2 dynamic_dp wall_s=0.1172 cpu_s=0.7547 rebuilds=0 rebuild_ms=0.0000 read_checksum=487750083 verified=true
+    phase_wall_s=0.0297;0.0291;0.0286;0.0297
+  run=2 fixed wall_s=0.1010 cpu_s=0.6652 rebuilds=0 rebuild_ms=0.0000 read_checksum=487752525 verified=true
+    phase_wall_s=0.0238;0.0254;0.0256;0.0260
+  run=3 unique_queries=2000000 phases=4
+  run=3 dynamic_dp wall_s=0.1186 cpu_s=0.7670 rebuilds=0 rebuild_ms=0.0000 read_checksum=487954868 verified=true
+    phase_wall_s=0.0288;0.0301;0.0305;0.0289
+  run=3 fixed wall_s=0.1053 cpu_s=0.6927 rebuilds=0 rebuild_ms=0.0000 read_checksum=487953811 verified=true
+    phase_wall_s=0.0263;0.0260;0.0249;0.0280
+  run=3 balanced wall_s=0.1184 cpu_s=0.7688 rebuilds=0 rebuild_ms=0.0000 read_checksum=487954240 verified=true
+    phase_wall_s=0.0298;0.0304;0.0296;0.0285
+  median fixed_s=0.1053
+  median balanced_s=0.1301 paired_speedup=0.8725 range=[0.7766,0.8891] cpu/fixed=1.1256
+  median dynamic_dp_s=0.1186 paired_speedup=0.8788 range=[0.8621,0.8879] cpu/fixed=1.1282
+
+steady_range
+  run=1 unique_queries=2000000 phases=4
+  run=1 balanced wall_s=0.1419 cpu_s=0.9260 rebuilds=0 rebuild_ms=0.0000 read_checksum=3907231648 verified=true
+    phase_wall_s=0.0357;0.0355;0.0341;0.0364
+  run=1 dynamic_dp wall_s=0.1424 cpu_s=0.9183 rebuilds=0 rebuild_ms=0.0000 read_checksum=3907150655 verified=true
+    phase_wall_s=0.0352;0.0358;0.0361;0.0352
+  run=1 fixed wall_s=0.1307 cpu_s=0.8473 rebuilds=0 rebuild_ms=0.0000 read_checksum=3907147371 verified=true
+    phase_wall_s=0.0301;0.0344;0.0334;0.0327
+  run=2 unique_queries=2000000 phases=4
+  run=2 dynamic_dp wall_s=0.1436 cpu_s=0.9313 rebuilds=0 rebuild_ms=0.0000 read_checksum=3908358082 verified=true
+    phase_wall_s=0.0374;0.0342;0.0365;0.0353
+  run=2 fixed wall_s=0.1363 cpu_s=0.8998 rebuilds=0 rebuild_ms=0.0000 read_checksum=3908372245 verified=true
+    phase_wall_s=0.0343;0.0325;0.0358;0.0336
+  run=2 balanced wall_s=0.1484 cpu_s=0.9717 rebuilds=0 rebuild_ms=0.0000 read_checksum=3908368572 verified=true
+    phase_wall_s=0.0379;0.0368;0.0373;0.0363
+  run=3 unique_queries=2000000 phases=4
+  run=3 fixed wall_s=0.1391 cpu_s=0.9185 rebuilds=0 rebuild_ms=0.0000 read_checksum=3905769025 verified=true
+    phase_wall_s=0.0332;0.0355;0.0349;0.0354
+  run=3 balanced wall_s=0.1389 cpu_s=0.8928 rebuilds=0 rebuild_ms=0.0000 read_checksum=3905722439 verified=true
+    phase_wall_s=0.0349;0.0323;0.0345;0.0370
+  run=3 dynamic_dp wall_s=0.1306 cpu_s=0.8111 rebuilds=0 rebuild_ms=0.0000 read_checksum=3905782947 verified=true
+    phase_wall_s=0.0335;0.0343;0.0349;0.0277
+  median fixed_s=0.1363
+  median balanced_s=0.1419 paired_speedup=0.9208 range=[0.9183,1.0018] cpu/fixed=1.0800
+  median dynamic_dp_s=0.1424 paired_speedup=0.9489 range=[0.9176,1.0649] cpu/fixed=1.0350
+
+hot_with_spike
+  run=1 unique_queries=2000000 phases=4
+  run=1 dynamic_dp wall_s=0.0806 cpu_s=0.4301 rebuilds=0 rebuild_ms=0.0000 read_checksum=725350793003 verified=true
+    phase_wall_s=0.0188;0.0219;0.0200;0.0197
+  run=1 fixed wall_s=0.0825 cpu_s=0.5278 rebuilds=0 rebuild_ms=0.0000 read_checksum=725358460204 verified=true
+    phase_wall_s=0.0191;0.0213;0.0221;0.0198
+  run=1 balanced wall_s=0.0998 cpu_s=0.6425 rebuilds=0 rebuild_ms=0.0000 read_checksum=725366747036 verified=true
+    phase_wall_s=0.0237;0.0251;0.0254;0.0254
+  run=2 unique_queries=2000000 phases=4
+  run=2 fixed wall_s=0.0835 cpu_s=0.5432 rebuilds=0 rebuild_ms=0.0000 read_checksum=719048079428 verified=true
+    phase_wall_s=0.0214;0.0211;0.0207;0.0203
+  run=2 balanced wall_s=0.0936 cpu_s=0.5856 rebuilds=0 rebuild_ms=0.0000 read_checksum=719031848246 verified=true
+    phase_wall_s=0.0240;0.0243;0.0253;0.0200
+  run=2 dynamic_dp wall_s=0.0837 cpu_s=0.4851 rebuilds=0 rebuild_ms=0.0000 read_checksum=719022031481 verified=true
+    phase_wall_s=0.0208;0.0205;0.0211;0.0212
+  run=3 unique_queries=2000000 phases=4
+  run=3 balanced wall_s=0.0941 cpu_s=0.5862 rebuilds=0 rebuild_ms=0.0000 read_checksum=722150244855 verified=true
+    phase_wall_s=0.0204;0.0224;0.0260;0.0252
+  run=3 dynamic_dp wall_s=0.0956 cpu_s=0.6031 rebuilds=0 rebuild_ms=0.0000 read_checksum=722164241727 verified=true
+    phase_wall_s=0.0253;0.0238;0.0230;0.0233
+  run=3 fixed wall_s=0.0796 cpu_s=0.5146 rebuilds=0 rebuild_ms=0.0000 read_checksum=722153924115 verified=true
+    phase_wall_s=0.0184;0.0211;0.0202;0.0198
+  median fixed_s=0.0825
+  median balanced_s=0.0941 paired_speedup=0.8457 range=[0.8268,0.8921] cpu/fixed=1.1391
+  median dynamic_dp_s=0.0837 paired_speedup=0.9983 range=[0.8324,1.0237] cpu/fixed=0.8930

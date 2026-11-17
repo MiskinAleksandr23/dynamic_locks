@@ -1,0 +1,9 @@
+{
+  "status": "stopped_by_user",
+  "runner_session": 78472,
+  "command": "python3 BENCHMARK_RESULT/2026-11-17/locktree_comparison/run.py",
+  "scope": "3 write-only profiles at8workers,3reps; freshmatchedfixed/Bal/DP/LockTree,36runs. Uniform5M shortoverheadcontrol; steady/islands24M,L10000,10schecks. Nootherbenchmarksconcurrently.",
+  "adapter": "RocksDB/PerconaFT LockTree,NOT KDIauthorcode. Same-readbounds share, otheroverlappingreadsmayserialize; currenttestswriteonly. Perquerynativecond/releasebuffer lifecycleincluded. Upstream44filesunchanged.",
+  "completed_preflight": "Integrationpatchapplied; Release13/13 CTestpassed; extraendpoint+partial-overlap testsReleaseandASanUBSanpassed afterstandaloneCXX20featurefix.",
+  "remaining": "Do not resume automatically. Superseded by completed MGLcomparison."
+}

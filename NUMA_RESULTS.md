@@ -1,3 +1,5 @@
+> Архив результатов прежнего кода и прежней методики. Эти числа не характеризуют текущую реализацию. Актуальная методика и результаты: [BENCHMARK_RESULTS.md](BENCHMARK_RESULTS.md).
+
 # NUMA Benchmark Results
 
 Host: 4 NUMA nodes, 128 logical CPUs, 256 GB RAM. Each NUMA node has 32 logical

@@ -1,0 +1,33 @@
+Test project /private/tmp/dynamic-server-check-7u2dk03h/build/check
+      Start  1: multigranularity_lock_tests
+ 1/14 Test  #1: multigranularity_lock_tests ......   Passed    1.15 sec
+      Start  2: benchmark_mgl_smoke
+ 2/14 Test  #2: benchmark_mgl_smoke ..............   Passed    0.45 sec
+      Start  3: paper_partitioner_tests
+ 3/14 Test  #3: paper_partitioner_tests ..........   Passed    0.45 sec
+      Start  4: paper_lock_tests
+ 4/14 Test  #4: paper_lock_tests .................   Passed    0.51 sec
+      Start  5: read_write_lock_tests
+ 5/14 Test  #5: read_write_lock_tests ............   Passed    0.65 sec
+      Start  6: dynamic_lock_tests
+ 6/14 Test  #6: dynamic_lock_tests ...............   Passed    0.63 sec
+      Start  7: partitioner_tests
+ 7/14 Test  #7: partitioner_tests ................   Passed    0.46 sec
+      Start  8: genetic_partitioner_tests
+ 8/14 Test  #8: genetic_partitioner_tests ........   Passed    0.50 sec
+      Start  9: benchmark_workload_tests
+ 9/14 Test  #9: benchmark_workload_tests .........   Passed    0.39 sec
+      Start 10: example
+10/14 Test #10: example ..........................   Passed    0.37 sec
+      Start 11: benchmark_smoke
+11/14 Test #11: benchmark_smoke ..................   Passed    0.08 sec
+      Start 12: benchmark_cyclic_smoke
+12/14 Test #12: benchmark_cyclic_smoke ...........   Passed    0.05 sec
+      Start 13: benchmark_baselines_smoke
+13/14 Test #13: benchmark_baselines_smoke ........   Passed    0.01 sec
+      Start 14: benchmark_genetic_smoke
+14/14 Test #14: benchmark_genetic_smoke ..........   Passed    0.17 sec
+
+100% tests passed out of 14
+
+Total Test time (real) =   5.88 sec

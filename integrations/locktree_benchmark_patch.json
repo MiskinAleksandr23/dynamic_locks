@@ -1,0 +1,10 @@
+{
+  "status": "applied",
+  "reason": "current benchmark source and binary remain frozen during existing measurements",
+  "base_sha256": {
+    "CMakeLists.txt": "f38216927344e576c563ecaa62ec0c3097fa6844bc5039957fec08e2bfae5faa",
+    "benchmarks/adaptive_lock_benchmark.cpp": "08945e93613317d6c1fce902ded401d17728b061f48fa3a1f5e2ba411379c04f"
+  },
+  "patch_sha256": "68e64ce6d6164338933cf34a2b0846dd31a573fa073c4cea732a37709609bb36",
+  "note": "Applied before LockTree comparison; working sources subsequently extended with MGL. Do not reapply."
+}

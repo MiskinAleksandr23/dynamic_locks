@@ -1,0 +1,20 @@
+# command: ./build/adaptive_lock_benchmark --threads 8 --seed 1 --rebuild-ms 30000 --sample-rate 64 --trace-size 1048576 --scenario steady_range --array-size 67108864 --hot-width 4194304 --range-length 100000 --operations 6400000 --repetitions 1 --csv BENCHMARK_RESULT/2026-09-14/rare_range_100000.csv
+64 mutexes, 8 workers, 6400000 operations/scenario, 1 repetitions
+trace_size=1048576 unique query budget per phase (all workers)
+array_size=67108864 hot_width=4194304 range_length=100000 sample_rate=64 rebuild_interval_ms=30000 seed=1
+All work from lock construction through destruction is timed; no warmup.
+Final arrays verified against a deterministic reference after every run.
+Read checksums depend on scheduling and are not equality checks.
+Stored independent worker traces repeat cyclically; identical for all implementations.
+
+steady_range
+  run=1 unique_queries=4194304 phases=4
+  run=1 balanced wall_s=38.3027 cpu_s=125.9070 rebuilds=1 rebuild_ms=0.1565 read_checksum=1984136233699 verified=true
+    phase_wall_s=10.3475;10.7861;9.8120;7.3569
+  run=1 dynamic_dp wall_s=39.1277 cpu_s=129.6330 rebuilds=1 rebuild_ms=2.6313 read_checksum=1984136017028 verified=true
+    phase_wall_s=10.7401;10.7009;9.8510;7.8354
+  run=1 fixed wall_s=41.7833 cpu_s=112.4735 rebuilds=0 rebuild_ms=0.0000 read_checksum=1984135881620 verified=true
+    phase_wall_s=11.0533;9.8416;10.4322;10.4561
+  median fixed_s=41.7833
+  median balanced_s=38.3027 paired_speedup=1.0909 range=[1.0909,1.0909] cpu/fixed=1.1194
+  median dynamic_dp_s=39.1277 paired_speedup=1.0679 range=[1.0679,1.0679] cpu/fixed=1.1526

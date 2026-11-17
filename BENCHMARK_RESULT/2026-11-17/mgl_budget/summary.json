@@ -1,0 +1,840 @@
+{
+  "status": "complete",
+  "input_sha256": {
+    "BENCHMARK_RESULT/2026-11-17/mgl_budget/manifest.json": "03e9873118a0640bbde639dc4f66606b669acdf1079a5103eb34d799b0c5d1b0",
+    "BENCHMARK_RESULT/2026-11-17/mgl_comparison/manifest.json": "0a0d7e243851deb1c8a150a50057c5a7ba622623825a68be0fcd7c11c4b4c275",
+    "BENCHMARK_RESULT/2026-11-17/mgl_comparison/steady_range.csv": "41b8bc1a67c24f076585d529ac0fbdf9cd61f72e085e029db152efb7f23c0bc5",
+    "BENCHMARK_RESULT/2026-11-17/mgl_budget/steady_range_64leaves.csv": "daed3b80540f94cbdf821c5beebb688ac1d1c39d467ef0f53796cc7de48120b6",
+    "BENCHMARK_RESULT/2026-11-17/mgl_budget/steady_range_32leaves.csv": "6d5d3a6f79fe724fe623622aa503b3708ea07d0ede9f1454a39085e6fd2a34a7",
+    "BENCHMARK_RESULT/2026-11-17/mgl_comparison/islands_range.csv": "4ec291ad30247006a5a9986ecad943ccfbdea74de451db03b8fd376d49b50267",
+    "BENCHMARK_RESULT/2026-11-17/mgl_budget/islands_range_64leaves.csv": "21d41f175ebda49899cf79b53c352a35fc2abc82df866ccfdd8fea2ca99b2034",
+    "BENCHMARK_RESULT/2026-11-17/mgl_budget/islands_range_32leaves.csv": "24e2453726123d4326124319f5fb2311e476101f83430bd72751dfb15af63153"
+  },
+  "verified_supplemental_measurements": 12,
+  "verified_reference_measurements_used": 24,
+  "method": "Median of three seed/repetition-paired throughput ratios. The original 1024-leaf cohort measured all policies together in rotating order; 64/32-leaf supplemental runs occurred later and reuse those reference runs. No new fixed/Balanced/DP measurements and no equal-total-memory claim.",
+  "settings": {
+    "steady_range": {
+      "scenario": "steady_range",
+      "threads": 8,
+      "operations": 24000000,
+      "trace_size": 1048576,
+      "unique_queries": 4194304,
+      "array_size": 67108864,
+      "hot_width": 4194304,
+      "range_length": 10000,
+      "sample_rate": 64,
+      "rebuild_interval_ms": 10000,
+      "lock_kind": "mutex",
+      "read_percent": 0,
+      "read_operations": 0,
+      "write_operations": 24000000,
+      "model": "paper",
+      "bins": 1024,
+      "lambda": 10000,
+      "min_samples": 640,
+      "min_improvement": 0.1,
+      "write_body": "range",
+      "point_percent": 0,
+      "point_operations": 0,
+      "range_operations": 24000000
+    },
+    "islands_range": {
+      "scenario": "islands_range",
+      "threads": 8,
+      "operations": 24000000,
+      "trace_size": 1048576,
+      "unique_queries": 4194304,
+      "array_size": 67108864,
+      "hot_width": 4194304,
+      "range_length": 10000,
+      "sample_rate": 64,
+      "rebuild_interval_ms": 10000,
+      "lock_kind": "mutex",
+      "read_percent": 0,
+      "read_operations": 0,
+      "write_operations": 24000000,
+      "model": "paper",
+      "bins": 1024,
+      "lambda": 10000,
+      "min_samples": 640,
+      "min_improvement": 0.1,
+      "write_body": "range",
+      "point_percent": 0,
+      "point_operations": 0,
+      "range_operations": 24000000
+    }
+  },
+  "reference_results": [
+    {
+      "scenario": "steady_range",
+      "implementation": "fixed",
+      "throughput_relative_to_fixed": {
+        "median": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "values_by_repetition": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "qps": {
+        "median": 682679.5313831691,
+        "min": 628018.737242568,
+        "max": 696583.4919081465,
+        "values_by_repetition": [
+          696583.4919081465,
+          628018.737242568,
+          682679.5313831691
+        ]
+      },
+      "wall_s": {
+        "median": 35.1555875,
+        "min": 34.4538742,
+        "max": 38.2154203,
+        "values_by_repetition": [
+          34.4538742,
+          38.2154203,
+          35.1555875
+        ]
+      }
+    },
+    {
+      "scenario": "steady_range",
+      "implementation": "balanced",
+      "throughput_relative_to_fixed": {
+        "median": 1.7566635510956619,
+        "min": 1.579831382762073,
+        "max": 1.7629183008752651,
+        "values_by_repetition": [
+          1.579831382762073,
+          1.7629183008752651,
+          1.7566635510956619
+        ]
+      },
+      "qps": {
+        "median": 1107145.7251774976,
+        "min": 1100484.4612304803,
+        "max": 1199238.2498598802,
+        "values_by_repetition": [
+          1100484.4612304803,
+          1107145.7251774976,
+          1199238.2498598802
+        ]
+      },
+      "wall_s": {
+        "median": 21.6773632,
+        "min": 20.0127039,
+        "max": 21.8085769,
+        "values_by_repetition": [
+          21.8085769,
+          21.6773632,
+          20.0127039
+        ]
+      }
+    },
+    {
+      "scenario": "steady_range",
+      "implementation": "dynamic_dp",
+      "throughput_relative_to_fixed": {
+        "median": 1.668813769794807,
+        "min": 1.61651202640028,
+        "max": 1.9527065500221223,
+        "values_by_repetition": [
+          1.61651202640028,
+          1.9527065500221223,
+          1.668813769794807
+        ]
+      },
+      "qps": {
+        "median": 1139265.0023292985,
+        "min": 1126035.592061421,
+        "max": 1226336.3017501847,
+        "values_by_repetition": [
+          1126035.592061421,
+          1226336.3017501847,
+          1139265.0023292985
+        ]
+      },
+      "wall_s": {
+        "median": 21.0662137,
+        "min": 19.5704881,
+        "max": 21.3137135,
+        "values_by_repetition": [
+          21.3137135,
+          19.5704881,
+          21.0662137
+        ]
+      }
+    },
+    {
+      "scenario": "islands_range",
+      "implementation": "fixed",
+      "throughput_relative_to_fixed": {
+        "median": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "values_by_repetition": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "qps": {
+        "median": 523448.6728347125,
+        "min": 508340.95045181055,
+        "max": 526257.0818031769,
+        "values_by_repetition": [
+          523448.6728347125,
+          526257.0818031769,
+          508340.95045181055
+        ]
+      },
+      "wall_s": {
+        "median": 45.8497676,
+        "min": 45.605087,
+        "max": 47.2124073,
+        "values_by_repetition": [
+          45.8497676,
+          45.605087,
+          47.2124073
+        ]
+      }
+    },
+    {
+      "scenario": "islands_range",
+      "implementation": "balanced",
+      "throughput_relative_to_fixed": {
+        "median": 1.8632150866805866,
+        "min": 1.8515963337027552,
+        "max": 1.8636955845398637,
+        "values_by_repetition": [
+          1.8515963337027552,
+          1.8636955845398637,
+          1.8632150866805866
+        ]
+      },
+      "qps": {
+        "median": 969215.6435023267,
+        "min": 947148.528059362,
+        "max": 980782.9996894146,
+        "values_by_repetition": [
+          969215.6435023267,
+          980782.9996894146,
+          947148.528059362
+        ]
+      },
+      "wall_s": {
+        "median": 24.7622912,
+        "min": 24.4702447,
+        "max": 25.3392148,
+        "values_by_repetition": [
+          24.7622912,
+          24.4702447,
+          25.3392148
+        ]
+      }
+    },
+    {
+      "scenario": "islands_range",
+      "implementation": "dynamic_dp",
+      "throughput_relative_to_fixed": {
+        "median": 1.8722079959554547,
+        "min": 1.8605740332990017,
+        "max": 1.8914628244646339,
+        "values_by_repetition": [
+          1.8722079959554547,
+          1.8605740332990017,
+          1.8914628244646339
+        ]
+      },
+      "qps": {
+        "median": 979140.2612426996,
+        "min": 961508.009932618,
+        "max": 980004.7907534195,
+        "values_by_repetition": [
+          980004.7907534195,
+          979140.2612426996,
+          961508.009932618
+        ]
+      },
+      "wall_s": {
+        "median": 24.5112993,
+        "min": 24.4896762,
+        "max": 24.9607905,
+        "values_by_repetition": [
+          24.4896762,
+          24.5112993,
+          24.9607905
+        ]
+      }
+    }
+  ],
+  "mgl_results": [
+    {
+      "scenario": "steady_range",
+      "leaves": 1024,
+      "nodes": 2047,
+      "node_storage_bytes": 262016,
+      "leaf_width_elements": 65536,
+      "source": "BENCHMARK_RESULT/2026-11-17/mgl_comparison/steady_range.csv",
+      "cohort": "original matched comparison",
+      "seeds_by_repetition": [
+        7384279774257751943,
+        16525853614535529393,
+        1678718545820796922
+      ],
+      "wall_s": {
+        "median": 17.4416468,
+        "min": 16.8153737,
+        "max": 17.5805325,
+        "values_by_repetition": [
+          17.5805325,
+          16.8153737,
+          17.4416468
+        ]
+      },
+      "qps": {
+        "median": 1376016.8563899596,
+        "min": 1365146.3628874721,
+        "max": 1427265.3363629975,
+        "values_by_repetition": [
+          1365146.3628874721,
+          1427265.3363629975,
+          1376016.8563899596
+        ]
+      },
+      "cpu_s": {
+        "median": 131.818385,
+        "min": 128.791129,
+        "max": 134.392788,
+        "values_by_repetition": [
+          134.392788,
+          128.791129,
+          131.818385
+        ]
+      },
+      "throughput_relative_to_fixed": {
+        "median": 2.0156117081788403,
+        "min": 1.9597742104796883,
+        "max": 2.272647696197201,
+        "values_by_repetition": [
+          1.9597742104796883,
+          2.272647696197201,
+          2.0156117081788403
+        ]
+      },
+      "throughput_relative_to_balanced": {
+        "median": 1.240495809782781,
+        "min": 1.147409079514212,
+        "max": 1.2891395449629526,
+        "values_by_repetition": [
+          1.240495809782781,
+          1.2891395449629526,
+          1.147409079514212
+        ]
+      },
+      "throughput_relative_to_dp": {
+        "median": 1.2078110479797124,
+        "min": 1.1638449700347724,
+        "max": 1.2123474360062756,
+        "values_by_repetition": [
+          1.2123474360062756,
+          1.1638449700347724,
+          1.2078110479797124
+        ]
+      },
+      "balanced_throughput_relative_to_mgl": {
+        "median": 0.8061292848503105,
+        "min": 0.7757112128840467,
+        "max": 0.8715287492960908,
+        "values_by_repetition": [
+          0.8061292848503105,
+          0.7757112128840467,
+          0.8715287492960908
+        ]
+      },
+      "dp_throughput_relative_to_mgl": {
+        "median": 0.8279440742595335,
+        "min": 0.8248460550996898,
+        "max": 0.8592209664918884,
+        "values_by_repetition": [
+          0.8248460550996898,
+          0.8592209664918884,
+          0.8279440742595335
+        ]
+      }
+    },
+    {
+      "scenario": "steady_range",
+      "leaves": 64,
+      "nodes": 127,
+      "node_storage_bytes": 16256,
+      "leaf_width_elements": 1048576,
+      "source": "BENCHMARK_RESULT/2026-11-17/mgl_budget/steady_range_64leaves.csv",
+      "cohort": "later sequential supplemental budget run",
+      "seeds_by_repetition": [
+        7384279774257751943,
+        16525853614535529393,
+        1678718545820796922
+      ],
+      "wall_s": {
+        "median": 26.1775679,
+        "min": 25.8360929,
+        "max": 28.3879241,
+        "values_by_repetition": [
+          25.8360929,
+          28.3879241,
+          26.1775679
+        ]
+      },
+      "qps": {
+        "median": 916815.4998845404,
+        "min": 845429.9058802965,
+        "max": 928933.0276405687,
+        "values_by_repetition": [
+          928933.0276405687,
+          845429.9058802965,
+          916815.4998845404
+        ]
+      },
+      "cpu_s": {
+        "median": 159.177852,
+        "min": 157.22925,
+        "max": 165.253022,
+        "values_by_repetition": [
+          157.22925,
+          165.253022,
+          159.177852
+        ]
+      },
+      "throughput_relative_to_fixed": {
+        "median": 1.3429661469811336,
+        "min": 1.3335559031063866,
+        "max": 1.3461857994752071,
+        "values_by_repetition": [
+          1.3335559031063866,
+          1.3461857994752071,
+          1.3429661469811336
+        ]
+      },
+      "throughput_relative_to_balanced": {
+        "median": 0.7644982137549914,
+        "min": 0.763612130412875,
+        "max": 0.8441128070103819,
+        "values_by_repetition": [
+          0.8441128070103819,
+          0.763612130412875,
+          0.7644982137549914
+        ]
+      },
+      "throughput_relative_to_dp": {
+        "median": 0.8047429685016689,
+        "min": 0.6893948296839358,
+        "max": 0.8249588504924442,
+        "values_by_repetition": [
+          0.8249588504924442,
+          0.6893948296839358,
+          0.8047429685016689
+        ]
+      },
+      "balanced_throughput_relative_to_mgl": {
+        "median": 1.3080475297493408,
+        "min": 1.1846757823065477,
+        "max": 1.3095653672490943,
+        "values_by_repetition": [
+          1.1846757823065477,
+          1.3095653672490943,
+          1.3080475297493408
+        ]
+      },
+      "dp_throughput_relative_to_mgl": {
+        "median": 1.242632789773703,
+        "min": 1.212181673550224,
+        "max": 1.4505475772982894,
+        "values_by_repetition": [
+          1.212181673550224,
+          1.4505475772982894,
+          1.242632789773703
+        ]
+      }
+    },
+    {
+      "scenario": "steady_range",
+      "leaves": 32,
+      "nodes": 63,
+      "node_storage_bytes": 8064,
+      "leaf_width_elements": 2097152,
+      "source": "BENCHMARK_RESULT/2026-11-17/mgl_budget/steady_range_32leaves.csv",
+      "cohort": "later sequential supplemental budget run",
+      "seeds_by_repetition": [
+        7384279774257751943,
+        16525853614535529393,
+        1678718545820796922
+      ],
+      "wall_s": {
+        "median": 34.4476822,
+        "min": 32.8749361,
+        "max": 37.099946,
+        "values_by_repetition": [
+          32.8749361,
+          37.099946,
+          34.4476822
+        ]
+      },
+      "qps": {
+        "median": 696708.7033797589,
+        "min": 646901.2111230566,
+        "max": 730039.4418105044,
+        "values_by_repetition": [
+          730039.4418105044,
+          646901.2111230566,
+          696708.7033797589
+        ]
+      },
+      "cpu_s": {
+        "median": 253.225461,
+        "min": 245.375734,
+        "max": 263.671113,
+        "values_by_repetition": [
+          245.375734,
+          263.671113,
+          253.225461
+        ]
+      },
+      "throughput_relative_to_fixed": {
+        "median": 1.0300667364852767,
+        "min": 1.0205501576532774,
+        "max": 1.0480286287157226,
+        "values_by_repetition": [
+          1.0480286287157226,
+          1.0300667364852767,
+          1.0205501576532774
+        ]
+      },
+      "throughput_relative_to_balanced": {
+        "median": 0.5842963545014324,
+        "min": 0.5809593743871685,
+        "max": 0.6633800544482275,
+        "values_by_repetition": [
+          0.6633800544482275,
+          0.5842963545014324,
+          0.5809593743871685
+        ]
+      },
+      "throughput_relative_to_dp": {
+        "median": 0.6115422680019963,
+        "min": 0.5275071855899736,
+        "max": 0.6483271461020421,
+        "values_by_repetition": [
+          0.6483271461020421,
+          0.5275071855899736,
+          0.6115422680019963
+        ]
+      },
+      "balanced_throughput_relative_to_mgl": {
+        "median": 1.7114602757590003,
+        "min": 1.5074315142497905,
+        "max": 1.7212907547190561,
+        "values_by_repetition": [
+          1.5074315142497905,
+          1.7114602757590003,
+          1.7212907547190561
+        ]
+      },
+      "dp_throughput_relative_to_mgl": {
+        "median": 1.635209947575914,
+        "min": 1.5424311723060367,
+        "max": 1.8957087738654819,
+        "values_by_repetition": [
+          1.5424311723060367,
+          1.8957087738654819,
+          1.635209947575914
+        ]
+      }
+    },
+    {
+      "scenario": "islands_range",
+      "leaves": 1024,
+      "nodes": 2047,
+      "node_storage_bytes": 262016,
+      "leaf_width_elements": 65536,
+      "source": "BENCHMARK_RESULT/2026-11-17/mgl_comparison/islands_range.csv",
+      "cohort": "original matched comparison",
+      "seeds_by_repetition": [
+        1485635082340652376,
+        10261532401056251371,
+        5347038307822987421
+      ],
+      "wall_s": {
+        "median": 17.4592618,
+        "min": 17.0816151,
+        "max": 17.4878633,
+        "values_by_repetition": [
+          17.4878633,
+          17.0816151,
+          17.4592618
+        ]
+      },
+      "qps": {
+        "median": 1374628.5653383122,
+        "min": 1372380.3524928056,
+        "max": 1405019.3649428384,
+        "values_by_repetition": [
+          1372380.3524928056,
+          1405019.3649428384,
+          1374628.5653383122
+        ]
+      },
+      "cpu_s": {
+        "median": 114.447745,
+        "min": 113.477807,
+        "max": 115.601397,
+        "values_by_repetition": [
+          114.447745,
+          113.477807,
+          115.601397
+        ]
+      },
+      "throughput_relative_to_fixed": {
+        "median": 2.6698345989542873,
+        "min": 2.6218050091917173,
+        "max": 2.704146821373628,
+        "values_by_repetition": [
+          2.6218050091917173,
+          2.6698345989542873,
+          2.704146821373628
+        ]
+      },
+      "throughput_relative_to_balanced": {
+        "median": 1.4325486528495772,
+        "min": 1.415970080232729,
+        "max": 1.4513336869718054,
+        "values_by_repetition": [
+          1.415970080232729,
+          1.4325486528495772,
+          1.4513336869718054
+        ]
+      },
+      "throughput_relative_to_dp": {
+        "median": 1.4296589847802157,
+        "min": 1.400381268991278,
+        "max": 1.4349520906837434,
+        "values_by_repetition": [
+          1.400381268991278,
+          1.4349520906837434,
+          1.4296589847802157
+        ]
+      },
+      "balanced_throughput_relative_to_mgl": {
+        "median": 0.6980565707215834,
+        "min": 0.6890214214530436,
+        "max": 0.7062296117412593,
+        "values_by_repetition": [
+          0.7062296117412593,
+          0.6980565707215834,
+          0.6890214214530436
+        ]
+      },
+      "dp_throughput_relative_to_mgl": {
+        "median": 0.6994675028421075,
+        "min": 0.6968873779775517,
+        "max": 0.7140912422517044,
+        "values_by_repetition": [
+          0.7140912422517044,
+          0.6968873779775517,
+          0.6994675028421075
+        ]
+      }
+    },
+    {
+      "scenario": "islands_range",
+      "leaves": 64,
+      "nodes": 127,
+      "node_storage_bytes": 16256,
+      "leaf_width_elements": 1048576,
+      "source": "BENCHMARK_RESULT/2026-11-17/mgl_budget/islands_range_64leaves.csv",
+      "cohort": "later sequential supplemental budget run",
+      "seeds_by_repetition": [
+        1485635082340652376,
+        10261532401056251371,
+        5347038307822987421
+      ],
+      "wall_s": {
+        "median": 32.632435,
+        "min": 32.5626428,
+        "max": 34.4917527,
+        "values_by_repetition": [
+          32.632435,
+          34.4917527,
+          32.5626428
+        ]
+      },
+      "qps": {
+        "median": 735464.5768849306,
+        "min": 695818.5108407089,
+        "max": 737040.9136447611,
+        "values_by_repetition": [
+          735464.5768849306,
+          695818.5108407089,
+          737040.9136447611
+        ]
+      },
+      "cpu_s": {
+        "median": 184.959283,
+        "min": 184.782452,
+        "max": 190.348418,
+        "values_by_repetition": [
+          184.782452,
+          190.348418,
+          184.959283
+        ]
+      },
+      "throughput_relative_to_fixed": {
+        "median": 1.4050366636752667,
+        "min": 1.3222026551292072,
+        "max": 1.4498948254900246,
+        "values_by_repetition": [
+          1.4050366636752667,
+          1.3222026551292072,
+          1.4498948254900246
+        ]
+      },
+      "throughput_relative_to_balanced": {
+        "median": 0.7588245008378933,
+        "min": 0.7094520511275728,
+        "max": 0.7781682511347021,
+        "values_by_repetition": [
+          0.7588245008378933,
+          0.7094520511275728,
+          0.7781682511347021
+        ]
+      },
+      "throughput_relative_to_dp": {
+        "median": 0.7504703893534148,
+        "min": 0.7106423240707046,
+        "max": 0.7665468264756448,
+        "values_by_repetition": [
+          0.7504703893534148,
+          0.7106423240707046,
+          0.7665468264756448
+        ]
+      },
+      "balanced_throughput_relative_to_mgl": {
+        "median": 1.3178277703155352,
+        "min": 1.2850691332392825,
+        "max": 1.4095385282354778,
+        "values_by_repetition": [
+          1.3178277703155352,
+          1.4095385282354778,
+          1.2850691332392825
+        ]
+      },
+      "dp_throughput_relative_to_mgl": {
+        "median": 1.3324976097478984,
+        "min": 1.304551744865612,
+        "max": 1.407177656224858,
+        "values_by_repetition": [
+          1.3324976097478984,
+          1.407177656224858,
+          1.304551744865612
+        ]
+      }
+    },
+    {
+      "scenario": "islands_range",
+      "leaves": 32,
+      "nodes": 63,
+      "node_storage_bytes": 8064,
+      "leaf_width_elements": 2097152,
+      "source": "BENCHMARK_RESULT/2026-11-17/mgl_budget/islands_range_32leaves.csv",
+      "cohort": "later sequential supplemental budget run",
+      "seeds_by_repetition": [
+        1485635082340652376,
+        10261532401056251371,
+        5347038307822987421
+      ],
+      "wall_s": {
+        "median": 32.4280095,
+        "min": 32.2466327,
+        "max": 33.6095968,
+        "values_by_repetition": [
+          32.2466327,
+          32.4280095,
+          33.6095968
+        ]
+      },
+      "qps": {
+        "median": 740100.9303392489,
+        "min": 714081.7589338055,
+        "max": 744263.7568790244,
+        "values_by_repetition": [
+          744263.7568790244,
+          740100.9303392489,
+          714081.7589338055
+        ]
+      },
+      "cpu_s": {
+        "median": 185.40746,
+        "min": 184.044577,
+        "max": 187.80373,
+        "values_by_repetition": [
+          184.044577,
+          185.40746,
+          187.80373
+        ]
+      },
+      "throughput_relative_to_fixed": {
+        "median": 1.4063486382042658,
+        "min": 1.4047299520118017,
+        "max": 1.4218466785835906,
+        "values_by_repetition": [
+          1.4218466785835906,
+          1.4063486382042658,
+          1.4047299520118017
+        ]
+      },
+      "throughput_relative_to_balanced": {
+        "median": 0.7546021195041279,
+        "min": 0.7539279614327299,
+        "max": 0.7679031615601837,
+        "values_by_repetition": [
+          0.7679031615601837,
+          0.7546021195041279,
+          0.7539279614327299
+        ]
+      },
+      "throughput_relative_to_dp": {
+        "median": 0.7558681423230741,
+        "min": 0.7426685493590927,
+        "max": 0.7594491005567847,
+        "values_by_repetition": [
+          0.7594491005567847,
+          0.7558681423230741,
+          0.7426685493590927
+        ]
+      },
+      "balanced_throughput_relative_to_mgl": {
+        "median": 1.325201684640285,
+        "min": 1.3022475359630694,
+        "max": 1.32638667240786,
+        "values_by_repetition": [
+          1.3022475359630694,
+          1.325201684640285,
+          1.32638667240786
+        ]
+      },
+      "dp_throughput_relative_to_mgl": {
+        "median": 1.3229820705587811,
+        "min": 1.3167439388194115,
+        "max": 1.3464956889085702,
+        "values_by_repetition": [
+          1.3167439388194115,
+          1.3229820705587811,
+          1.3464956889085702
+        ]
+      }
+    }
+  ]
+}

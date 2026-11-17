@@ -1,0 +1,45 @@
+{
+  "source_directory": "/private/tmp/dynamic-server-check-7u2dk03h",
+  "platform": "local macOS; this is not a Linux/server test",
+  "commands": [
+    {
+      "command": [
+        "cmake",
+        "-S",
+        "/private/tmp/dynamic-server-check-7u2dk03h",
+        "-B",
+        "/private/tmp/dynamic-server-check-7u2dk03h/build/check",
+        "-DCMAKE_BUILD_TYPE=Release",
+        "-DCMAKE_CXX_COMPILER=/opt/homebrew/opt/llvm/bin/clang++",
+        "-DBUILD_LOCKTREE_BASELINE=OFF"
+      ],
+      "returncode": 0
+    },
+    {
+      "command": [
+        "cmake",
+        "--build",
+        "/private/tmp/dynamic-server-check-7u2dk03h/build/check",
+        "-j",
+        "6"
+      ],
+      "returncode": 0
+    },
+    {
+      "command": [
+        "ctest",
+        "--test-dir",
+        "/private/tmp/dynamic-server-check-7u2dk03h/build/check",
+        "--output-on-failure"
+      ],
+      "returncode": 0
+    },
+    {
+      "command": [
+        "python3",
+        "/private/tmp/dynamic-server-check-7u2dk03h/tests/run_single_node_test.py"
+      ],
+      "returncode": 0
+    }
+  ]
+}

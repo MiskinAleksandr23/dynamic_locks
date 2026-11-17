@@ -1,0 +1,21 @@
+fixed/adaptive: 64 mutexes; global: 1; per_element: array_size mutexes.
+sizeof(std::mutex)=64 bytes
+10 workers, 180000000 operations/scenario, 1 repetitions
+trace_size=1048576 unique query budget per phase (all workers)
+array_size=67108864 hot_width=4194304 range_length=10000 sample_rate=64 rebuild_interval_ms=10000 seed=1
+All work from lock construction through destruction is timed; no warmup.
+Final arrays verified against a deterministic reference after every run.
+Read checksums depend on scheduling and are not equality checks.
+Stored independent worker traces repeat cyclically; identical for all implementations.
+
+sliding_variable_range
+  run=1 unique_queries=9437184 phases=9
+  run=1 global wall_s=444.8593 cpu_s=2650.1123 rebuilds=0 optimizations=0 rebuild_ms=0.0000 read_checksum=29587604676916 verified=true
+    phase_wall_s=53.1511;50.0724;49.5658;50.8332;49.7576;50.2063;48.4584;44.7523;48.0621
+  run=1 balanced wall_s=110.1245 cpu_s=628.2528 rebuilds=11 optimizations=11 rebuild_ms=1.2167 read_checksum=29587583157654 verified=true
+    phase_wall_s=14.1292;11.6488;11.0269;11.2342;12.9778;12.9284;11.5970;11.9747;12.6071
+  run=1 dynamic_dp wall_s=107.1917 cpu_s=622.4146 rebuilds=10 optimizations=10 rebuild_ms=31.1226 read_checksum=29587587868686 verified=true
+    phase_wall_s=15.8032;10.6532;11.0676;11.5881;13.6850;11.7993;11.0307;10.8148;10.7496
+  median balanced_s=110.1245
+  median dynamic_dp_s=107.1917 paired_speedup=1.0274 range=[1.0274,1.0274] cpu/balanced=0.9907
+  median global_s=444.8593 paired_speedup=0.2475 range=[0.2475,0.2475] cpu/balanced=4.2182

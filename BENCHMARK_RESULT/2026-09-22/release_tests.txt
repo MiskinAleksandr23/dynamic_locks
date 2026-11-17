@@ -1,0 +1,23 @@
+Test project /Users/near/dynamic/build/genetic-release
+    Start 1: dynamic_lock_tests
+1/9 Test #1: dynamic_lock_tests ...............   Passed    0.61 sec
+    Start 2: partitioner_tests
+2/9 Test #2: partitioner_tests ................   Passed    0.40 sec
+    Start 3: genetic_partitioner_tests
+3/9 Test #3: genetic_partitioner_tests ........   Passed    0.41 sec
+    Start 4: benchmark_workload_tests
+4/9 Test #4: benchmark_workload_tests .........   Passed    0.36 sec
+    Start 5: example
+5/9 Test #5: example ..........................   Passed    0.35 sec
+    Start 6: benchmark_smoke
+6/9 Test #6: benchmark_smoke ..................   Passed    0.50 sec
+    Start 7: benchmark_cyclic_smoke
+7/9 Test #7: benchmark_cyclic_smoke ...........   Passed    0.04 sec
+    Start 8: benchmark_baselines_smoke
+8/9 Test #8: benchmark_baselines_smoke ........   Passed    0.01 sec
+    Start 9: benchmark_genetic_smoke
+9/9 Test #9: benchmark_genetic_smoke ..........   Passed    0.17 sec
+
+100% tests passed out of 9
+
+Total Test time (real) =   2.86 sec

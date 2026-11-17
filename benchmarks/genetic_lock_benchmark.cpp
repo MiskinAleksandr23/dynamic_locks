@@ -74,7 +74,6 @@ struct LockBenchmarkRun {
   std::string name;
   double seconds = 0.0;
   uint64_t queries = 0;
-  double avg_lock_ms = 0.0;
   double avg_mutexes_per_query = 0.0;
   size_t trainings = 0;
   double avg_training_ms = 0.0;
@@ -182,7 +181,7 @@ RunPhasedLockBenchmark(const std::string &name, Lock &lock,
   result.name = name;
 
   if (enable_training) {
-    lock.StartRebuilder(std::chrono::milliseconds(0), 0.0);
+    lock.StartRebuilder(std::chrono::milliseconds(0));
   } else {
     lock.StopRebuilder();
   }
@@ -197,12 +196,10 @@ RunPhasedLockBenchmark(const std::string &name, Lock &lock,
   for (const LockBenchmarkPhase &phase : phases) {
     result.queries += RunLockOnlyQueries(lock, phase.queries);
   }
+  lock.StopRebuilder();
   result.seconds =
       std::chrono::duration<double>(std::chrono::steady_clock::now() - start)
           .count();
-
-  lock.StopRebuilder();
-  result.avg_lock_ms = lock.GetAvgLockTimeMs();
   result.avg_mutexes_per_query = GetAverageMutexes(lock, all_queries);
   result.trainings = GetTrainingCount(lock);
   result.avg_training_ms = GetAverageTrainingMs(lock);
@@ -411,10 +408,8 @@ void PrintRecallTest(const RecallTestResult &result) {
 void PrintLockBenchmarkRun(const LockBenchmarkRun &run) {
   const double qps =
       run.seconds > 0.0 ? static_cast<double>(run.queries) / run.seconds : 0.0;
-  std::print("  {}: {:.3f} s, {:.0f} qps, avg mutexes/query {:.2f}, "
-             "avg lock wait {:.4f} ms",
-             run.name, run.seconds, qps, run.avg_mutexes_per_query,
-             run.avg_lock_ms);
+  std::print("  {}: {:.3f} s, {:.0f} qps, avg mutexes/query {:.2f}",
+             run.name, run.seconds, qps, run.avg_mutexes_per_query);
 
   if (run.trainings > 0) {
     std::print(", trainings {}, avg train {:.2f} ms", run.trainings,

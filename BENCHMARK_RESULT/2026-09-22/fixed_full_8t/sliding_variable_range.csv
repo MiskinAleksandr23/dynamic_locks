@@ -1,0 +1,2 @@
+scenario,repetition,implementation,threads,operations,trace_size,unique_queries,array_size,hot_width,range_length,seed,sample_rate,rebuild_interval_ms,wall_s,cpu_s,rebuilds,rebuild_ms,read_checksum,verified,phase_wall_s,partition_cuts,optimizations
+sliding_variable_range,1,fixed,8,180000000,1048576,9437184,67108864,4194304,10000,7326479631639850093,64,30000,153.259827,771.502594,0,0,29591014317801,true,16.552636;16.5563023;16.8956918;16.6255226;16.9395999;16.5398928;16.500411;17.7550104;18.8945528,,0

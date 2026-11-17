@@ -1,0 +1,34 @@
+{
+  "status": "complete",
+  "started_utc": "2026-09-20T01:42:45.937285+00:00",
+  "expected_runs": 74,
+  "source_sha256": {
+    "common/element_lock.hpp": "bf9c5b2e57eac6da34aee6f9bfb76afc1ffcd8d009cb65915fdb769567bd22f7",
+    "common/naive_lock.hpp": "e5b46a7d5989e38b8e5e0c3cddadb70cb79c2f802ddd4ea50f2a0a3f0fc04187",
+    "common/range_lock.hpp": "bed94a5cdecd5566c806abf17c4afcf13e12732e6f8e0ce69df67be256d189e6",
+    "dynamic/dynamic_lock.hpp": "99ea97d5812e6d27b1619ddf285df1f9afe2ec3c527060bf0d70edac5a42971d",
+    "dynamic/partitioner.hpp": "9def0df3aee547edf023d7bc2c05f9d363558de1ca802f03ffa78c6e96c7f6ad",
+    "benchmarks/adaptive_lock_benchmark.cpp": "d251bcbb1aec0e7936866a5c0b066350205fd1dc451b7cad02a2d3c618521c04",
+    "build/adaptive_lock_benchmark": "d776e5fe812fa6b6de9f757d80106ed05599b887d4173e6529477cf781ebf662"
+  },
+  "validation": "Release build and 7/7 CTest passed including per-element concurrency, exception unwinding and all-scenario cyclic smoke for both baselines.",
+  "method": "Only global/per_element measured. One repetition. Original counts, geometry, seed, worker count and trace budgets retained. Full final array verified. Global=NaiveLock<1>; per_element=dense std::mutex array, inclusive range held throughout callback. Per-element range workloads explicitly excluded at user request. Reference fixed measured earlier, not rerun.",
+  "finished_utc": "2026-09-20T04:29:29.620073+00:00",
+  "verified_runs": 74,
+  "elapsed_s": 10003.548964262009,
+  "global_runs": 54,
+  "per_element_runs": 20,
+  "mutex_bytes": 64,
+  "per_element_point_mutex_storage_bytes": 67108864,
+  "source_matches_previous": {
+    "common/naive_lock.hpp": true,
+    "common/range_lock.hpp": true,
+    "dynamic/dynamic_lock.hpp": false,
+    "dynamic/partitioner.hpp": true,
+    "benchmarks/adaptive_lock_benchmark.cpp": false,
+    "build/adaptive_lock_benchmark": false
+  },
+  "all_measured_sources_unchanged_during_run": true,
+  "table_sha256": "87422dd1c6399cdcf7750179d923f80de16e25555faab4409e18a315bd5763b9",
+  "summary_csv_sha256": "2f4e027aca8129861f0bcf3ac8c2776430b0256e48d8d5a1d703d31a23ba8751"
+}

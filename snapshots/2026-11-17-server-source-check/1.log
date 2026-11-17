@@ -1,0 +1,33 @@
+[ 13%] Building CXX object CMakeFiles/multigranularity_lock_tests.dir/tests/multigranularity_lock_test.cpp.o
+[ 13%] Building CXX object CMakeFiles/paper_partitioner_tests.dir/tests/paper_partitioner_test.cpp.o
+[ 13%] Building CXX object CMakeFiles/adaptive_lock_benchmark.dir/benchmarks/adaptive_lock_benchmark.cpp.o
+[ 21%] Building CXX object CMakeFiles/read_write_lock_tests.dir/tests/read_write_lock_test.cpp.o
+[ 21%] Building CXX object CMakeFiles/example.dir/example/main.cpp.o
+[ 26%] Building CXX object CMakeFiles/paper_lock_tests.dir/tests/paper_lock_test.cpp.o
+[ 30%] Linking CXX executable paper_partitioner_tests
+[ 34%] Linking CXX executable multigranularity_lock_tests
+[ 39%] Linking CXX executable example
+[ 39%] Built target multigranularity_lock_tests
+[ 39%] Built target paper_partitioner_tests
+[ 43%] Building CXX object CMakeFiles/adaptive_lock_benchmark.dir/common/spinlock.cpp.o
+[ 47%] Building CXX object CMakeFiles/dynamic_lock_tests.dir/tests/dynamic_lock_test.cpp.o
+[ 47%] Built target example
+[ 52%] Building CXX object CMakeFiles/partitioner_tests.dir/tests/partitioner_test.cpp.o
+[ 56%] Building CXX object CMakeFiles/genetic_partitioner_tests.dir/tests/genetic_partitioner_test.cpp.o
+[ 60%] Building CXX object CMakeFiles/read_write_lock_tests.dir/common/spinlock.cpp.o
+[ 65%] Linking CXX executable partitioner_tests
+[ 65%] Built target partitioner_tests
+[ 69%] Building CXX object CMakeFiles/benchmark_workload_tests.dir/tests/benchmark_workload_test.cpp.o
+[ 73%] Linking CXX executable read_write_lock_tests
+[ 78%] Linking CXX executable paper_lock_tests
+[ 78%] Built target read_write_lock_tests
+[ 82%] Building CXX object CMakeFiles/benchmark_workload_tests.dir/common/spinlock.cpp.o
+[ 82%] Built target paper_lock_tests
+[ 86%] Linking CXX executable genetic_partitioner_tests
+[ 86%] Built target genetic_partitioner_tests
+[ 91%] Linking CXX executable adaptive_lock_benchmark
+[ 91%] Built target adaptive_lock_benchmark
+[ 95%] Linking CXX executable dynamic_lock_tests
+[ 95%] Built target dynamic_lock_tests
+[100%] Linking CXX executable benchmark_workload_tests
+[100%] Built target benchmark_workload_tests

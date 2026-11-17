@@ -1,0 +1,42 @@
+fixed/adaptive: 64 mutexes; global: 1; per_element: array_size mutexes.
+sizeof(std::mutex)=64 bytes
+8 workers, 1000000 operations/scenario, 3 repetitions
+trace_size=1048576 unique query budget per phase (all workers)
+array_size=67108864 hot_width=4194304 range_length=10000 sample_rate=64 rebuild_interval_ms=100 seed=1
+All work from lock construction through destruction is timed; no warmup.
+Final arrays verified against a deterministic reference after every run.
+Read checksums depend on scheduling and are not equality checks.
+Stored independent worker traces repeat cyclically; identical for all implementations.
+
+sliding_variable_range
+  run=1 unique_queries=1000000 phases=9
+  run=1 fixed wall_s=0.9259 cpu_s=4.5023 rebuilds=0 optimizations=0 rebuild_ms=0.0000 read_checksum=913552126 verified=true
+    phase_wall_s=0.0959;0.1002;0.0949;0.1074;0.1175;0.0993;0.1013;0.1057;0.1036
+  run=1 balanced wall_s=0.8275 cpu_s=3.6306 rebuilds=7 optimizations=7 rebuild_ms=0.6188 read_checksum=913552592 verified=true
+    phase_wall_s=0.1033;0.0898;0.0783;0.0725;0.0878;0.1060;0.0915;0.1009;0.0972
+  run=1 dynamic_dp wall_s=0.7613 cpu_s=3.7834 rebuilds=7 optimizations=7 rebuild_ms=16.2428 read_checksum=913566730 verified=true
+    phase_wall_s=0.1062;0.0720;0.0744;0.0846;0.0923;0.0887;0.0834;0.0706;0.0889
+  run=1 genetic wall_s=0.7743 cpu_s=3.7863 rebuilds=7 optimizations=7 rebuild_ms=1.6386 read_checksum=913576501 verified=true
+    phase_wall_s=0.1072;0.0887;0.0819;0.0800;0.0812;0.0840;0.0876;0.0875;0.0759
+  run=2 unique_queries=1000000 phases=9
+  run=2 balanced wall_s=0.7569 cpu_s=3.6950 rebuilds=7 optimizations=7 rebuild_ms=0.4968 read_checksum=912128011 verified=true
+    phase_wall_s=0.1006;0.0865;0.0792;0.0769;0.0828;0.0979;0.0871;0.0671;0.0786
+  run=2 dynamic_dp wall_s=0.7515 cpu_s=3.7136 rebuilds=7 optimizations=7 rebuild_ms=15.3377 read_checksum=912140713 verified=true
+    phase_wall_s=0.1072;0.0782;0.0693;0.0796;0.0911;0.0886;0.0785;0.0765;0.0823
+  run=2 genetic wall_s=0.8324 cpu_s=3.5285 rebuilds=8 optimizations=8 rebuild_ms=1.5130 read_checksum=912152487 verified=true
+    phase_wall_s=0.1005;0.0955;0.0809;0.0715;0.0777;0.0868;0.0886;0.1140;0.1156
+  run=2 fixed wall_s=1.0079 cpu_s=4.5934 rebuilds=0 optimizations=0 rebuild_ms=0.0000 read_checksum=912147633 verified=true
+    phase_wall_s=0.1427;0.1189;0.1235;0.1225;0.1114;0.1048;0.0987;0.0938;0.0912
+  run=3 unique_queries=1000000 phases=9
+  run=3 dynamic_dp wall_s=0.6801 cpu_s=3.4089 rebuilds=6 optimizations=6 rebuild_ms=13.7871 read_checksum=911961368 verified=true
+    phase_wall_s=0.0946;0.0569;0.0814;0.0846;0.0759;0.0637;0.0811;0.0773;0.0644
+  run=3 genetic wall_s=0.6636 cpu_s=3.3246 rebuilds=6 optimizations=6 rebuild_ms=1.1346 read_checksum=911965696 verified=true
+    phase_wall_s=0.0933;0.0558;0.0744;0.0792;0.0774;0.0677;0.0788;0.0741;0.0627
+  run=3 fixed wall_s=0.8173 cpu_s=4.0696 rebuilds=0 optimizations=0 rebuild_ms=0.0000 read_checksum=911958600 verified=true
+    phase_wall_s=0.0903;0.0924;0.0956;0.0880;0.0890;0.0893;0.0900;0.0922;0.0905
+  run=3 balanced wall_s=0.6568 cpu_s=3.3114 rebuilds=6 optimizations=6 rebuild_ms=0.3649 read_checksum=911956186 verified=true
+    phase_wall_s=0.0930;0.0578;0.0723;0.0732;0.0727;0.0740;0.0731;0.0749;0.0656
+  median fixed_s=0.9259
+  median balanced_s=0.7569 paired_speedup=1.2445 range=[1.1189,1.3316] cpu/fixed=0.8064
+  median dynamic_dp_s=0.7515 paired_speedup=1.2163 range=[1.2018,1.3412] cpu/fixed=0.8376
+  median genetic_s=0.7743 paired_speedup=1.2108 range=[1.1959,1.2317] cpu/fixed=0.8170

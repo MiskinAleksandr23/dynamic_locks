@@ -1,0 +1,34 @@
+Fast-path ablation, 2026-09-14
+Compiler: /opt/homebrew/opt/llvm/bin/clang++ -O3 -DNDEBUG -std=c++20 -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk
+Workload: uniform, 16,000,000 operations, 8 workers, 1,048,576 trace queries, sample_rate=64, rebuild_interval_ms=30000. All final arrays verified; no rebuilds occurred.
+Variants are diagnostic copies under build/experiments/fastpath, not changes to production files.
+Reorder changes LockSlot from {Mutex mutex; uint64_t sampling_state;} to {uint64_t sampling_state; Mutex mutex;}; both fixed and dynamic use the same slot layout.
+Measured original layout: sizeof(std::mutex)=64; sizeof(LockSlot)=128; mutex offset=0; sampling_state offset=64.
+
+variant,repetitions,implementation,median_wall_s,median_cpu_s,median_paired_speedup_fixed_over_impl,median_paired_cpu_ratio_impl_over_fixed
+original,3,fixed,0.207071,1.193945,1.000000,1.000000
+original,3,balanced,0.459012,2.684016,0.450580,2.248023
+original,3,dynamic_dp,0.459925,2.692765,0.450227,2.255351
+nosample,3,fixed,0.199536,1.145940,1.000000,1.000000
+nosample,3,balanced,0.204556,1.181985,0.975462,1.031897
+nosample,3,dynamic_dp,0.204636,1.183931,0.976734,1.030155
+counter,3,fixed,0.206427,1.191407,1.000000,1.000000
+counter,3,balanced,0.449253,2.627408,0.459490,2.199972
+counter,3,dynamic_dp,0.450328,2.635581,0.458393,2.212158
+stateonly,3,fixed,0.203440,1.171614,1.000000,1.000000
+stateonly,3,balanced,0.452301,2.652624,0.450559,2.259523
+stateonly,3,dynamic_dp,0.450512,2.642946,0.451575,2.260657
+counteronly,3,fixed,0.191572,1.096796,1.000000,1.000000
+counteronly,3,balanced,0.445306,2.610994,0.431759,2.371087
+counteronly,3,dynamic_dp,0.444895,2.607971,0.430601,2.376049
+tls,3,fixed,0.201877,1.159120,1.000000,1.000000
+tls,3,balanced,0.439329,2.592544,0.420132,2.499516
+tls,3,dynamic_dp,0.416661,2.434647,0.484512,2.100427
+reorder,5,fixed,0.203859,1.161933,1.000000,1.000000
+reorder,5,balanced,0.221758,1.283714,0.921639,1.103083
+reorder,5,dynamic_dp,0.206579,1.195472,0.966312,1.042129
+
+Interpretation: Removing all sampling recovers fixed throughput. Replacing RNG with a counter does not. Retaining only the shared sampling-state write remains slow, even without histogram updates. Reordering two fields while retaining the original RNG and histogram restores throughput close to fixed. Thus the dominant regression is memory-layout/coherence cost of the per-lock state at offset64, not optimizer, map, epoch, RNG arithmetic, or sampled histogram work. The coherence interpretation is inferred from controlled layout changes, not hardware counter measurements.
+Thread-local state experiment was also slower on this host and is not recommended.
+Reorder repeat uses five matched repetitions; DP median paired speedup0.9663 and CPU ratio1.0421, balanced0.9216/1.1031. Since rebuilds=0, both dynamic strategies execute identical query paths; differing measured ratios reflect run variability.
+All experiment subprocesses finished.

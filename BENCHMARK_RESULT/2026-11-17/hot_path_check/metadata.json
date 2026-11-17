@@ -1,0 +1,41 @@
+{
+  "command": [
+    "./build/paper-release/adaptive_lock_benchmark",
+    "--scenario",
+    "uniform",
+    "--operations",
+    "1000000000",
+    "--threads",
+    "8",
+    "--repetitions",
+    "3",
+    "--model",
+    "paper",
+    "--write-body",
+    "range",
+    "--array-size",
+    "1048576",
+    "--hot-width",
+    "16384",
+    "--range-length",
+    "1",
+    "--lambda",
+    "10000",
+    "--rebuild-ms",
+    "30000",
+    "--sample-rate",
+    "64",
+    "--seed",
+    "97",
+    "--csv",
+    "BENCHMARK_RESULT/2026-11-17/hot_path_check/results.csv"
+  ],
+  "status": "complete",
+  "source_sha256": {
+    "dynamic/paper_lock.hpp": "05ed55cd1a96f40c85f47668a29ff86e55c6a6138c81e0ed8cbf608a6a5529f5",
+    "dynamic/paper_partitioner.hpp": "8ae870c0d0776bf3c284f8d1e7bb746ada3b022c9c480752eef25c155ab5fc13",
+    "benchmarks/adaptive_lock_benchmark.cpp": "08945e93613317d6c1fce902ded401d17728b061f48fa3a1f5e2ba411379c04f",
+    "build/paper-release/adaptive_lock_benchmark": "a6a83af81f023108c62258835cff9de04751769bce13ba97001d92630e5f124c"
+  },
+  "returncode": 0
+}

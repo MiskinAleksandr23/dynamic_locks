@@ -1,0 +1,2 @@
+scenario,repetition,implementation,threads,operations,trace_size,unique_queries,array_size,hot_width,range_length,seed,sample_rate,rebuild_interval_ms,wall_s,cpu_s,rebuilds,rebuild_ms,read_checksum,verified,phase_wall_s,partition_cuts,optimizations,lock_kind,read_percent,read_operations,write_operations
+steady_range,1,fixed,8,24000000,1048576,4194304,67108864,4194304,10000,883620860755687159,64,10000,31.087311,135.324266,0,0,275207488835,true,7.2377575;8.53822808;7.3371815;7.9739485,,0,mutex,90,21598051,2401949

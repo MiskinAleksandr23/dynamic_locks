@@ -1,0 +1,66 @@
+simple genetic partition demo
+  requests: sum on range + apply f(int)->int to one element
+  chromosome: partition boundaries between 1024 fine-grained blocks
+  mutation: shift a few boundaries by several blocks
+  fitness = contention_score + 5000 * avg_mutexes_per_query
+  contention_score = sum(load_i^2), load_i = recent queries on mutex i
+  online learning: batches are clustered into workload modes,
+  each mode keeps its own history and remembered best partition
+
+config
+  array size: 1048576
+  mutexes: 64
+  fine blocks: 1024
+  hot window size: 16384
+  query length: 64
+  batch size: 512
+  epochs per side: 4
+  recall return epochs: 3
+  population size: 24
+  generations: 18
+
+benchmark config
+  threads: 11
+  online training batch: 2048
+  online phase queries: 480000
+  pure lock queries: 9000000
+
+improvement test
+  before: fitness 296602, contention 291602, avg mutexes/query 1.00
+  after:  fitness 23711, contention 18418, avg mutexes/query 1.06
+  hot locks after training: left 16, right 1
+  result: OK
+
+shift test
+  left epoch 1: fitness 23169, contention 18003, avg mutexes/query 1.03, hot locks left 16, right 1
+  left epoch 2: fitness 23481, contention 18188, avg mutexes/query 1.06, hot locks left 16, right 1
+  left epoch 3: fitness 23061, contention 17856, avg mutexes/query 1.04, hot locks left 16, right 1
+  left epoch 4: fitness 23713, contention 18410, avg mutexes/query 1.06, hot locks left 16, right 1
+  right epoch 1: fitness 23079, contention 17893, avg mutexes/query 1.04, hot locks left 16, right 16
+  right epoch 2: fitness 23055, contention 17811, avg mutexes/query 1.05, hot locks left 8, right 16
+  right epoch 3: fitness 23967, contention 18694, avg mutexes/query 1.05, hot locks left 9, right 16
+  right epoch 4: fitness 23745, contention 18442, avg mutexes/query 1.06, hot locks left 10, right 16
+  result: OK
+
+recall test
+  after left warmup: fitness 23765, contention 18492, avg mutexes/query 1.05, hot locks left 16, right 1
+  after right warmup: fitness 24196, contention 18864, avg mutexes/query 1.07, hot locks left 10, right 16
+  left recall epoch 1: fitness 24152, contention 18840, avg mutexes/query 1.06, hot locks left 16, right 1
+  left recall epoch 2: fitness 24055, contention 18762, avg mutexes/query 1.06, hot locks left 16, right 1
+  left recall epoch 3: fitness 22868, contention 17692, avg mutexes/query 1.04, hot locks left 16, right 1
+  result: OK
+
+online total time, including genetic training
+  naive fixed partitions: 0.035 s, 40656145 qps, avg mutexes/query 1.00, hot locks left 1, right 1
+  genetic adaptive partitions: 0.171 s, 8419772 qps, avg mutexes/query 1.00, hot locks left 1, right 1
+  qps ratio genetic/naive: 0.207x
+  wall-time ratio naive/genetic: 0.207x
+
+pure lock/unlock time after offline pretraining
+  naive fixed partitions: 0.188 s, 47855286 qps, avg mutexes/query 1.00, hot locks left 1, right 1
+  genetic adaptive partitions: 1.180 s, 7627093 qps, avg mutexes/query 1.06, trainings 8, avg train 40.80 ms, hot locks left 16, right 1
+  qps ratio genetic/naive: 0.159x
+  wall-time ratio naive/genetic: 0.159x
+
+summary
+  overall: OK

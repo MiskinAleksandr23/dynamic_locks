@@ -1,0 +1,79 @@
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -21,6 +21,13 @@
+ 
+ add_executable(adaptive_lock_benchmark benchmarks/adaptive_lock_benchmark.cpp common/spinlock.cpp)
+ target_link_libraries(adaptive_lock_benchmark PRIVATE dynamic_locks)
++
++option(BUILD_LOCKTREE_BASELINE "Build optional RocksDB/PerconaFT LockTree baseline" OFF)
++if(BUILD_LOCKTREE_BASELINE)
++  add_subdirectory(third_party/rocksdb_locktree)
++  target_link_libraries(adaptive_lock_benchmark PRIVATE locktree_baseline)
++  target_compile_definitions(adaptive_lock_benchmark PRIVATE DYNAMIC_HAS_LOCKTREE=1)
++endif()
+ add_executable(example example/main.cpp)
+ target_link_libraries(example PRIVATE dynamic_locks)
+ 
+--- a/benchmarks/adaptive_lock_benchmark.cpp
++++ b/benchmarks/adaptive_lock_benchmark.cpp
+@@ -23,6 +23,9 @@
+ #include <string>
+ #include <thread>
+ #include <vector>
++#ifdef DYNAMIC_HAS_LOCKTREE
++#include "common/locktree_lock.hpp"
++#endif
+ 
+ namespace {
+ constexpr size_t kLocks = 64;
+@@ -128,6 +131,7 @@
+                    "  --read-percent N  read-only queries, 0..100 (default 0)\n"
+                    "  --partitions      print final dynamic partition cuts\n"
+                    "  --implementations LIST  comma-separated fixed,balanced,dynamic_dp,genetic,global,per_element\n"
++                   "Optional baseline when built with BUILD_LOCKTREE_BASELINE: locktree\n"
+                    "Scenarios:";
+       for (const auto &scenario : kScenarios) std::cout << ' ' << scenario.name;
+       std::cout << "\nTraces repeat cyclically when operations exceed their stored query count.\n";
+@@ -147,7 +151,11 @@
+         const size_t end = value.find(',', start);
+         const auto name = value.substr(start, end - start);
+         if ((name != "fixed" && name != "balanced" && name != "dynamic_dp" &&
+-             name != "genetic" && name != "global" && name != "per_element") ||
++             name != "genetic" && name != "global" && name != "per_element"
++#ifdef DYNAMIC_HAS_LOCKTREE
++             && name != "locktree"
++#endif
++             ) ||
+             std::find(options.implementations.begin(), options.implementations.end(), name) !=
+                 options.implementations.end())
+           throw std::invalid_argument("unknown or duplicate implementation: " + name);
+@@ -544,7 +552,8 @@
+   csv << ',' << options.write_body
+       << ',' << options.point_percent << ',' << point_operations << ',' << options.operations - point_operations
+       << ',' << result.optimize_ms << ',' << result.publication_wait_ms << ',' << result.publication_hold_ms
+-      << ',' << result.max_publication_pause_ms << ',' << result.last_window_samples << ',' << result.actual_bins << '\n';
++      << ',' << result.max_publication_pause_ms << ',' << result.last_window_samples << ',' << result.actual_bins << ','
++      << (implementation == "locktree" ? "locktree_native" : options.lock_kind) << '\n';
+   csv.flush();
+   if (!csv) throw std::runtime_error("failed to write benchmark CSV");
+ }
+@@ -559,7 +568,7 @@
+       if (!csv) throw std::runtime_error("cannot write " + options.csv);
+       csv << "scenario,repetition,implementation,threads,operations,trace_size,unique_queries,array_size,hot_width,range_length,seed,"
+              "sample_rate,rebuild_interval_ms,wall_s,cpu_s,rebuilds,rebuild_ms,"
+-             "read_checksum,verified,phase_wall_s,partition_cuts,optimizations,lock_kind,read_percent,read_operations,write_operations,model,bins,lambda,min_samples,min_improvement,write_body,point_percent,point_operations,range_operations,optimize_ms,publication_wait_ms,publication_hold_ms,max_publication_pause_ms,last_window_samples,actual_bins\n";
++             "read_checksum,verified,phase_wall_s,partition_cuts,optimizations,lock_kind,read_percent,read_operations,write_operations,model,bins,lambda,min_samples,min_improvement,write_body,point_percent,point_operations,range_operations,optimize_ms,publication_wait_ms,publication_hold_ms,max_publication_pause_ms,last_window_samples,actual_bins,effective_lock_kind\n";
+     }
+     std::cout << "fixed/adaptive: 64 mutexes; global: 1; per_element: array_size mutexes.\n"
+               << "sizeof(std::mutex)=" << sizeof(std::mutex) << " bytes\n"
+@@ -602,6 +611,10 @@
+           const size_t implementation = (order + repetition + scenario.id) % names.size();
+           const auto &name = names[implementation];
+           const auto execute = [&]<class Mutex>() {
++#ifdef DYNAMIC_HAS_LOCKTREE
++            if (name == "locktree")
++              return Run(input, scenario, options, [&] { return LockTreeRangeLock(options.array_size); });
++#endif
+             if (name == "global")
+               return Run(input, scenario, options, [&] { return NaiveLock<1, Mutex>(options.array_size); });
+             if (name == "per_element")

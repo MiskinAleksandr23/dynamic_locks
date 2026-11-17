@@ -1,0 +1,36 @@
+fixed/adaptive: 64 mutexes; global: 1; per_element: array_size mutexes.
+sizeof(std::mutex)=64 bytes
+8 workers, 180000000 operations/scenario, 3 repetitions
+trace_size=1048576 unique query budget per phase (all workers)
+array_size=67108864 hot_width=4194304 range_length=10000 sample_rate=64 lock_kind=mutex read_percent=0 point_percent=0 model=paper write_body=range rebuild_interval_ms=10000 seed=97
+All work from lock construction through destruction is timed; no warmup.
+Final arrays verified against a deterministic reference after every run.
+Read checksums depend on scheduling and are not equality checks.
+Stored independent worker traces repeat cyclically; identical for all implementations.
+paper bins_requested=1024 lambda=10000 min_samples=640 min_improvement=0.1
+
+sliding_variable_range
+  run=1 unique_queries=9437184 phases=9 read_operations=0 write_operations=180000000 point_operations=18324 range_operations=179981676
+  run=1 dynamic_dp wall_s=105.8453 cpu_s=524.7226 rebuilds=10 optimizations=10 rebuild_ms=3.3275 optimize_ms=2.9509 publication_wait_ms=0.0953 publication_hold_ms=0.0280 max_publication_pause_ms=0.0367 last_window_samples=279010 read_checksum=0 verified=true
+    phase_wall_s=13.7781;10.7338;10.7459;11.4274;11.1350;12.0331;13.2148;11.5835;11.1935
+  run=1 fixed wall_s=190.5038 cpu_s=867.8440 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+    phase_wall_s=20.8957;21.2025;21.1341;21.8363;21.5824;23.9609;19.9281;19.8654;20.0984
+  run=1 balanced wall_s=106.7266 cpu_s=530.3499 rebuilds=10 optimizations=10 rebuild_ms=0.3802 optimize_ms=0.0898 publication_wait_ms=0.0927 publication_hold_ms=0.0223 max_publication_pause_ms=0.0381 last_window_samples=272978 read_checksum=0 verified=true
+    phase_wall_s=14.3644;10.9807;11.2167;10.8809;11.6586;13.0901;11.7979;11.6127;11.1243
+  run=2 unique_queries=9437184 phases=9 read_operations=0 write_operations=180000000 point_operations=17565 range_operations=179982435
+  run=2 fixed wall_s=183.5142 cpu_s=842.8874 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+    phase_wall_s=20.8907;21.5209;19.6219;20.3295;20.8871;21.3304;19.9523;19.5669;19.4144
+  run=2 balanced wall_s=106.5107 cpu_s=537.6796 rebuilds=10 optimizations=10 rebuild_ms=0.4996 optimize_ms=0.1268 publication_wait_ms=0.1682 publication_hold_ms=0.0213 max_publication_pause_ms=0.0503 last_window_samples=306649 read_checksum=0 verified=true
+    phase_wall_s=14.3057;12.1149;13.1072;14.4743;10.4223;10.8325;10.5411;10.2517;10.4606
+  run=2 dynamic_dp wall_s=106.4330 cpu_s=529.8416 rebuilds=10 optimizations=10 rebuild_ms=3.0038 optimize_ms=2.7135 publication_wait_ms=0.1152 publication_hold_ms=0.0225 max_publication_pause_ms=0.0293 last_window_samples=294432 read_checksum=0 verified=true
+    phase_wall_s=13.6938;10.8247;11.5654;11.0239;11.6745;14.4838;11.4930;10.7950;10.8786
+  run=3 unique_queries=9437184 phases=9 read_operations=0 write_operations=180000000 point_operations=17612 range_operations=179982388
+  run=3 balanced wall_s=105.4761 cpu_s=525.1679 rebuilds=10 optimizations=10 rebuild_ms=0.4914 optimize_ms=0.1136 publication_wait_ms=0.1040 publication_hold_ms=0.0279 max_publication_pause_ms=0.0307 last_window_samples=257698 read_checksum=0 verified=true
+    phase_wall_s=13.8570;11.7238;10.3819;10.5734;10.0598;11.8488;13.1326;12.1734;11.7251
+  run=3 dynamic_dp wall_s=110.8330 cpu_s=547.0809 rebuilds=11 optimizations=11 rebuild_ms=3.9817 optimize_ms=3.4990 publication_wait_ms=0.1961 publication_hold_ms=0.0383 max_publication_pause_ms=0.0507 last_window_samples=251064 read_checksum=0 verified=true
+    phase_wall_s=14.2673;11.7319;11.8455;12.6837;13.2985;11.8043;11.2043;11.0820;12.9151
+  run=3 fixed wall_s=189.1828 cpu_s=862.5256 rebuilds=0 optimizations=0 rebuild_ms=0.0000 optimize_ms=0.0000 publication_wait_ms=0.0000 publication_hold_ms=0.0000 max_publication_pause_ms=0.0000 last_window_samples=0 read_checksum=0 verified=true
+    phase_wall_s=20.4369;20.4703;21.3023;21.6755;19.8520;21.7759;21.9239;21.0846;20.6612
+  median fixed_s=189.1828
+  median balanced_s=106.5107 paired_speedup=1.7850 range=[1.7230,1.7936] cpu/fixed=0.6111
+  median dynamic_dp_s=106.4330 paired_speedup=1.7242 range=[1.7069,1.7998] cpu/fixed=0.6286

@@ -1,0 +1,119 @@
+[
+  {
+    "scenario": "steady_range",
+    "operations": 8000000,
+    "length": 1000,
+    "ca_over_fixed": 2.3345828662865404,
+    "paired_ratios": [
+      2.4470051545200437,
+      2.2906172564128844,
+      2.3345828662865404
+    ],
+    "fixed_avl": {
+      "median_wall_s": 26.451889416,
+      "median_qps": 302435.862867362,
+      "gc_ms": [
+        0,
+        0,
+        0
+      ],
+      "base_nodes_after": [
+        64,
+        64,
+        64
+      ]
+    },
+    "ca": {
+      "median_wall_s": 11.330456416,
+      "median_qps": 706061.583600729,
+      "gc_ms": [
+        0,
+        0,
+        0
+      ],
+      "base_nodes_after": [
+        79,
+        79,
+        81
+      ]
+    }
+  },
+  {
+    "scenario": "islands_range",
+    "operations": 8000000,
+    "length": 1000,
+    "ca_over_fixed": 2.2861224551236767,
+    "paired_ratios": [
+      2.2096920902608175,
+      2.426430837181398,
+      2.2861224551236767
+    ],
+    "fixed_avl": {
+      "median_wall_s": 42.587222667,
+      "median_qps": 187849.770400713,
+      "gc_ms": [
+        0,
+        0,
+        0
+      ],
+      "base_nodes_after": [
+        64,
+        64,
+        64
+      ]
+    },
+    "ca": {
+      "median_wall_s": 18.628583334,
+      "median_qps": 429447.578302897,
+      "gc_ms": [
+        0,
+        0,
+        0
+      ],
+      "base_nodes_after": [
+        42,
+        42,
+        42
+      ]
+    }
+  },
+  {
+    "scenario": "uniform_point",
+    "operations": 100000000,
+    "length": 1,
+    "ca_over_fixed": 1.010687790066882,
+    "paired_ratios": [
+      0.9391921292219906,
+      1.1053178913467465,
+      1.010687790066882
+    ],
+    "fixed_avl": {
+      "median_wall_s": 12.046460792,
+      "median_qps": 8301193.331937755,
+      "gc_ms": [
+        0,
+        0,
+        0
+      ],
+      "base_nodes_after": [
+        64,
+        64,
+        64
+      ]
+    },
+    "ca": {
+      "median_wall_s": 11.91907225,
+      "median_qps": 8389914.743574107,
+      "gc_ms": [
+        0,
+        0,
+        0
+      ],
+      "base_nodes_after": [
+        1481,
+        1434,
+        1395
+      ]
+    }
+  }
+]

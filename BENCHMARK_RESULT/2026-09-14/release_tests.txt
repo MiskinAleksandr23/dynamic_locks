@@ -1,0 +1,647 @@
+Start testing: Sep 14 15:31 MSK
+----------------------------------------------------------
+1/5 Testing: dynamic_lock_tests
+1/5 Test: dynamic_lock_tests
+Command: "/Users/near/dynamic/build/dynamic_lock_tests"
+Directory: /Users/near/dynamic/build
+"dynamic_lock_tests" start time: Sep 14 15:31 MSK
+Output:
+----------------------------------------------------------
+PASS fixed: inclusive endpoints, edge sizes, exceptions and concurrency
+PASS dynamic DP: inclusive endpoints, edge sizes, exceptions and concurrency
+PASS dynamic balanced: inclusive endpoints, edge sizes, exceptions and concurrency
+PASS DP: rebuilder start, stop, restart and destruction
+PASS balanced: rebuilder start, stop, restart and destruction
+PASS DP: manual rebuild and complete partition coverage
+PASS balanced: manual rebuild and complete partition coverage
+PASS DP: rebuild snapshot mutex acquisition failure
+PASS balanced: rebuild snapshot mutex acquisition failure
+PASS DP: complete range and separated cluster sampling
+PASS balanced: complete range and separated cluster sampling
+PASS DP: concurrent writes, manual rebuilds and periodic rebuilds
+PASS balanced: concurrent writes, manual rebuilds and periodic rebuilds
+<end of output>
+Test time =   0.04 sec
+----------------------------------------------------------
+Test Passed.
+"dynamic_lock_tests" end time: Sep 14 15:31 MSK
+"dynamic_lock_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+2/5 Testing: partitioner_tests
+2/5 Test: partitioner_tests
+Command: "/Users/near/dynamic/build/partitioner_tests"
+Directory: /Users/near/dynamic/build
+"partitioner_tests" start time: Sep 14 15:31 MSK
+Output:
+----------------------------------------------------------
+partitioner: exhaustive balance and original DP checks passed
+<end of output>
+Test time =   0.02 sec
+----------------------------------------------------------
+Test Passed.
+"partitioner_tests" end time: Sep 14 15:31 MSK
+"partitioner_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+3/5 Testing: example
+3/5 Test: example
+Command: "/Users/near/dynamic/build/example"
+Directory: /Users/near/dynamic/build
+"example" start time: Sep 14 15:31 MSK
+Output:
+----------------------------------------------------------
+All elements verified
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"example" end time: Sep 14 15:31 MSK
+"example" time elapsed: 00:00:00
+----------------------------------------------------------
+
+4/5 Testing: benchmark_smoke
+4/5 Test: benchmark_smoke
+Command: "/Users/near/dynamic/build/adaptive_lock_benchmark" "--operations" "8192" "--threads" "4" "--repetitions" "1"
+Directory: /Users/near/dynamic/build
+"benchmark_smoke" start time: Sep 14 15:31 MSK
+Output:
+----------------------------------------------------------
+64 mutexes, 4 workers, 8192 operations/scenario, 1 repetitions
+trace_size=1048576 unique query budget per phase (all workers)
+array_size=1048576 hot_width=16384 range_length=8 sample_rate=64 rebuild_interval_ms=30000 seed=1
+All work from lock construction through destruction is timed; no warmup.
+Final arrays verified against a deterministic reference after every run.
+Read checksums depend on scheduling and are not equality checks.
+Stored independent worker traces repeat cyclically; identical for all implementations.
+
+uniform
+  run=1 unique_queries=8192 phases=1
+  run=1 fixed wall_s=0.0024 cpu_s=0.0018 rebuilds=0 rebuild_ms=0.0000 read_checksum=124 verified=true
+  run=1 balanced wall_s=0.0009 cpu_s=0.0015 rebuilds=0 rebuild_ms=0.0000 read_checksum=127 verified=true
+  run=1 dynamic_dp wall_s=0.0004 cpu_s=0.0010 rebuilds=0 rebuild_ms=0.0000 read_checksum=123 verified=true
+  median fixed_s=0.0024
+  median balanced_s=0.0009 paired_speedup=2.8127 range=[2.8127,2.8127] cpu/fixed=0.8696
+  median dynamic_dp_s=0.0004 paired_speedup=6.1047 range=[6.1047,6.1047] cpu/fixed=0.5644
+
+hot_left
+  run=1 unique_queries=8192 phases=1
+  run=1 balanced wall_s=0.0009 cpu_s=0.0024 rebuilds=0 rebuild_ms=0.0000 read_checksum=7944 verified=true
+  run=1 dynamic_dp wall_s=0.0008 cpu_s=0.0020 rebuilds=0 rebuild_ms=0.0000 read_checksum=7967 verified=true
+  run=1 fixed wall_s=0.0007 cpu_s=0.0019 rebuilds=0 rebuild_ms=0.0000 read_checksum=7959 verified=true
+  median fixed_s=0.0007
+  median balanced_s=0.0009 paired_speedup=0.7675 range=[0.7675,0.7675] cpu/fixed=1.2660
+  median dynamic_dp_s=0.0008 paired_speedup=0.9047 range=[0.9047,0.9047] cpu/fixed=1.0545
+
+hot_right
+  run=1 unique_queries=8192 phases=1
+  run=1 dynamic_dp wall_s=0.0008 cpu_s=0.0021 rebuilds=0 rebuild_ms=0.0000 read_checksum=8309 verified=true
+  run=1 fixed wall_s=0.0007 cpu_s=0.0019 rebuilds=0 rebuild_ms=0.0000 read_checksum=8279 verified=true
+  run=1 balanced wall_s=0.0008 cpu_s=0.0021 rebuilds=0 rebuild_ms=0.0000 read_checksum=8374 verified=true
+  median fixed_s=0.0007
+  median balanced_s=0.0008 paired_speedup=0.8829 range=[0.8829,0.8829] cpu/fixed=1.1095
+  median dynamic_dp_s=0.0008 paired_speedup=0.8832 range=[0.8832,0.8832] cpu/fixed=1.1239
+
+clusters_2
+  run=1 unique_queries=8192 phases=1
+  run=1 fixed wall_s=0.0005 cpu_s=0.0013 rebuilds=0 rebuild_ms=0.0000 read_checksum=4051 verified=true
+  run=1 balanced wall_s=0.0005 cpu_s=0.0013 rebuilds=0 rebuild_ms=0.0000 read_checksum=4052 verified=true
+  run=1 dynamic_dp wall_s=0.0006 cpu_s=0.0015 rebuilds=0 rebuild_ms=0.0000 read_checksum=4044 verified=true
+  median fixed_s=0.0005
+  median balanced_s=0.0005 paired_speedup=1.0336 range=[1.0336,1.0336] cpu/fixed=1.0165
+  median dynamic_dp_s=0.0006 paired_speedup=0.8492 range=[0.8492,0.8492] cpu/fixed=1.1595
+
+clusters_4
+  run=1 unique_queries=8192 phases=1
+  run=1 balanced wall_s=0.0008 cpu_s=0.0013 rebuilds=0 rebuild_ms=0.0000 read_checksum=1919 verified=true
+  run=1 dynamic_dp wall_s=0.0004 cpu_s=0.0008 rebuilds=0 rebuild_ms=0.0000 read_checksum=1918 verified=true
+  run=1 fixed wall_s=0.0003 cpu_s=0.0007 rebuilds=0 rebuild_ms=0.0000 read_checksum=1944 verified=true
+  median fixed_s=0.0003
+  median balanced_s=0.0008 paired_speedup=0.3609 range=[0.3609,0.3609] cpu/fixed=1.7503
+  median dynamic_dp_s=0.0004 paired_speedup=0.7866 range=[0.7866,0.7866] cpu/fixed=1.0764
+
+clusters_8
+  run=1 unique_queries=8192 phases=1
+  run=1 dynamic_dp wall_s=0.0004 cpu_s=0.0009 rebuilds=0 rebuild_ms=0.0000 read_checksum=1064 verified=true
+  run=1 fixed wall_s=0.0002 cpu_s=0.0005 rebuilds=0 rebuild_ms=0.0000 read_checksum=1064 verified=true
+  run=1 balanced wall_s=0.0002 cpu_s=0.0005 rebuilds=0 rebuild_ms=0.0000 read_checksum=1080 verified=true
+  median fixed_s=0.0002
+  median balanced_s=0.0002 paired_speedup=0.8268 range=[0.8268,0.8268] cpu/fixed=1.1164
+  median dynamic_dp_s=0.0004 paired_speedup=0.5281 range=[0.5281,0.5281] cpu/fixed=1.8649
+
+unequal
+  run=1 unique_queries=8192 phases=1
+  run=1 fixed wall_s=0.0004 cpu_s=0.0010 rebuilds=0 rebuild_ms=0.0000 read_checksum=4543 verified=true
+  run=1 balanced wall_s=0.0005 cpu_s=0.0013 rebuilds=0 rebuild_ms=0.0000 read_checksum=4663 verified=true
+  run=1 dynamic_dp wall_s=0.0003 cpu_s=0.0008 rebuilds=0 rebuild_ms=0.0000 read_checksum=4622 verified=true
+  median fixed_s=0.0004
+  median balanced_s=0.0005 paired_speedup=0.7835 range=[0.7835,0.7835] cpu/fixed=1.2836
+  median dynamic_dp_s=0.0003 paired_speedup=1.2186 range=[1.2186,1.2186] cpu/fixed=0.8099
+
+moving
+  run=1 unique_queries=8192 phases=8
+  run=1 balanced wall_s=0.0006 cpu_s=0.0013 rebuilds=0 rebuild_ms=0.0000 read_checksum=971 verified=true
+    phase_wall_s=0.0001;0.0000;0.0000;0.0000;0.0001;0.0001;0.0000;0.0000
+  run=1 dynamic_dp wall_s=0.0005 cpu_s=0.0010 rebuilds=0 rebuild_ms=0.0000 read_checksum=943 verified=true
+    phase_wall_s=0.0000;0.0000;0.0000;0.0000;0.0000;0.0001;0.0001;0.0001
+  run=1 fixed wall_s=0.0005 cpu_s=0.0010 rebuilds=0 rebuild_ms=0.0000 read_checksum=974 verified=true
+    phase_wall_s=0.0001;0.0001;0.0001;0.0000;0.0001;0.0000;0.0001;0.0001
+  median fixed_s=0.0005
+  median balanced_s=0.0006 paired_speedup=0.9292 range=[0.9292,0.9292] cpu/fixed=1.2341
+  median dynamic_dp_s=0.0005 paired_speedup=1.0768 range=[1.0768,1.0768] cpu/fixed=0.9403
+
+churn
+  run=1 unique_queries=8192 phases=6
+  run=1 dynamic_dp wall_s=0.0006 cpu_s=0.0013 rebuilds=0 rebuild_ms=0.0000 read_checksum=595 verified=true
+    phase_wall_s=0.0001;0.0001;0.0001;0.0001;0.0001;0.0000
+  run=1 fixed wall_s=0.0003 cpu_s=0.0006 rebuilds=0 rebuild_ms=0.0000 read_checksum=593 verified=true
+    phase_wall_s=0.0000;0.0000;0.0000;0.0000;0.0000;0.0000
+  run=1 balanced wall_s=0.0003 cpu_s=0.0007 rebuilds=0 rebuild_ms=0.0000 read_checksum=591 verified=true
+    phase_wall_s=0.0001;0.0000;0.0000;0.0000;0.0000;0.0000
+  median fixed_s=0.0003
+  median balanced_s=0.0003 paired_speedup=0.8758 range=[0.8758,0.8758] cpu/fixed=1.2183
+  median dynamic_dp_s=0.0006 paired_speedup=0.4997 range=[0.4997,0.4997] cpu/fixed=2.1354
+
+uniform_range
+  run=1 unique_queries=8192 phases=1
+  run=1 fixed wall_s=0.0002 cpu_s=0.0005 rebuilds=0 rebuild_ms=0.0000 read_checksum=1083 verified=true
+  run=1 balanced wall_s=0.0002 cpu_s=0.0004 rebuilds=0 rebuild_ms=0.0000 read_checksum=1075 verified=true
+  run=1 dynamic_dp wall_s=0.0001 cpu_s=0.0003 rebuilds=0 rebuild_ms=0.0000 read_checksum=1066 verified=true
+  median fixed_s=0.0002
+  median balanced_s=0.0002 paired_speedup=1.2898 range=[1.2898,1.2898] cpu/fixed=0.7076
+  median dynamic_dp_s=0.0001 paired_speedup=1.4487 range=[1.4487,1.4487] cpu/fixed=0.6406
+
+hot_range
+  run=1 unique_queries=8192 phases=1
+  run=1 balanced wall_s=0.0005 cpu_s=0.0010 rebuilds=0 rebuild_ms=0.0000 read_checksum=66199 verified=true
+  run=1 dynamic_dp wall_s=0.0005 cpu_s=0.0011 rebuilds=0 rebuild_ms=0.0000 read_checksum=65601 verified=true
+  run=1 fixed wall_s=0.0004 cpu_s=0.0009 rebuilds=0 rebuild_ms=0.0000 read_checksum=65738 verified=true
+  median fixed_s=0.0004
+  median balanced_s=0.0005 paired_speedup=0.7481 range=[0.7481,0.7481] cpu/fixed=1.2222
+  median dynamic_dp_s=0.0005 paired_speedup=0.8252 range=[0.8252,0.8252] cpu/fixed=1.2643
+
+clusters_2_range
+  run=1 unique_queries=8192 phases=1
+  run=1 dynamic_dp wall_s=0.0005 cpu_s=0.0011 rebuilds=0 rebuild_ms=0.0000 read_checksum=32727 verified=true
+  run=1 fixed wall_s=0.0004 cpu_s=0.0010 rebuilds=0 rebuild_ms=0.0000 read_checksum=32420 verified=true
+  run=1 balanced wall_s=0.0004 cpu_s=0.0011 rebuilds=0 rebuild_ms=0.0000 read_checksum=32625 verified=true
+  median fixed_s=0.0004
+  median balanced_s=0.0004 paired_speedup=0.9578 range=[0.9578,0.9578] cpu/fixed=1.0816
+  median dynamic_dp_s=0.0005 paired_speedup=0.8517 range=[0.8517,0.8517] cpu/fixed=1.1005
+
+clusters_4_range
+  run=1 unique_queries=8192 phases=1
+  run=1 fixed wall_s=0.0003 cpu_s=0.0007 rebuilds=0 rebuild_ms=0.0000 read_checksum=15879 verified=true
+  run=1 balanced wall_s=0.0004 cpu_s=0.0008 rebuilds=0 rebuild_ms=0.0000 read_checksum=15719 verified=true
+  run=1 dynamic_dp wall_s=0.0004 cpu_s=0.0009 rebuilds=0 rebuild_ms=0.0000 read_checksum=15943 verified=true
+  median fixed_s=0.0003
+  median balanced_s=0.0004 paired_speedup=0.9347 range=[0.9347,0.9347] cpu/fixed=1.1095
+  median dynamic_dp_s=0.0004 paired_speedup=0.9571 range=[0.9571,0.9571] cpu/fixed=1.1500
+
+moving_range
+  run=1 unique_queries=8192 phases=8
+  run=1 balanced wall_s=0.0005 cpu_s=0.0010 rebuilds=0 rebuild_ms=0.0000 read_checksum=8101 verified=true
+    phase_wall_s=0.0001;0.0001;0.0000;0.0001;0.0001;0.0000;0.0000;0.0000
+  run=1 dynamic_dp wall_s=0.0006 cpu_s=0.0012 rebuilds=0 rebuild_ms=0.0000 read_checksum=8247 verified=true
+    phase_wall_s=0.0001;0.0000;0.0000;0.0000;0.0000;0.0001;0.0000;0.0001
+  run=1 fixed wall_s=0.0004 cpu_s=0.0007 rebuilds=0 rebuild_ms=0.0000 read_checksum=8197 verified=true
+    phase_wall_s=0.0000;0.0000;0.0001;0.0000;0.0000;0.0000;0.0000;0.0000
+  median fixed_s=0.0004
+  median balanced_s=0.0005 paired_speedup=0.6923 range=[0.6923,0.6923] cpu/fixed=1.3595
+  median dynamic_dp_s=0.0006 paired_speedup=0.5651 range=[0.5651,0.5651] cpu/fixed=1.6365
+
+uniform_variable_range
+  run=1 unique_queries=8192 phases=1
+  run=1 dynamic_dp wall_s=0.0004 cpu_s=0.0010 rebuilds=0 rebuild_ms=0.0000 read_checksum=596 verified=true
+  run=1 fixed wall_s=0.0002 cpu_s=0.0005 rebuilds=0 rebuild_ms=0.0000 read_checksum=604 verified=true
+  run=1 balanced wall_s=0.0002 cpu_s=0.0004 rebuilds=0 rebuild_ms=0.0000 read_checksum=599 verified=true
+  median fixed_s=0.0002
+  median balanced_s=0.0002 paired_speedup=1.2376 range=[1.2376,1.2376] cpu/fixed=0.7356
+  median dynamic_dp_s=0.0004 paired_speedup=0.5265 range=[0.5265,0.5265] cpu/fixed=1.8966
+
+hot_variable_range
+  run=1 unique_queries=8192 phases=1
+  run=1 fixed wall_s=0.0005 cpu_s=0.0012 rebuilds=0 rebuild_ms=0.0000 read_checksum=37552 verified=true
+  run=1 balanced wall_s=0.0008 cpu_s=0.0019 rebuilds=0 rebuild_ms=0.0000 read_checksum=37458 verified=true
+  run=1 dynamic_dp wall_s=0.0007 cpu_s=0.0018 rebuilds=0 rebuild_ms=0.0000 read_checksum=37722 verified=true
+  median fixed_s=0.0005
+  median balanced_s=0.0008 paired_speedup=0.6324 range=[0.6324,0.6324] cpu/fixed=1.5500
+  median dynamic_dp_s=0.0007 paired_speedup=0.7003 range=[0.7003,0.7003] cpu/fixed=1.4877
+
+true_contention
+  run=1 unique_queries=8192 phases=1
+  run=1 balanced wall_s=0.0003 cpu_s=0.0007 rebuilds=0 rebuild_ms=0.0000 read_checksum=134750021 verified=true
+  run=1 dynamic_dp wall_s=0.0003 cpu_s=0.0006 rebuilds=0 rebuild_ms=0.0000 read_checksum=134499410 verified=true
+  run=1 fixed wall_s=0.0002 cpu_s=0.0006 rebuilds=0 rebuild_ms=0.0000 read_checksum=134781517 verified=true
+  median fixed_s=0.0002
+  median balanced_s=0.0003 paired_speedup=0.8621 range=[0.8621,0.8621] cpu/fixed=1.0831
+  median dynamic_dp_s=0.0003 paired_speedup=0.9073 range=[0.9073,0.9073] cpu/fixed=1.0505
+
+recovery
+  run=1 unique_queries=8192 phases=2
+  run=1 dynamic_dp wall_s=0.0003 cpu_s=0.0008 rebuilds=0 rebuild_ms=0.0000 read_checksum=2102 verified=true
+    phase_wall_s=0.0002;0.0001
+  run=1 fixed wall_s=0.0002 cpu_s=0.0006 rebuilds=0 rebuild_ms=0.0000 read_checksum=2113 verified=true
+    phase_wall_s=0.0001;0.0001
+  run=1 balanced wall_s=0.0003 cpu_s=0.0008 rebuilds=0 rebuild_ms=0.0000 read_checksum=2089 verified=true
+    phase_wall_s=0.0002;0.0001
+  median fixed_s=0.0002
+  median balanced_s=0.0003 paired_speedup=0.7211 range=[0.7211,0.7211] cpu/fixed=1.3889
+  median dynamic_dp_s=0.0003 paired_speedup=0.6786 range=[0.6786,0.6786] cpu/fixed=1.3490
+
+hot_middle
+  run=1 unique_queries=8192 phases=1
+  run=1 fixed wall_s=0.0003 cpu_s=0.0007 rebuilds=0 rebuild_ms=0.0000 read_checksum=7615 verified=true
+  run=1 balanced wall_s=0.0004 cpu_s=0.0009 rebuilds=0 rebuild_ms=0.0000 read_checksum=7593 verified=true
+  run=1 dynamic_dp wall_s=0.0003 cpu_s=0.0008 rebuilds=0 rebuild_ms=0.0000 read_checksum=7623 verified=true
+  median fixed_s=0.0003
+  median balanced_s=0.0004 paired_speedup=0.8124 range=[0.8124,0.8124] cpu/fixed=1.3227
+  median dynamic_dp_s=0.0003 paired_speedup=0.8670 range=[0.8670,0.8670] cpu/fixed=1.1867
+
+hot_with_cold
+  run=1 unique_queries=8192 phases=1
+  run=1 balanced wall_s=0.0004 cpu_s=0.0011 rebuilds=0 rebuild_ms=0.0000 read_checksum=6642 verified=true
+  run=1 dynamic_dp wall_s=0.0004 cpu_s=0.0009 rebuilds=0 rebuild_ms=0.0000 read_checksum=6625 verified=true
+  run=1 fixed wall_s=0.0004 cpu_s=0.0010 rebuilds=0 rebuild_ms=0.0000 read_checksum=6672 verified=true
+  median fixed_s=0.0004
+  median balanced_s=0.0004 paired_speedup=0.9295 range=[0.9295,0.9295] cpu/fixed=1.0903
+  median dynamic_dp_s=0.0004 paired_speedup=0.9836 range=[0.9836,0.9836] cpu/fixed=0.9478
+
+clusters_16
+  run=1 unique_queries=8192 phases=1
+  run=1 dynamic_dp wall_s=0.0002 cpu_s=0.0006 rebuilds=0 rebuild_ms=0.0000 read_checksum=562 verified=true
+  run=1 fixed wall_s=0.0003 cpu_s=0.0005 rebuilds=0 rebuild_ms=0.0000 read_checksum=559 verified=true
+  run=1 balanced wall_s=0.0002 cpu_s=0.0005 rebuilds=0 rebuild_ms=0.0000 read_checksum=553 verified=true
+  median fixed_s=0.0003
+  median balanced_s=0.0002 paired_speedup=1.1978 range=[1.1978,1.1978] cpu/fixed=0.9138
+  median dynamic_dp_s=0.0002 paired_speedup=1.1182 range=[1.1182,1.1182] cpu/fixed=1.0385
+
+clusters_4_variable_range
+  run=1 unique_queries=8192 phases=1
+  run=1 fixed wall_s=0.0004 cpu_s=0.0009 rebuilds=0 rebuild_ms=0.0000 read_checksum=8867 verified=true
+  run=1 balanced wall_s=0.0004 cpu_s=0.0010 rebuilds=0 rebuild_ms=0.0000 read_checksum=8924 verified=true
+  run=1 dynamic_dp wall_s=0.0005 cpu_s=0.0011 rebuilds=0 rebuild_ms=0.0000 read_checksum=8988 verified=true
+  median fixed_s=0.0004
+  median balanced_s=0.0004 paired_speedup=0.8715 range=[0.8715,0.8715] cpu/fixed=1.1515
+  median dynamic_dp_s=0.0005 paired_speedup=0.7672 range=[0.7672,0.7672] cpu/fixed=1.1818
+
+shift
+  run=1 unique_queries=8192 phases=2
+  run=1 balanced wall_s=0.0004 cpu_s=0.0010 rebuilds=0 rebuild_ms=0.0000 read_checksum=3817 verified=true
+    phase_wall_s=0.0002;0.0001
+  run=1 dynamic_dp wall_s=0.0004 cpu_s=0.0009 rebuilds=0 rebuild_ms=0.0000 read_checksum=3830 verified=true
+    phase_wall_s=0.0001;0.0002
+  run=1 fixed wall_s=0.0003 cpu_s=0.0006 rebuilds=0 rebuild_ms=0.0000 read_checksum=3728 verified=true
+    phase_wall_s=0.0001;0.0001
+  median fixed_s=0.0003
+  median balanced_s=0.0004 paired_speedup=0.6487 range=[0.6487,0.6487] cpu/fixed=1.8310
+  median dynamic_dp_s=0.0004 paired_speedup=0.7930 range=[0.7930,0.7930] cpu/fixed=1.5427
+
+shift_range
+  run=1 unique_queries=8192 phases=2
+  run=1 dynamic_dp wall_s=0.0005 cpu_s=0.0010 rebuilds=0 rebuild_ms=0.0000 read_checksum=32282 verified=true
+    phase_wall_s=0.0002;0.0002
+  run=1 fixed wall_s=0.0004 cpu_s=0.0009 rebuilds=0 rebuild_ms=0.0000 read_checksum=32199 verified=true
+    phase_wall_s=0.0002;0.0001
+  run=1 balanced wall_s=0.0005 cpu_s=0.0011 rebuilds=0 rebuild_ms=0.0000 read_checksum=32628 verified=true
+    phase_wall_s=0.0002;0.0002
+  median fixed_s=0.0004
+  median balanced_s=0.0005 paired_speedup=0.8028 range=[0.8028,0.8028] cpu/fixed=1.1765
+  median dynamic_dp_s=0.0005 paired_speedup=0.7992 range=[0.7992,0.7992] cpu/fixed=1.0877
+
+steady_point
+  run=1 unique_queries=8192 phases=4
+  run=1 fixed wall_s=0.0011 cpu_s=0.0008 rebuilds=0 rebuild_ms=0.0000 read_checksum=8460 verified=true
+    phase_wall_s=0.0001;0.0001;0.0001;0.0001
+  run=1 balanced wall_s=0.0004 cpu_s=0.0009 rebuilds=0 rebuild_ms=0.0000 read_checksum=8395 verified=true
+    phase_wall_s=0.0001;0.0001;0.0001;0.0001
+  run=1 dynamic_dp wall_s=0.0004 cpu_s=0.0010 rebuilds=0 rebuild_ms=0.0000 read_checksum=8461 verified=true
+    phase_wall_s=0.0001;0.0001;0.0001;0.0001
+  median fixed_s=0.0011
+  median balanced_s=0.0004 paired_speedup=2.9861 range=[2.9861,2.9861] cpu/fixed=1.0840
+  median dynamic_dp_s=0.0004 paired_speedup=2.7432 range=[2.7432,2.7432] cpu/fixed=1.3108
+
+steady_range
+  run=1 unique_queries=8192 phases=4
+  run=1 balanced wall_s=0.0006 cpu_s=0.0014 rebuilds=0 rebuild_ms=0.0000 read_checksum=67254 verified=true
+    phase_wall_s=0.0001;0.0001;0.0001;0.0001
+  run=1 dynamic_dp wall_s=0.0005 cpu_s=0.0012 rebuilds=0 rebuild_ms=0.0000 read_checksum=67181 verified=true
+    phase_wall_s=0.0001;0.0001;0.0001;0.0001
+  run=1 fixed wall_s=0.0004 cpu_s=0.0009 rebuilds=0 rebuild_ms=0.0000 read_checksum=67277 verified=true
+    phase_wall_s=0.0001;0.0001;0.0001;0.0001
+  median fixed_s=0.0004
+  median balanced_s=0.0006 paired_speedup=0.7437 range=[0.7437,0.7437] cpu/fixed=1.4633
+  median dynamic_dp_s=0.0005 paired_speedup=0.8448 range=[0.8448,0.8448] cpu/fixed=1.2635
+
+hot_with_spike
+  run=1 unique_queries=8192 phases=4
+  run=1 dynamic_dp wall_s=0.0004 cpu_s=0.0007 rebuilds=0 rebuild_ms=0.0000 read_checksum=12703871 verified=true
+    phase_wall_s=0.0001;0.0001;0.0001;0.0001
+  run=1 fixed wall_s=0.0003 cpu_s=0.0005 rebuilds=0 rebuild_ms=0.0000 read_checksum=12703672 verified=true
+    phase_wall_s=0.0000;0.0000;0.0000;0.0001
+  run=1 balanced wall_s=0.0006 cpu_s=0.0009 rebuilds=0 rebuild_ms=0.0000 read_checksum=12676311 verified=true
+    phase_wall_s=0.0001;0.0001;0.0001;0.0001
+  median fixed_s=0.0003
+  median balanced_s=0.0006 paired_speedup=0.4612 range=[0.4612,0.4612] cpu/fixed=1.6316
+  median dynamic_dp_s=0.0004 paired_speedup=0.7530 range=[0.7530,0.7530] cpu/fixed=1.3947
+<end of output>
+Test time =   0.59 sec
+----------------------------------------------------------
+Test Passed.
+"benchmark_smoke" end time: Sep 14 15:31 MSK
+"benchmark_smoke" time elapsed: 00:00:00
+----------------------------------------------------------
+
+5/5 Testing: benchmark_cyclic_smoke
+5/5 Test: benchmark_cyclic_smoke
+Command: "/Users/near/dynamic/build/adaptive_lock_benchmark" "--operations" "8191" "--threads" "3" "--trace-size" "17" "--repetitions" "1"
+Directory: /Users/near/dynamic/build
+"benchmark_cyclic_smoke" start time: Sep 14 15:31 MSK
+Output:
+----------------------------------------------------------
+64 mutexes, 3 workers, 8191 operations/scenario, 1 repetitions
+trace_size=17 unique query budget per phase (all workers)
+array_size=1048576 hot_width=16384 range_length=8 sample_rate=64 rebuild_interval_ms=30000 seed=1
+All work from lock construction through destruction is timed; no warmup.
+Final arrays verified against a deterministic reference after every run.
+Read checksums depend on scheduling and are not equality checks.
+Stored independent worker traces repeat cyclically; identical for all implementations.
+
+uniform
+  run=1 unique_queries=17 phases=1
+  run=1 fixed wall_s=0.0001 cpu_s=0.0002 rebuilds=0 rebuild_ms=0.0000 read_checksum=6790420 verified=true
+  run=1 balanced wall_s=0.0002 cpu_s=0.0004 rebuilds=0 rebuild_ms=0.0000 read_checksum=6790420 verified=true
+  run=1 dynamic_dp wall_s=0.0002 cpu_s=0.0003 rebuilds=0 rebuild_ms=0.0000 read_checksum=6790420 verified=true
+  median fixed_s=0.0001
+  median balanced_s=0.0002 paired_speedup=0.5929 range=[0.5929,0.5929] cpu/fixed=1.4234
+  median dynamic_dp_s=0.0002 paired_speedup=0.6640 range=[0.6640,0.6640] cpu/fixed=1.3548
+
+hot_left
+  run=1 unique_queries=17 phases=1
+  run=1 balanced wall_s=0.0004 cpu_s=0.0007 rebuilds=0 rebuild_ms=0.0000 read_checksum=7295925 verified=true
+  run=1 dynamic_dp wall_s=0.0003 cpu_s=0.0006 rebuilds=0 rebuild_ms=0.0000 read_checksum=7295925 verified=true
+  run=1 fixed wall_s=0.0002 cpu_s=0.0005 rebuilds=0 rebuild_ms=0.0000 read_checksum=7295925 verified=true
+  median fixed_s=0.0002
+  median balanced_s=0.0004 paired_speedup=0.6591 range=[0.6591,0.6591] cpu/fixed=1.5487
+  median dynamic_dp_s=0.0003 paired_speedup=0.7722 range=[0.7722,0.7722] cpu/fixed=1.1946
+
+hot_right
+  run=1 unique_queries=17 phases=1
+  run=1 dynamic_dp wall_s=0.0003 cpu_s=0.0006 rebuilds=0 rebuild_ms=0.0000 read_checksum=7134855 verified=true
+  run=1 fixed wall_s=0.0003 cpu_s=0.0006 rebuilds=0 rebuild_ms=0.0000 read_checksum=7134855 verified=true
+  run=1 balanced wall_s=0.0003 cpu_s=0.0007 rebuilds=0 rebuild_ms=0.0000 read_checksum=7134855 verified=true
+  median fixed_s=0.0003
+  median balanced_s=0.0003 paired_speedup=0.8223 range=[0.8223,0.8223] cpu/fixed=1.1583
+  median dynamic_dp_s=0.0003 paired_speedup=0.8633 range=[0.8633,0.8633] cpu/fixed=1.0034
+
+clusters_2
+  run=1 unique_queries=17 phases=1
+  run=1 fixed wall_s=0.0002 cpu_s=0.0004 rebuilds=0 rebuild_ms=0.0000 read_checksum=8393385 verified=true
+  run=1 balanced wall_s=0.0003 cpu_s=0.0005 rebuilds=0 rebuild_ms=0.0000 read_checksum=8393385 verified=true
+  run=1 dynamic_dp wall_s=0.0003 cpu_s=0.0005 rebuilds=0 rebuild_ms=0.0000 read_checksum=8393385 verified=true
+  median fixed_s=0.0002
+  median balanced_s=0.0003 paired_speedup=0.6679 range=[0.6679,0.6679] cpu/fixed=1.3077
+  median dynamic_dp_s=0.0003 paired_speedup=0.6691 range=[0.6691,0.6691] cpu/fixed=1.3692
+
+clusters_4
+  run=1 unique_queries=17 phases=1
+  run=1 balanced wall_s=0.0005 cpu_s=0.0005 rebuilds=0 rebuild_ms=0.0000 read_checksum=8104005 verified=true
+  run=1 dynamic_dp wall_s=0.0014 cpu_s=0.0005 rebuilds=0 rebuild_ms=0.0000 read_checksum=8104005 verified=true
+  run=1 fixed wall_s=0.0007 cpu_s=0.0004 rebuilds=0 rebuild_ms=0.0000 read_checksum=8104005 verified=true
+  median fixed_s=0.0007
+  median balanced_s=0.0005 paired_speedup=1.5629 range=[1.5629,1.5629] cpu/fixed=1.3665
+  median dynamic_dp_s=0.0014 paired_speedup=0.5248 range=[0.5248,0.5248] cpu/fixed=1.5028
+
+clusters_8
+  run=1 unique_queries=17 phases=1
+  run=1 dynamic_dp wall_s=0.0006 cpu_s=0.0005 rebuilds=0 rebuild_ms=0.0000 read_checksum=8820630 verified=true
+  run=1 fixed wall_s=0.0009 cpu_s=0.0003 rebuilds=0 rebuild_ms=0.0000 read_checksum=8820630 verified=true
+  run=1 balanced wall_s=0.0002 cpu_s=0.0004 rebuilds=0 rebuild_ms=0.0000 read_checksum=8820630 verified=true
+  median fixed_s=0.0009
+  median balanced_s=0.0002 paired_speedup=3.9474 range=[3.9474,3.9474] cpu/fixed=1.1691
+  median dynamic_dp_s=0.0006 paired_speedup=1.5411 range=[1.5411,1.5411] cpu/fixed=1.5163
+
+unequal
+  run=1 unique_queries=17 phases=1
+  run=1 fixed wall_s=0.0002 cpu_s=0.0003 rebuilds=0 rebuild_ms=0.0000 read_checksum=7211750 verified=true
+  run=1 balanced wall_s=0.0003 cpu_s=0.0005 rebuilds=0 rebuild_ms=0.0000 read_checksum=7211750 verified=true
+  run=1 dynamic_dp wall_s=0.0002 cpu_s=0.0004 rebuilds=0 rebuild_ms=0.0000 read_checksum=7211750 verified=true
+  median fixed_s=0.0002
+  median balanced_s=0.0003 paired_speedup=0.6791 range=[0.6791,0.6791] cpu/fixed=1.3735
+  median dynamic_dp_s=0.0002 paired_speedup=0.7412 range=[0.7412,0.7412] cpu/fixed=1.2794
+
+moving
+  run=1 unique_queries=136 phases=8
+  run=1 balanced wall_s=0.0003 cpu_s=0.0006 rebuilds=0 rebuild_ms=0.0000 read_checksum=1009510 verified=true
+    phase_wall_s=0.0000;0.0000;0.0000;0.0000;0.0000;0.0000;0.0000;0.0000
+  run=1 dynamic_dp wall_s=0.0003 cpu_s=0.0005 rebuilds=0 rebuild_ms=0.0000 read_checksum=1009510 verified=true
+    phase_wall_s=0.0000;0.0000;0.0000;0.0000;0.0000;0.0000;0.0000;0.0000
+  run=1 fixed wall_s=0.0003 cpu_s=0.0004 rebuilds=0 rebuild_ms=0.0000 read_checksum=1009510 verified=true
+    phase_wall_s=0.0000;0.0000;0.0000;0.0000;0.0000;0.0000;0.0000;0.0000
+  median fixed_s=0.0003
+  median balanced_s=0.0003 paired_speedup=0.9010 range=[0.9010,0.9010] cpu/fixed=1.3594
+  median dynamic_dp_s=0.0003 paired_speedup=0.9887 range=[0.9887,0.9887] cpu/fixed=1.2054
+
+churn
+  run=1 unique_queries=102 phases=6
+  run=1 dynamic_dp wall_s=0.0002 cpu_s=0.0004 rebuilds=0 rebuild_ms=0.0000 read_checksum=1416845 verified=true
+    phase_wall_s=0.0000;0.0000;0.0000;0.0000;0.0000;0.0000
+  run=1 fixed wall_s=0.0002 cpu_s=0.0004 rebuilds=0 rebuild_ms=0.0000 read_checksum=1416845 verified=true
+    phase_wall_s=0.0000;0.0000;0.0000;0.0000;0.0000;0.0000
+  run=1 balanced wall_s=0.0003 cpu_s=0.0005 rebuilds=0 rebuild_ms=0.0000 read_checksum=1416845 verified=true
+    phase_wall_s=0.0001;0.0000;0.0000;0.0000;0.0000;0.0000
+  median fixed_s=0.0002
+  median balanced_s=0.0003 paired_speedup=0.5573 range=[0.5573,0.5573] cpu/fixed=1.4406
+  median dynamic_dp_s=0.0002 paired_speedup=0.7336 range=[0.7336,0.7336] cpu/fixed=1.1821
+
+uniform_range
+  run=1 unique_queries=17 phases=1
+  run=1 fixed wall_s=0.0001 cpu_s=0.0002 rebuilds=0 rebuild_ms=0.0000 read_checksum=8659560 verified=true
+  run=1 balanced wall_s=0.0002 cpu_s=0.0002 rebuilds=0 rebuild_ms=0.0000 read_checksum=8659560 verified=true
+  run=1 dynamic_dp wall_s=0.0001 cpu_s=0.0002 rebuilds=0 rebuild_ms=0.0000 read_checksum=8659560 verified=true
+  median fixed_s=0.0001
+  median balanced_s=0.0002 paired_speedup=0.5395 range=[0.5395,0.5395] cpu/fixed=1.4405
+  median dynamic_dp_s=0.0001 paired_speedup=1.0567 range=[1.0567,1.0567] cpu/fixed=1.1131
+
+hot_range
+  run=1 unique_queries=17 phases=1
+  run=1 balanced wall_s=0.0014 cpu_s=0.0007 rebuilds=0 rebuild_ms=0.0000 read_checksum=9312485 verified=true
+  run=1 dynamic_dp wall_s=0.0003 cpu_s=0.0006 rebuilds=0 rebuild_ms=0.0000 read_checksum=9312485 verified=true
+  run=1 fixed wall_s=0.0002 cpu_s=0.0004 rebuilds=0 rebuild_ms=0.0000 read_checksum=9312485 verified=true
+  median fixed_s=0.0002
+  median balanced_s=0.0014 paired_speedup=0.1433 range=[0.1433,0.1433] cpu/fixed=1.7717
+  median dynamic_dp_s=0.0003 paired_speedup=0.6998 range=[0.6998,0.6998] cpu/fixed=1.4392
+
+clusters_2_range
+  run=1 unique_queries=17 phases=1
+  run=1 dynamic_dp wall_s=0.0002 cpu_s=0.0004 rebuilds=0 rebuild_ms=0.0000 read_checksum=7456540 verified=true
+  run=1 fixed wall_s=0.0002 cpu_s=0.0004 rebuilds=0 rebuild_ms=0.0000 read_checksum=7456540 verified=true
+  run=1 balanced wall_s=0.0002 cpu_s=0.0005 rebuilds=0 rebuild_ms=0.0000 read_checksum=7456540 verified=true
+  median fixed_s=0.0002
+  median balanced_s=0.0002 paired_speedup=0.7962 range=[0.7962,0.7962] cpu/fixed=1.0833
+  median dynamic_dp_s=0.0002 paired_speedup=0.8600 range=[0.8600,0.8600] cpu/fixed=1.0113
+
+clusters_4_range
+  run=1 unique_queries=17 phases=1
+  run=1 fixed wall_s=0.0002 cpu_s=0.0003 rebuilds=0 rebuild_ms=0.0000 read_checksum=8484385 verified=true
+  run=1 balanced wall_s=0.0002 cpu_s=0.0005 rebuilds=0 rebuild_ms=0.0000 read_checksum=8484385 verified=true
+  run=1 dynamic_dp wall_s=0.0002 cpu_s=0.0004 rebuilds=0 rebuild_ms=0.0000 read_checksum=8484385 verified=true
+  median fixed_s=0.0002
+  median balanced_s=0.0002 paired_speedup=0.6852 range=[0.6852,0.6852] cpu/fixed=1.3994
+  median dynamic_dp_s=0.0002 paired_speedup=0.7865 range=[0.7865,0.7865] cpu/fixed=1.3384
+
+moving_range
+  run=1 unique_queries=136 phases=8
+  run=1 balanced wall_s=0.0003 cpu_s=0.0006 rebuilds=0 rebuild_ms=0.0000 read_checksum=987593 verified=true
+    phase_wall_s=0.0000;0.0000;0.0000;0.0000;0.0000;0.0000;0.0000;0.0000
+  run=1 dynamic_dp wall_s=0.0002 cpu_s=0.0005 rebuilds=0 rebuild_ms=0.0000 read_checksum=987593 verified=true
+    phase_wall_s=0.0000;0.0000;0.0000;0.0000;0.0000;0.0000;0.0000;0.0000
+  run=1 fixed wall_s=0.0002 cpu_s=0.0004 rebuilds=0 rebuild_ms=0.0000 read_checksum=987593 verified=true
+    phase_wall_s=0.0000;0.0000;0.0000;0.0000;0.0000;0.0000;0.0000;0.0000
+  median fixed_s=0.0002
+  median balanced_s=0.0003 paired_speedup=0.8114 range=[0.8114,0.8114] cpu/fixed=1.3000
+  median dynamic_dp_s=0.0002 paired_speedup=0.9477 range=[0.9477,0.9477] cpu/fixed=1.1341
+
+uniform_variable_range
+  run=1 unique_queries=17 phases=1
+  run=1 dynamic_dp wall_s=0.0001 cpu_s=0.0002 rebuilds=0 rebuild_ms=0.0000 read_checksum=7140770 verified=true
+  run=1 fixed wall_s=0.0001 cpu_s=0.0002 rebuilds=0 rebuild_ms=0.0000 read_checksum=7140770 verified=true
+  run=1 balanced wall_s=0.0001 cpu_s=0.0002 rebuilds=0 rebuild_ms=0.0000 read_checksum=7140770 verified=true
+  median fixed_s=0.0001
+  median balanced_s=0.0001 paired_speedup=0.7634 range=[0.7634,0.7634] cpu/fixed=1.1036
+  median dynamic_dp_s=0.0001 paired_speedup=0.8509 range=[0.8509,0.8509] cpu/fixed=1.0207
+
+hot_variable_range
+  run=1 unique_queries=17 phases=1
+  run=1 fixed wall_s=0.0003 cpu_s=0.0004 rebuilds=0 rebuild_ms=0.0000 read_checksum=9228765 verified=true
+  run=1 balanced wall_s=0.0002 cpu_s=0.0003 rebuilds=0 rebuild_ms=0.0000 read_checksum=9228765 verified=true
+  run=1 dynamic_dp wall_s=0.0003 cpu_s=0.0006 rebuilds=0 rebuild_ms=0.0000 read_checksum=9228765 verified=true
+  median fixed_s=0.0003
+  median balanced_s=0.0002 paired_speedup=1.5485 range=[1.5485,1.5485] cpu/fixed=0.7371
+  median dynamic_dp_s=0.0003 paired_speedup=1.0020 range=[1.0020,1.0020] cpu/fixed=1.4584
+
+true_contention
+  run=1 unique_queries=17 phases=1
+  run=1 balanced wall_s=0.0004 cpu_s=0.0007 rebuilds=0 rebuild_ms=0.0000 read_checksum=145397391 verified=true
+  run=1 dynamic_dp wall_s=0.0003 cpu_s=0.0006 rebuilds=0 rebuild_ms=0.0000 read_checksum=144240039 verified=true
+  run=1 fixed wall_s=0.0002 cpu_s=0.0004 rebuilds=0 rebuild_ms=0.0000 read_checksum=140064235 verified=true
+  median fixed_s=0.0002
+  median balanced_s=0.0004 paired_speedup=0.4961 range=[0.4961,0.4961] cpu/fixed=1.9813
+  median dynamic_dp_s=0.0003 paired_speedup=0.5778 range=[0.5778,0.5778] cpu/fixed=1.6711
+
+recovery
+  run=1 unique_queries=34 phases=2
+  run=1 dynamic_dp wall_s=0.0002 cpu_s=0.0004 rebuilds=0 rebuild_ms=0.0000 read_checksum=4188036 verified=true
+    phase_wall_s=0.0001;0.0000
+  run=1 fixed wall_s=0.0002 cpu_s=0.0004 rebuilds=0 rebuild_ms=0.0000 read_checksum=4188036 verified=true
+    phase_wall_s=0.0001;0.0000
+  run=1 balanced wall_s=0.0002 cpu_s=0.0003 rebuilds=0 rebuild_ms=0.0000 read_checksum=4188036 verified=true
+    phase_wall_s=0.0001;0.0000
+  median fixed_s=0.0002
+  median balanced_s=0.0002 paired_speedup=0.9919 range=[0.9919,0.9919] cpu/fixed=0.9359
+  median dynamic_dp_s=0.0002 paired_speedup=0.8396 range=[0.8396,0.8396] cpu/fixed=1.1588
+
+hot_middle
+  run=1 unique_queries=17 phases=1
+  run=1 fixed wall_s=0.0002 cpu_s=0.0003 rebuilds=0 rebuild_ms=0.0000 read_checksum=9091810 verified=true
+  run=1 balanced wall_s=0.0002 cpu_s=0.0004 rebuilds=0 rebuild_ms=0.0000 read_checksum=9091810 verified=true
+  run=1 dynamic_dp wall_s=0.0002 cpu_s=0.0005 rebuilds=0 rebuild_ms=0.0000 read_checksum=9091810 verified=true
+  median fixed_s=0.0002
+  median balanced_s=0.0002 paired_speedup=0.6961 range=[0.6961,0.6961] cpu/fixed=1.4137
+  median dynamic_dp_s=0.0002 paired_speedup=0.6895 range=[0.6895,0.6895] cpu/fixed=1.5114
+
+hot_with_cold
+  run=1 unique_queries=17 phases=1
+  run=1 balanced wall_s=0.0003 cpu_s=0.0006 rebuilds=0 rebuild_ms=0.0000 read_checksum=9118200 verified=true
+  run=1 dynamic_dp wall_s=0.0002 cpu_s=0.0003 rebuilds=0 rebuild_ms=0.0000 read_checksum=9118200 verified=true
+  run=1 fixed wall_s=0.0002 cpu_s=0.0004 rebuilds=0 rebuild_ms=0.0000 read_checksum=9118200 verified=true
+  median fixed_s=0.0002
+  median balanced_s=0.0003 paired_speedup=0.6227 range=[0.6227,0.6227] cpu/fixed=1.5613
+  median dynamic_dp_s=0.0002 paired_speedup=0.8168 range=[0.8168,0.8168] cpu/fixed=0.9373
+
+clusters_16
+  run=1 unique_queries=17 phases=1
+  run=1 dynamic_dp wall_s=0.0002 cpu_s=0.0004 rebuilds=0 rebuild_ms=0.0000 read_checksum=9254700 verified=true
+  run=1 fixed wall_s=0.0001 cpu_s=0.0003 rebuilds=0 rebuild_ms=0.0000 read_checksum=9254700 verified=true
+  run=1 balanced wall_s=0.0002 cpu_s=0.0004 rebuilds=0 rebuild_ms=0.0000 read_checksum=9254700 verified=true
+  median fixed_s=0.0001
+  median balanced_s=0.0002 paired_speedup=0.8215 range=[0.8215,0.8215] cpu/fixed=1.0794
+  median dynamic_dp_s=0.0002 paired_speedup=0.7377 range=[0.7377,0.7377] cpu/fixed=1.1500
+
+clusters_4_variable_range
+  run=1 unique_queries=17 phases=1
+  run=1 fixed wall_s=0.0002 cpu_s=0.0003 rebuilds=0 rebuild_ms=0.0000 read_checksum=7377370 verified=true
+  run=1 balanced wall_s=0.0002 cpu_s=0.0004 rebuilds=0 rebuild_ms=0.0000 read_checksum=7377370 verified=true
+  run=1 dynamic_dp wall_s=0.0002 cpu_s=0.0005 rebuilds=0 rebuild_ms=0.0000 read_checksum=7377370 verified=true
+  median fixed_s=0.0002
+  median balanced_s=0.0002 paired_speedup=0.9141 range=[0.9141,0.9141] cpu/fixed=1.4426
+  median dynamic_dp_s=0.0002 paired_speedup=0.7869 range=[0.7869,0.7869] cpu/fixed=1.6993
+
+shift
+  run=1 unique_queries=34 phases=2
+  run=1 balanced wall_s=0.0003 cpu_s=0.0006 rebuilds=0 rebuild_ms=0.0000 read_checksum=3968427 verified=true
+    phase_wall_s=0.0001;0.0001
+  run=1 dynamic_dp wall_s=0.0003 cpu_s=0.0006 rebuilds=0 rebuild_ms=0.0000 read_checksum=3968427 verified=true
+    phase_wall_s=0.0001;0.0001
+  run=1 fixed wall_s=0.0002 cpu_s=0.0004 rebuilds=0 rebuild_ms=0.0000 read_checksum=3968427 verified=true
+    phase_wall_s=0.0001;0.0001
+  median fixed_s=0.0002
+  median balanced_s=0.0003 paired_speedup=0.6812 range=[0.6812,0.6812] cpu/fixed=1.4829
+  median dynamic_dp_s=0.0003 paired_speedup=0.5731 range=[0.5731,0.5731] cpu/fixed=1.4854
+
+shift_range
+  run=1 unique_queries=34 phases=2
+  run=1 dynamic_dp wall_s=0.0003 cpu_s=0.0006 rebuilds=0 rebuild_ms=0.0000 read_checksum=3941641 verified=true
+    phase_wall_s=0.0001;0.0001
+  run=1 fixed wall_s=0.0002 cpu_s=0.0004 rebuilds=0 rebuild_ms=0.0000 read_checksum=3941641 verified=true
+    phase_wall_s=0.0001;0.0001
+  run=1 balanced wall_s=0.0003 cpu_s=0.0006 rebuilds=0 rebuild_ms=0.0000 read_checksum=3941641 verified=true
+    phase_wall_s=0.0001;0.0001
+  median fixed_s=0.0002
+  median balanced_s=0.0003 paired_speedup=0.6742 range=[0.6742,0.6742] cpu/fixed=1.3531
+  median dynamic_dp_s=0.0003 paired_speedup=0.5683 range=[0.5683,0.5683] cpu/fixed=1.4282
+
+steady_point
+  run=1 unique_queries=68 phases=4
+  run=1 fixed wall_s=0.0002 cpu_s=0.0003 rebuilds=0 rebuild_ms=0.0000 read_checksum=1839118 verified=true
+    phase_wall_s=0.0000;0.0000;0.0000;0.0000
+  run=1 balanced wall_s=0.0003 cpu_s=0.0006 rebuilds=0 rebuild_ms=0.0000 read_checksum=1839118 verified=true
+    phase_wall_s=0.0001;0.0000;0.0000;0.0001
+  run=1 dynamic_dp wall_s=0.0003 cpu_s=0.0006 rebuilds=0 rebuild_ms=0.0000 read_checksum=1839118 verified=true
+    phase_wall_s=0.0001;0.0001;0.0000;0.0001
+  median fixed_s=0.0002
+  median balanced_s=0.0003 paired_speedup=0.6328 range=[0.6328,0.6328] cpu/fixed=2.2023
+  median dynamic_dp_s=0.0003 paired_speedup=0.6696 range=[0.6696,0.6696] cpu/fixed=2.2335
+
+steady_range
+  run=1 unique_queries=68 phases=4
+  run=1 balanced wall_s=0.0003 cpu_s=0.0006 rebuilds=0 rebuild_ms=0.0000 read_checksum=2209706 verified=true
+    phase_wall_s=0.0001;0.0000;0.0000;0.0001
+  run=1 dynamic_dp wall_s=0.0003 cpu_s=0.0006 rebuilds=0 rebuild_ms=0.0000 read_checksum=2209706 verified=true
+    phase_wall_s=0.0000;0.0001;0.0001;0.0001
+  run=1 fixed wall_s=0.0002 cpu_s=0.0004 rebuilds=0 rebuild_ms=0.0000 read_checksum=2209706 verified=true
+    phase_wall_s=0.0000;0.0000;0.0000;0.0000
+  median fixed_s=0.0002
+  median balanced_s=0.0003 paired_speedup=0.7341 range=[0.7341,0.7341] cpu/fixed=1.3033
+  median dynamic_dp_s=0.0003 paired_speedup=0.7456 range=[0.7456,0.7456] cpu/fixed=1.3483
+
+hot_with_spike
+  run=1 unique_queries=68 phases=4
+  run=1 dynamic_dp wall_s=0.0003 cpu_s=0.0006 rebuilds=0 rebuild_ms=0.0000 read_checksum=13402371 verified=true
+    phase_wall_s=0.0000;0.0000;0.0000;0.0001
+  run=1 fixed wall_s=0.0002 cpu_s=0.0004 rebuilds=0 rebuild_ms=0.0000 read_checksum=13388832 verified=true
+    phase_wall_s=0.0000;0.0000;0.0000;0.0000
+  run=1 balanced wall_s=0.0002 cpu_s=0.0004 rebuilds=0 rebuild_ms=0.0000 read_checksum=13494211 verified=true
+    phase_wall_s=0.0001;0.0000;0.0000;0.0000
+  median fixed_s=0.0002
+  median balanced_s=0.0002 paired_speedup=0.7456 range=[0.7456,0.7456] cpu/fixed=1.1852
+  median dynamic_dp_s=0.0003 paired_speedup=0.6698 range=[0.6698,0.6698] cpu/fixed=1.5291
+<end of output>
+Test time =   0.06 sec
+----------------------------------------------------------
+Test Passed.
+"benchmark_cyclic_smoke" end time: Sep 14 15:31 MSK
+"benchmark_cyclic_smoke" time elapsed: 00:00:00
+----------------------------------------------------------
+
+End testing: Sep 14 15:31 MSK

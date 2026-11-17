@@ -1,195 +1,102 @@
-# Dynamic Lock Benchmark Results
+> 17 ноября: [новая модель статьи](BENCHMARK_RESULT/2026-11-17/paper_validation_v2/TABLE.md), [сравнение с классическим MGL](BENCHMARK_RESULT/2026-11-17/mgl_comparison/TABLE.md), [MGL с 32/64/1024 листьями](BENCHMARK_RESULT/2026-11-17/mgl_budget/TABLE.md). Отдельно: [авторский Java CA tree против Java fixed AVL64](BENCHMARK_RESULT/2026-11-17/ca_comparison/TABLE.md); эти числа не сравниваются напрямую с C++ массивом. [Запуск на 32/64 ядрах одной NUMA ноды](docs/SINGLE_NODE_RUN.md). Старые таблицы ниже сохранены как исторические.
 
-Snapshots from `adaptive_lock_benchmark`.
+> 20 сентября: [global и per_element относительно прежнего fixed](BASELINE_COMPARISON.md), 74 проверенных запуска; per_element только на точках. [Математическое отличие balanced от DP](BALANCED_VS_DP.md).
+>
+> Новый `sliding_variable_range`: 8 постепенных сдвигов окна, проверка перестройки раз в 10 с, 8 потоков, один повтор — [краткий результат](BENCHMARK_RESULT/2026-09-18/sliding_10s_8t/SHORT.md).
+>
+> Все 14 сценариев на **4, 6, 8 и 10 потоках**: [графики с подписями](BENCHMARK_RESULT/2026-09-18/scaling_4_6_8_10/GRAPHS.md), [методика](BENCHMARK_RESULT/2026-09-18/scaling_4_6_8_10/README.md). 126 новых проверенных запусков и 42 прежних на 8 потоках; по одному повтору на точку.
+>
+> Все 14 сценариев на 8 потоках, 18 сентября: [результаты](BENCHMARK_RESULT/2026-09-18/screening_8t/README.md), [галерея графиков](BENCHMARK_RESULT/2026-09-18/screening_8t/GRAPHS.md). Один повтор каждой реализации, 42 проверенных запуска.
+>
+> Нагрузки и графики запросов в секунду за 15 сентября: [THROUGHPUT.md](docs/THROUGHPUT.md).
 
-`Benchmark-v700` is vendored, but the top-level build does not build it unless
-`-DBUILD_BENCHMARK_V700=ON` is passed.
+# Результаты: исходные DP и балансировка, редкие перестройки
 
-## Column Meaning
+Измерено 14 сентября 2026 на Apple M3 Pro: 11 физических/логических ядер, 18 GiB RAM, macOS 26.6 (Darwin 25.6.0), arm64. Использованы 8 рабочих потоков, Homebrew Clang 22.1.0, C++20, Release `-O3 -DNDEBUG`. Характеристики машины, параметры и SHA-256 измеренных исходников сохранены в [metadata.json](BENCHMARK_RESULT/2026-09-14/metadata.json).
 
-| Column | Meaning |
-|---|---|
-| Setup time | Warmup/adaptation time before measured requests |
-| Measured request time | Final measured phase with real body: lock, sum range, update one element, unlock |
-| Request speedup | Speedup over naive fixed partitioning in the same scenario |
-| Empty critical section time | Same coordinates, but empty body inside the lock |
-| Empty-body speedup | Speedup over naive fixed partitioning for empty critical section |
-| Avg lock wait | Average measured time from entering `WriteQuery` to locks acquired |
-| Total lock wait | Sum of measured lock acquisition time across workers |
-| Avg mutexes/query | Average number of mutexes acquired per measured query |
-| Hot locks L/R | Number of mutexes covering left/right 16,384-element hot window after setup |
+Во всех измерениях ниже один набор настроек алгоритма: **64 mutex, до 4096 мелких блоков, выборка в среднем 1/64 запросов, проверка перестройки раз в 30 секунд**. Первый расчёт начинается после первых 30 секунд. DP минимизирует исходную сумму квадратов суммарных нагрузок соседних групп; `balanced` минимизирует максимальную нагрузку группы. Обе стратегии получают те же счётчики обращений к каждому затронутому блоку.
 
-Current benchmark output names: `total_s` is "Total time", `total_x` is "Total
-speedup", `measured_s` is "Measured phase time", `lock_only_s` is "Empty
-critical section time", and `lock_x` is "Empty-body speedup".
+## Как считали время
 
-## x86/Linux Server Configuration
+- Один запрос читает **весь включительный диапазон**, суммирует значения и прибавляет `delta` одному элементу внутри него. Сумма чтений сохраняется в CSV; результат обновлений проверяется по каждому элементу массива.
+- `wall_s` начинается перед созданием структуры и заканчивается после её уничтожения. Он включает поток перестройки, сбор статистики, вычисление и публикацию границ, ожидания, создание/завершение рабочих потоков и все фазы, включая холодное начало. Обучение заранее не выполняется.
+- `cpu_s` — процессорное время всего процесса, включая фонового перестройщика. `rebuild_ms` — диагностическое время внутри перестройки, уже вошедшее в `wall_s`; второй раз оно не прибавляется.
+- Подготовка одинаковых входных данных, обнуление массива и последовательный эталон находятся вне таймера у всех вариантов. У каждого варианта отдельный новый массив и новая структура.
+- Порядок `fixed`, `balanced`, `dynamic_dp` циклически меняется между повторениями. Внутри повторения совпадают все запросы, seed, размеры и число операций. В таблицах — медианы времени и медианы **парных** отношений `fixed/variant`; диапазон показывает все повторения.
+- Для длинных запусков независимо созданные трассы потоков повторяются циклически. На фазу сохраняется максимум 1 048 576 записей суммарно; новый seed используется в каждом повторении. Это периодическая нагрузка после создания трасс, а не новый случайный запрос на каждой операции. Все варианты используют одинаковые циклы; эталон учитывает полные циклы и остаток. `trace_size` и фактический `unique_queries` записаны в CSV.
 
-Run command pattern:
+## Массив 2^26, запросы 10 000 внутри области 1/16
 
-```bash
-env DYNAMIC_LOCK_SCENARIO=<scenario> \
-  DYNAMIC_LOCK_QUERY_DIVISOR=<divisor> \
-  DYNAMIC_LOCK_THREAD_COUNT=16 \
-  DYNAMIC_LOCK_REBUILD_INTERVAL_MS=500 \
-  DYNAMIC_LOCK_STATS_SAMPLE_RATE=64 \
-  DYNAMIC_LOCK_REBUILD_MIN_GAIN=1.0 \
-  DYNAMIC_LOCK_REBUILD_MIN_SKEW=4.0 \
-  DYNAMIC_LOCK_RUN_GENETIC=1 \
-  DYNAMIC_LOCK_GENETIC_TRAINING_BATCH=100000 \
-  DYNAMIC_LOCK_GENETIC_TRAINING_SAMPLE_RATE=64 \
-  DYNAMIC_LOCK_GENETIC_PROBE_GAP=1000000 \
-  DYNAMIC_LOCK_GENETIC_MIN_SKEW=4.0 \
-  ./build/adaptive_lock_benchmark
-```
+`steady_range`: 67 108 864 элемента `uint64_t`, горячая область 4 194 304 элемента, длина каждого запроса 10 000, **64 млн операций**, 3 повторения. Четыре равные по числу запросов фазы имеют одно распределение. Между фазами меняется сохранённая случайная трасса, а не горячая область. Все девять запусков проверили итоговый массив.
 
-| Parameter | Value |
-|---|---:|
-| Array size | 1,048,576 |
-| Mutexes | 64 |
-| Fine blocks | 1,024 |
-| Fine block size | 1,024 |
-| Threads | 16 |
-| Point query length | 1 |
-| Random range max length | 65,536 |
-| Hot window size | 16,384 |
-| Clustered hot window size | 16,384 |
-| Clustered churn changes | 5 |
-| Small range max length | 8 |
-| Moving window size | 16,384 |
-| Moving window stops | 14 |
-| Dynamic rebuild interval | 500 ms |
-| Dynamic rebuild threshold | 2.0 |
-| Dynamic rebuild min gain | 1.0 |
-| Dynamic rebuild min skew | 4.0 |
-| Dynamic stats sample rate | 64 |
-| Genetic | Enabled |
-| Genetic training batch | 100,000 |
-| Genetic training sample rate | 64 |
-| Genetic training probe gap | 1,000,000 operations |
-| Genetic min training skew | 4.0 |
-| Main lock primitive | `std::mutex` |
+| Вариант | Полное время, с | CPU, с | Ускорение, медиана [min–max] | Перестроек в каждом запуске | Перестройка, медиана мс |
+|---|---:|---:|---:|---:|---:|
+| fixed | 96.075 | 393.564 | 1.000× | 0,0,0 | 0.000 |
+| balanced | 55.305 | 290.469 | 1.763× [1.450–1.828] | 1,1,1 | 0.102 |
+| dynamic_dp | 54.045 | 285.051 | 1.513× [1.467–1.778] | 1,1,1 | 2.303 |
 
-## x86/Linux Server Results
+У каждой адаптивной реализации была **ровно одна публикация нового разбиения**, после 30 секунд холодной работы. DP потратил на перестройку больше времени, чем балансировка; оба варианта окупили эти расходы в полном времени. В каждой из трёх пар итоговые границы DP и балансировки совпали. Этот набор не показывает систематического преимущества одного способа расчёта над другим. Медиана парных отношений не обязана совпадать с отношением медиан времени; разброс запусков здесь заметен.
 
-### Scenario: Shifted Hotspot, Point Queries
+Отдельные повторы (секунды):
 
-Setup queries: `3,200,000 + 9,600,000`. Measured queries: `60,000,000`.
-Query divisor: `2`.
+| Повтор | Fixed | Balanced | DP |
+|---|---:|---:|---:|
+| 1 | 96.075 | 52.546 | 54.045 |
+| 2 | 97.508 | 55.305 | 66.473 |
+| 3 | 81.037 | 55.904 | 53.568 |
 
-| Implementation | Total time, s | Total speedup | Setup time, s | Measured phase time, s | Empty critical section time, s | Empty-body speedup | Avg lock wait, us | Total lock wait, s | Avg mutexes/query | Hot locks L/R |
-|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| Naive fixed | 36.940 | 1.000x | 6.010 | 30.925 | 34.483 | 1.000x | 6.32 | 459.777 | 1.00 | 1 / 1 |
-| Dynamic DP | 13.073 | 2.826x | 2.723 | 10.316 | 14.534 | 2.373x | 1.44 | 104.707 | 1.00 | 16 / 16 |
-| Genetic | 19.458 | 1.898x | 5.070 | 14.381 | 17.467 | 1.974x | 2.18 | 158.490 | 1.00 | 16 / 16 |
+Время одинаковых четвертей по 16 млн операций, медианы по трём повторениям:
 
-### Scenario: Clustered 2 Hot Windows
+| Вариант | Четверть 1, с | Четверть 2, с | Четверть 3, с | Четверть 4, с |
+|---|---:|---:|---:|---:|
+| fixed | 20.697 | 25.215 | 24.675 | 23.735 |
+| balanced | 20.849 | 14.165 | 9.413 | 10.425 |
+| dynamic_dp | 20.997 | 14.875 | 9.167 | 10.204 |
 
-Setup queries: `3,200,000 + 9,600,000`. Measured queries: `60,000,000`.
-Query divisor: `2`.
+Первая четверть выполняется до перестройки; вторая включает переход. Третья и четвёртая показывают работу с новым разбиением. Их выигрыш не подменяет итоговое ускорение: в основном столбце выше учтены все четыре четверти и жизненный цикл структуры.
 
-| Implementation | Total time, s | Total speedup | Setup time, s | Measured phase time, s | Empty critical section time, s | Empty-body speedup | Avg lock wait, us | Total lock wait, s | Avg mutexes/query | Hot locks L/R |
-|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| Naive fixed | 32.111 | 1.000x | 5.578 | 26.518 | 25.999 | 1.000x | 5.54 | 402.991 | 1.00 | 1 / 1 |
-| Dynamic DP | 22.147 | 1.450x | 3.969 | 18.130 | 20.775 | 1.251x | 2.77 | 201.753 | 1.00 | 16 / 1 |
-| Genetic | 17.608 | 1.824x | 4.366 | 13.229 | 16.455 | 1.580x | 2.32 | 168.939 | 1.00 | 16 / 1 |
+[Сырые повторения](BENCHMARK_RESULT/2026-09-14/rare_large_range.csv), [полный вывод](BENCHMARK_RESULT/2026-09-14/rare_large_range.txt), [точная команда](BENCHMARK_RESULT/2026-09-14/runs.json).
 
-### Scenario: Clustered 4 Hot Windows
+## Другие длительные нагрузки
 
-Setup queries: `6,400,000 + 19,200,000`. Measured queries: `120,000,000`.
-Query divisor: `1`.
+Следующие случаи выполнены **по одному повторению**, поэтому это дополнительные наблюдения, а не оценка статистического разброса. Во всех тот же интервал 30 с. Для точечных сценариев — 2 млрд операций на массиве 2^20, горячие окна по 16 384 элемента. В строках диапазонов размер массива и размер каждого горячего окна совпадают с основным тестом; число окон указано в строке; число операций уменьшено обратно пропорционально длине, так что число прочитанных элементов остаётся 640 млрд на вариант.
 
-| Implementation | Total time, s | Total speedup | Setup time, s | Measured phase time, s | Empty critical section time, s | Empty-body speedup | Avg lock wait, us | Total lock wait, s | Avg mutexes/query | Hot locks L/R |
-|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| Naive fixed | 44.562 | 1.000x | 8.066 | 36.483 | 43.330 | 1.000x | 3.84 | 559.058 | 1.00 | 1 / 1 |
-| Dynamic DP | 28.191 | 1.581x | 5.595 | 22.547 | 28.926 | 1.498x | 1.44 | 209.506 | 1.00 | 1 / 1 |
-| Genetic | 33.879 | 1.315x | 7.206 | 26.659 | 31.540 | 1.374x | 1.73 | 252.612 | 1.00 | 1 / 1 |
+| Сценарий | Операций | Fixed, с | Balanced, с / ускорение | DP, с / ускорение | CPU balanced/fixed / DP/fixed | Перестройки balanced / DP |
+|---|---:|---:|---:|---:|---:|---:|
+| [2 раздельных скопления](BENCHMARK_RESULT/2026-09-14/rare_clusters_2.csv) | 2,000,000,000 | 95.028 | 51.462 / 1.847× | 53.213 / 1.786× | 0.540 / 0.555 | 1 / 1 |
+| [8 раздельных скоплений](BENCHMARK_RESULT/2026-09-14/rare_clusters_8.csv) | 2,000,000,000 | 58.089 | 43.800 / 1.326× | 45.990 / 1.263× | 0.759 / 0.783 | 1 / 1 |
+| [4 скопления: 70/10/10/10%](BENCHMARK_RESULT/2026-09-14/rare_unequal.csv) | 2,000,000,000 | 128.433 | 70.021 / 1.834× | 60.441 / 2.125× | 0.519 / 0.451 | 1 / 1 |
+| [2 области, диапазон 10 000](BENCHMARK_RESULT/2026-09-14/rare_clusters_2_range.csv) | 64,000,000 | 66.407 | 54.055 / 1.228× | 54.072 / 1.228× | 0.939 / 0.939 | 1 / 1 |
+| [4 области, диапазон 10 000](BENCHMARK_RESULT/2026-09-14/rare_clusters_4_range.csv) | 64,000,000 | 61.263 | 54.690 / 1.120× | 54.510 / 1.124× | 0.984 / 0.985 | 1 / 1 |
+| [Перенос окна слева направо](BENCHMARK_RESULT/2026-09-14/rare_shift.csv) | 2,000,000,000 | 97.996 | 73.211 / 1.339× | 71.793 / 1.365× | 0.705 / 0.697 | 2 / 2 |
+| [70% внутри окна + 30% в одной точке](BENCHMARK_RESULT/2026-09-14/rare_spike.csv) | 2,000,000,000 | 85.400 | 113.273 / 0.754× | 114.150 / 0.748× | 1.254 / 1.254 | 1 / 1 |
+| [Диапазон 100 000](BENCHMARK_RESULT/2026-09-14/rare_range_100000.csv) | 6,400,000 | 41.783 | 38.303 / 1.091× | 39.128 / 1.068× | 1.119 / 1.153 | 1 / 1 |
+| [Диапазон 1 000 000](BENCHMARK_RESULT/2026-09-14/rare_range_1000000.csv) | 640,000 | 58.125 | 50.480 / 1.151× | 50.423 / 1.153× | 0.981 / 0.979 | 1 / 1 |
 
-The `Hot locks L/R` diagnostic is not meaningful for compact clustered
-scenarios because it reports fixed left/right windows, not the internal cluster
-windows.
+В `shift` обе фазы входят в время, включая работу со старым разбиением после смены нагрузки. В `hot_with_spike` один мелкий блок нельзя разделить. Итоговые разбиения двух стратегий совпали; обе проиграли статическому варианту примерно на треть по времени. Баланс счётчиков сам по себе не гарантирует ускорения при такой конкуренции за одну точку. В случае неравных скоплений разбиения отличаются: DP в этом одиночном прогоне оказался быстрее балансировки, несмотря на более дорогой расчёт. Длинные диапазоны одновременно повышают долю полезного тела запроса и вероятность настоящих пересечений: выигрыш нельзя предсказать только по неравномерности счётчиков.
 
-### Scenario: Clustered Churn, 2 Hot Windows
+## Равномерная нагрузка и короткие прогоны
 
-Setup queries: `6,400,000 + 48,000,000 timed adapt`. Measured queries:
-`100,000,000`. Query divisor: `1`.
+Отдельный контроль: равномерные точечные запросы, массив 2^20, 32 млн операций, **7 повторений**. Все заканчиваются до первого 30-секундного интервала; перестроек нет. Здесь измеряется цена отображения блоков, проверки версии и выборки статистики при уже подходящем статическом разбиении.
 
-| Implementation | Total time, s | Total speedup | Setup time, s | Measured phase time, s | Empty critical section time, s | Empty-body speedup | Avg lock wait, us | Total lock wait, s | Avg mutexes/query | Hot locks L/R |
-|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| Naive fixed | 33.326 | 1.000x | 11.499 | 21.779 | 31.784 | 1.000x | 5.36 | 413.714 | 1.00 | 1 / 1 |
-| Dynamic DP | 22.962 | 1.451x | 8.709 | 14.182 | 20.550 | 1.547x | 2.83 | 218.762 | 1.00 | 16 / 1 |
-| Genetic | 20.562 | 1.621x | 9.427 | 11.084 | 20.586 | 1.544x | 2.76 | 213.259 | 1.00 | 16 / 1 |
+| Вариант | Полное время, медиана с | Ускорение, медиана [min–max] | Отношение CPU variant/fixed, медиана |
+|---|---:|---:|---:|
+| fixed | 0.3801 | 1.000× | 1.000 |
+| balanced | 0.4499 | 0.898× [0.723–1.036] | 1.123 |
+| dynamic_dp | 0.4186 | 0.900× [0.561–1.112] | 1.121 |
 
-### Scenario: Clustered Churn, 4 Hot Windows
+Без перестроек обе адаптивные стратегии исполняют один код запросов. Различия их измеренных расходов и отдельные выбросы показывают вариативность коротких измерений на этой машине. Все повторы, включая худшие, сохранены в [uniform_overhead.csv](BENCHMARK_RESULT/2026-09-14/uniform_overhead.csv).
 
-Setup queries: `3,200,000 + 24,000,000 timed adapt`. Measured queries:
-`50,000,000`. Query divisor: `2`.
+Существенную регрессию удалось убрать перестановкой двух полей: состояние выборки теперь расположено перед `std::mutex` внутри общего `LockSlot`. При прежнем расположении после 64-байтового mutex одна запись состояния на каждый запрос примерно удваивала расходы. Отключение RNG не помогало; перенос поля при сохранённой статистике помог. [Контрольные эксперименты](BENCHMARK_RESULT/2026-09-14/fastpath_ablation.txt) отделяют измеренный результат от предположения о механизме обмена кэш-памятью.
 
-| Implementation | Total time, s | Total speedup | Setup time, s | Measured phase time, s | Empty critical section time, s | Empty-body speedup | Avg lock wait, us | Total lock wait, s | Avg mutexes/query | Hot locks L/R |
-|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| Naive fixed | 49.059 | 1.000x | 17.535 | 31.477 | 42.528 | 1.000x | 4.03 | 621.881 | 1.00 | 1 / 1 |
-| Dynamic DP | 34.369 | 1.427x | 13.899 | 20.395 | 29.829 | 1.426x | 1.93 | 297.405 | 1.00 | 1 / 1 |
-| Genetic | 37.792 | 1.298x | 17.170 | 20.574 | 34.050 | 1.249x | 2.30 | 354.764 | 1.00 | 1 / 1 |
+Дополнительно все **27 сценариев** прошли по 3 повторения с 2 млн операций: [all_shapes_cold.csv](BENCHMARK_RESULT/2026-09-14/all_shapes_cold.csv). Каждый из 243 запусков сравнил весь массив с эталоном. Они слишком коротки для редкой адаптации и показывают только расходы до неё; наличие этого набора не доказывает ускорение после перестройки на всех 27 сценариях.
 
-### Scenario: Moving Small Window
+## Проверки и воспроизведение
 
-Setup queries: `640,000 + 13,440,000 timed adapt`. Measured queries:
-`49,000,000`. Query divisor: `20`.
+Release: **5/5 CTest passed**. Debug с AddressSanitizer + UndefinedBehaviorSanitizer: **5/5 passed**. Проверяются обе стратегии, взаимно перекрывающиеся диапазоны, реальные конкурентные перестройки, границы и малые размеры, ошибки callback/захвата mutex, восстановление после ошибки снимка, циклы трасс с остатком. Оптимальные разбиения маленьких массивов весов независимо проверены полным перебором для обеих целевых функций.
 
-| Implementation | Total time, s | Total speedup | Setup time, s | Measured phase time, s | Empty critical section time, s | Empty-body speedup | Avg lock wait, us | Total lock wait, s | Avg mutexes/query | Hot locks L/R |
-|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| Naive fixed | 64.196 | 1.000x | 14.406 | 49.608 | 33.247 | 1.000x | 12.19 | 768.755 | 1.00 | 1 / 1 |
-| Dynamic DP | 36.868 | 1.741x | 9.253 | 27.404 | 25.547 | 1.301x | 7.23 | 456.100 | 1.00 | 16 / 1 |
-| Genetic | 48.709 | 1.318x | 13.336 | 35.186 | 28.253 | 1.177x | 9.35 | 589.865 | 1.00 | 16 / 1 |
+[Вывод Release](BENCHMARK_RESULT/2026-09-14/release_tests.txt), [вывод ASan/UBSan](BENCHMARK_RESULT/2026-09-14/asan_ubsan_tests.txt). ThreadSanitizer в этой среде падает даже на `int main() { return 0; }`, внутри и вне песочницы. Результата проверки гонок TSan здесь нет; stress-тесты не доказывают все возможные чередования потоков.
 
-### Scenario: Uniform Random, Point Queries
+Команды сборки, API и список сценариев: [README](README.md). Точные команды дополнительных измерений, время их запуска и exit codes: [runs.json](BENCHMARK_RESULT/2026-09-14/runs.json). Данные относятся к этой ARM-машине с 8 потоками; новые NUMA/x86-результаты в этом запуске не измерялись.
 
-Setup queries: `3,200,000`. Measured queries: `60,000,000`.
-Query divisor: `2`. Conservative uniform settings:
-`DYNAMIC_LOCK_STATS_SAMPLE_RATE=1024`,
-`DYNAMIC_LOCK_REBUILD_MIN_SKEW=1000`,
-`DYNAMIC_LOCK_GENETIC_TRAINING_SAMPLE_RATE=1024`,
-`DYNAMIC_LOCK_GENETIC_PROBE_GAP=1000000000`,
-`DYNAMIC_LOCK_GENETIC_MIN_SKEW=1000`.
-
-| Implementation | Total time, s | Total speedup | Setup time, s | Measured phase time, s | Empty critical section time, s | Empty-body speedup | Avg lock wait, us | Total lock wait, s | Avg mutexes/query | Hot locks L/R |
-|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| Naive fixed | 12.521 | 1.000x | 0.634 | 11.884 | 10.774 | 1.000x | 0.57 | 36.072 | 1.00 | 1 / 1 |
-| Dynamic DP | 13.564 | 0.923x | 0.727 | 12.825 | 13.106 | 0.822x | 1.73 | 109.597 | 1.00 | 1 / 1 |
-| Genetic | 14.205 | 0.881x | 0.638 | 13.562 | 13.286 | 0.811x | 1.31 | 82.837 | 1.00 | 1 / 1 |
-
-### Scenario: Shifted Hotspot, Random-Length Ranges
-
-Setup queries: `1,600,000 + 4,800,000`. Measured queries: `4,000,000`.
-Query divisor: `1`.
-
-| Implementation | Total time, s | Total speedup | Setup time, s | Measured phase time, s | Empty critical section time, s | Empty-body speedup | Avg lock wait, us | Total lock wait, s | Avg mutexes/query | Hot locks L/R |
-|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| Naive fixed | 27.214 | 1.000x | 16.866 | 10.333 | 5.854 | 1.000x | 37.16 | 386.443 | 1.00 | 1 / 1 |
-| Dynamic DP | 26.203 | 1.039x | 16.288 | 9.895 | 6.239 | 0.938x | 35.69 | 371.169 | 1.00 | 1 / 1 |
-| Genetic | 24.926 | 1.092x | 15.980 | 8.929 | 5.602 | 1.045x | 34.14 | 355.095 | 4.05 | 16 / 16 |
-
-### Scenario: Uniform Random, Random-Length Ranges
-
-Setup queries: `1,600,000`. Measured queries: `4,000,000`.
-Query divisor: `1`.
-
-| Implementation | Total time, s | Total speedup | Setup time, s | Measured phase time, s | Empty critical section time, s | Empty-body speedup | Avg lock wait, us | Total lock wait, s | Avg mutexes/query | Hot locks L/R |
-|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| Naive fixed | 21.881 | 1.000x | 6.283 | 15.587 | 4.938 | 1.000x | 52.50 | 293.994 | 3.00 | 1 / 1 |
-| Dynamic DP | 21.648 | 1.011x | 6.057 | 15.571 | 5.362 | 0.921x | 51.95 | 290.917 | 3.00 | 1 / 1 |
-| Genetic | 21.575 | 1.014x | 6.240 | 15.324 | 4.981 | 0.991x | 51.69 | 289.472 | 3.00 | 1 / 1 |
-
-## x86/Linux Server Takeaways
-
-| Case | Total speedup |
-|---|---:|
-| Shifted hotspot, point queries | Dynamic 2.826x, Genetic 1.898x |
-| Clustered 2 hot windows | Dynamic 1.450x, Genetic 1.824x |
-| Clustered 4 hot windows | Dynamic 1.581x, Genetic 1.315x |
-| Clustered churn, 2 hot windows | Dynamic 1.451x, Genetic 1.621x |
-| Clustered churn, 4 hot windows | Dynamic 1.427x, Genetic 1.298x |
-| Moving small window | Dynamic 1.741x, Genetic 1.318x |
-| Uniform random, point queries | Dynamic 0.923x, Genetic 0.881x |
-| Shifted hotspot, random ranges | Dynamic 1.039x, Genetic 1.092x |
-| Uniform random, random ranges | Dynamic 1.011x, Genetic 1.014x |
+Старый отчёт перенесён в [архив](docs/archive/BENCHMARK_RESULTS_LEGACY.md); прежние числа с другими реализациями, метриками и настройками не используются как доказательство текущего ускорения.

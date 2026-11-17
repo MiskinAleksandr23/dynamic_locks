@@ -1,0 +1,2 @@
+# Validated with matplotlib 3.11.2; plotting only, not needed for C++ benchmarks.
+matplotlib>=3.9,<4

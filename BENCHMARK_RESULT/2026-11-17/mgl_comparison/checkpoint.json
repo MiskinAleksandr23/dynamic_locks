@@ -1,0 +1,10 @@
+{
+  "status": "complete",
+  "runner_session": 93300,
+  "verified_runs": 36,
+  "tests": "Release14/14, MGLASanUBSan1/1; allarrayscorrect",
+  "result": "TABLE.md andsummary.csv; MGLwonbothrangeprofiles vsfixedandpaperpolicies; shortpointsoverheadcontrolMGLslow. Nocherrypicking/retuning afterresults.",
+  "scope": "8threads3reps:uniform5M;steady/islands24M,L10000,10sinterval,lambda10000; MGL1024leaves2047nodes262016bytes; ourfixed/Bal/DP64mutexes. Currentcomparisonallwrites.",
+  "history": "PreviousLockTreecomparisoncancelledexplicitlybyuser, partialresultsretained. KDIsearchdeferredwhenusersteeredtoMGL/CA. CA tree notimplemented/tested.",
+  "remaining": "Noactivebenchmark; finaluserresponse withtable andlimitations. Previouspaper_validation_v2 completed72runsalsoavailable. READMEhasportablebuild/runinstructions."
+}

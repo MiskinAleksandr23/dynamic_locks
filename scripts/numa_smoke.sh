@@ -1,21 +1,9 @@
 #!/usr/bin/env bash
 
 set -euo pipefail
-
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-THREADS="${THREADS:-16}"
-NODE="${NODE:-0}"
-NUMA_PROFILE="${NUMA_PROFILE:-smoke}"
-NUMA_TIMEOUT_SECONDS="${NUMA_TIMEOUT_SECONDS:-180}"
-
-source "${SCRIPT_DIR}/numa_common.sh"
-
-OUT_DIR="$(make_result_dir "smoke_node${NODE}_${THREADS}t")"
-write_topology "${OUT_DIR}"
-
-run_one_scenario "${OUT_DIR}" "node${NODE}" "${THREADS}" \
-  "shift_hotspot_point" "$(scenario_divisor shift_hotspot_point)" \
-  --cpunodebind="${NODE}" --membind="${NODE}"
-
-summarize_dir "${OUT_DIR}"
-echo "Results: ${OUT_DIR}"
+export THREADS="${THREADS:-16}"
+export OPERATIONS="${OPERATIONS:-100000}"
+export REPETITIONS="${REPETITIONS:-1}"
+export NUMA_TIMEOUT_SECONDS="${NUMA_TIMEOUT_SECONDS:-180}"
+exec "${SCRIPT_DIR}/numa_one_node.sh"

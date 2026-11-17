@@ -1,0 +1,30 @@
+{
+  "date_utc": "2026-09-14T12:33:08.282281+00:00",
+  "host": {
+    "cpu": "Apple M3 Pro",
+    "physical_cores": 11,
+    "logical_cpus": 11,
+    "memory_bytes": 19327352832,
+    "reported_cacheline_bytes": 128,
+    "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+    "thread_placement": "OS scheduler, no CPU pinning"
+  },
+  "compiler": "Homebrew clang 22.1.0",
+  "build": "Release -O3 -DNDEBUG -std=c++20",
+  "threads": 8,
+  "rebuild_interval_ms": 30000,
+  "stats_sample_rate": 64,
+  "trace_size": 1048576,
+  "source_sha256": {
+    "dynamic/dynamic_lock.hpp": "61d7665d330c8d854980b8d9f4a73467bf2db20051018aee87e91503fa64407e",
+    "dynamic/partitioner.hpp": "9def0df3aee547edf023d7bc2c05f9d363558de1ca802f03ffa78c6e96c7f6ad",
+    "common/range_lock.hpp": "bed94a5cdecd5566c806abf17c4afcf13e12732e6f8e0ce69df67be256d189e6",
+    "common/naive_lock.hpp": "e5b46a7d5989e38b8e5e0c3cddadb70cb79c2f802ddd4ea50f2a0a3f0fc04187",
+    "benchmarks/adaptive_lock_benchmark.cpp": "196306364cda2321423dc04396e551a4c8f67f3c67d5ffacd56a47caa1f2d905"
+  },
+  "sanitizers": {
+    "address,undefined": "5/5 CTest passed",
+    "thread": "Runtime segfaults on empty main, both inside and outside sandbox; no race-check result."
+  },
+  "balanced_reconstruction": "greedy minimax packing, then largest squared-load gain splits for unused locks"
+}

@@ -1,0 +1,17 @@
+# command: ./build/adaptive_lock_benchmark --scenario unequal --operations 2000000000 --repetitions 1 --threads 8 --seed 1 --rebuild-ms 30000 --sample-rate 64 --trace-size 1048576 --csv BENCHMARK_RESULT/2026-09-14/rare_unequal.csv
+64 mutexes, 8 workers, 2000000000 operations/scenario, 1 repetitions
+trace_size=1048576 unique query budget per phase (all workers)
+array_size=1048576 hot_width=16384 range_length=8 sample_rate=64 rebuild_interval_ms=30000 seed=1
+All work from lock construction through destruction is timed; no warmup.
+Final arrays verified against a deterministic reference after every run.
+Read checksums depend on scheduling and are not equality checks.
+Stored independent worker traces repeat cyclically; identical for all implementations.
+
+unequal
+  run=1 unique_queries=1048576 phases=1
+  run=1 fixed wall_s=128.4334 cpu_s=806.6516 rebuilds=0 rebuild_ms=0.0000 read_checksum=261113571622193 verified=true
+  run=1 balanced wall_s=70.0213 cpu_s=418.5544 rebuilds=1 rebuild_ms=0.1884 read_checksum=261113846223911 verified=true
+  run=1 dynamic_dp wall_s=60.4409 cpu_s=363.7264 rebuilds=1 rebuild_ms=2.3043 read_checksum=261116003772027 verified=true
+  median fixed_s=128.4334
+  median balanced_s=70.0213 paired_speedup=1.8342 range=[1.8342,1.8342] cpu/fixed=0.5189
+  median dynamic_dp_s=60.4409 paired_speedup=2.1249 range=[2.1249,2.1249] cpu/fixed=0.4509

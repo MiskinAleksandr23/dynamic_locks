@@ -1,0 +1,15 @@
+/Users/near/dynamic/BENCHMARK_RESULT/2026-11-17/ca_comparison/sources/ca_tree_java/upstream/src/main/java/se/uu/collection/SeqRWLock.java:26: warning: Unsafe is internal proprietary API and may be removed in a future release
+import sun.misc.Unsafe;
+               ^
+/Users/near/dynamic/BENCHMARK_RESULT/2026-11-17/ca_comparison/sources/ca_tree_java/upstream/src/main/java/se/uu/collection/SeqRWLock.java:44: warning: Unsafe is internal proprietary API and may be removed in a future release
+    private static final Unsafe unsafe;
+                         ^
+/Users/near/dynamic/BENCHMARK_RESULT/2026-11-17/ca_comparison/sources/ca_tree_java/upstream/src/main/java/se/uu/collection/SeqRWLock.java:53: warning: Unsafe is internal proprietary API and may be removed in a future release
+            Field theUnsafe = Unsafe.class.getDeclaredField("theUnsafe");
+                              ^
+/Users/near/dynamic/BENCHMARK_RESULT/2026-11-17/ca_comparison/sources/ca_tree_java/upstream/src/main/java/se/uu/collection/SeqRWLock.java:55: warning: Unsafe is internal proprietary API and may be removed in a future release
+            unsafe = (Unsafe) theUnsafe.get(null);
+                      ^
+Note: /Users/near/dynamic/BENCHMARK_RESULT/2026-11-17/ca_comparison/sources/ca_tree_java/upstream/src/main/java/se/uu/collection/CATreeMapSTDR.java uses unchecked or unsafe operations.
+Note: Recompile with -Xlint:unchecked for details.
+4 warnings

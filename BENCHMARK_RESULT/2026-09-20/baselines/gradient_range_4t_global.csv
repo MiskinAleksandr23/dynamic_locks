@@ -1,0 +1,2 @@
+scenario,repetition,implementation,threads,operations,trace_size,unique_queries,array_size,hot_width,range_length,seed,sample_rate,rebuild_interval_ms,wall_s,cpu_s,rebuilds,rebuild_ms,read_checksum,verified,phase_wall_s,partition_cuts
+gradient_range,1,global,4,96000000,1048576,4194304,67108864,4194304,10000,807013244984872231,64,30000,219.828252,484.688879,0,0,58791035313751,true,54.9496803;55.0260305;54.8981341;54.954299,

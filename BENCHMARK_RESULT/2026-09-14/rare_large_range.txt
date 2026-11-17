@@ -1,0 +1,34 @@
+# command: ./build/adaptive_lock_benchmark --threads 8 --seed 1 --rebuild-ms 30000 --sample-rate 64 --trace-size 1048576 --scenario steady_range --array-size 67108864 --hot-width 4194304 --range-length 10000 --operations 64000000 --repetitions 3 --csv BENCHMARK_RESULT/2026-09-14/rare_large_range.csv
+64 mutexes, 8 workers, 64000000 operations/scenario, 3 repetitions
+trace_size=1048576 unique query budget per phase (all workers)
+array_size=67108864 hot_width=4194304 range_length=10000 sample_rate=64 rebuild_interval_ms=30000 seed=1
+All work from lock construction through destruction is timed; no warmup.
+Final arrays verified against a deterministic reference after every run.
+Read checksums depend on scheduling and are not equality checks.
+Stored independent worker traces repeat cyclically; identical for all implementations.
+
+steady_range
+  run=1 unique_queries=4194304 phases=4
+  run=1 balanced wall_s=52.5461 cpu_s=277.2811 rebuilds=1 rebuild_ms=0.0882 read_checksum=19560348412098 verified=true
+    phase_wall_s=20.8492;14.1650;8.9582;8.5731
+  run=1 dynamic_dp wall_s=54.0449 cpu_s=285.0512 rebuilds=1 rebuild_ms=2.3033 read_checksum=19560351018468 verified=true
+    phase_wall_s=20.0759;14.8755;8.8889;10.2045
+  run=1 fixed wall_s=96.0752 cpu_s=393.5640 rebuilds=0 rebuild_ms=0.0000 read_checksum=19560349655288 verified=true
+    phase_wall_s=20.6972;25.4567;24.6745;25.2465
+  run=2 unique_queries=4194304 phases=4
+  run=2 dynamic_dp wall_s=66.4729 cpu_s=329.0828 rebuilds=1 rebuild_ms=2.3350 read_checksum=19564951355953 verified=true
+    phase_wall_s=25.7601;14.9739;12.6177;13.1210
+  run=2 fixed wall_s=97.5080 cpu_s=410.4035 rebuilds=0 rebuild_ms=0.0000 read_checksum=19564952737776 verified=true
+    phase_wall_s=22.4748;25.2150;26.0833;23.7346
+  run=2 balanced wall_s=55.3053 cpu_s=293.2032 rebuilds=1 rebuild_ms=0.1329 read_checksum=19564948825878 verified=true
+    phase_wall_s=21.9430;13.4625;9.4134;10.4862
+  run=3 unique_queries=4194304 phases=4
+  run=3 fixed wall_s=81.0369 cpu_s=365.2800 rebuilds=0 rebuild_ms=0.0000 read_checksum=19556493904823 verified=true
+    phase_wall_s=20.3164;19.9948;19.8834;20.8421
+  run=3 balanced wall_s=55.9037 cpu_s=290.4691 rebuilds=1 rebuild_ms=0.1025 read_checksum=19556497889036 verified=true
+    phase_wall_s=19.7986;15.2621;10.4174;10.4254
+  run=3 dynamic_dp wall_s=53.5678 cpu_s=281.9464 rebuilds=1 rebuild_ms=2.2840 read_checksum=19556496868663 verified=true
+    phase_wall_s=20.9971;14.1409;9.1671;9.2624
+  median fixed_s=96.0752
+  median balanced_s=55.3053 paired_speedup=1.7631 range=[1.4496,1.8284] cpu/fixed=0.7144
+  median dynamic_dp_s=54.0449 paired_speedup=1.5128 range=[1.4669,1.7777] cpu/fixed=0.7719

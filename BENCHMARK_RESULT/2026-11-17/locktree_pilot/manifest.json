@@ -1,0 +1,72 @@
+{
+  "stage": "calibration only; not main comparison",
+  "binary_sha256": "e9fd8157d8ebe89ceb54791f887f44ead3af262aa11c72430e43fbe992adb760",
+  "jobs": [
+    {
+      "scenario": "uniform",
+      "command": [
+        "./build/with-locktree/adaptive_lock_benchmark",
+        "--implementations",
+        "locktree",
+        "--scenario",
+        "uniform",
+        "--model",
+        "paper",
+        "--write-body",
+        "range",
+        "--threads",
+        "8",
+        "--array-size",
+        "1048576",
+        "--hot-width",
+        "16384",
+        "--range-length",
+        "1",
+        "--operations",
+        "1000000",
+        "--repetitions",
+        "1",
+        "--seed",
+        "97",
+        "--csv",
+        "BENCHMARK_RESULT/2026-11-17/locktree_pilot/uniform.csv"
+      ],
+      "status": "complete",
+      "returncode": 0,
+      "elapsed_s": 4.918325917038601
+    },
+    {
+      "scenario": "steady_range",
+      "command": [
+        "./build/with-locktree/adaptive_lock_benchmark",
+        "--implementations",
+        "locktree",
+        "--scenario",
+        "steady_range",
+        "--model",
+        "paper",
+        "--write-body",
+        "range",
+        "--threads",
+        "8",
+        "--array-size",
+        "67108864",
+        "--hot-width",
+        "4194304",
+        "--range-length",
+        "10000",
+        "--operations",
+        "100000",
+        "--repetitions",
+        "1",
+        "--seed",
+        "97",
+        "--csv",
+        "BENCHMARK_RESULT/2026-11-17/locktree_pilot/steady_range.csv"
+      ],
+      "status": "complete",
+      "returncode": 0,
+      "elapsed_s": 0.937790916999802
+    }
+  ]
+}

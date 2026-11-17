@@ -1,0 +1,52 @@
+{
+  "status": "built_and_tested_comparison_stopped_by_user",
+  "upstream_commit": "f16beed54628fdc0f2d8bba779f7fb0c7611fcf2",
+  "comparison_name": "RocksDB/PerconaFT LockTree",
+  "author_kdi_artifact": false,
+  "upstream_files_modified": false,
+  "integration_patch_applied": true,
+  "static_checks": [
+    "All44 upstream SHA256 and Git blob hashes verified",
+    "git apply --check integration patch passed",
+    "documentation local links exist",
+    "active benchmark measured source/binary hashes unchanged"
+  ],
+  "deferred": [
+    "Linux execution",
+    "complete performance series (stopped by user)"
+  ],
+  "known_limitations": [
+    "Shared reads coexist for identical endpoints; differently overlapping reads may serialize.",
+    "Native request/condition-variable lifecycle is per-query; reuse optimization not applied.",
+    "No comprehensive native allocation-failure recovery guarantee."
+  ],
+  "local_files_sha256": {
+    "common/locktree_lock.hpp": "dd164cefea3f1928e37f122d1afa010408a8cbbab9564f3631e83861473cc4b3",
+    "common/locktree_lock.cpp": "08916788e9c000f702af845c1fa2522cd21ca3dbaeae5e5c325c1ac094022e52",
+    "tests/locktree_lock_test.cpp": "1bbf5eb50efecc68fed3ff7bc36b23ab9803d139450ee7769c1d993e8a928962",
+    "integrations/locktree_benchmark.patch": "68e64ce6d6164338933cf34a2b0846dd31a573fa073c4cea732a37709609bb36",
+    "integrations/locktree_benchmark_patch.json": "77603f006b69a2874e28f1da4b0cb986f4f7c0f80ed9586a23159196ed7c6018",
+    "third_party/rocksdb_locktree/CMakeLists.txt": "7fe25976ecbd8b897650fd5089df1e7d79645100f56c6e9b4d38ba5e1433d24f",
+    "third_party/rocksdb_locktree/README.md": "2f940468fa7e1ee9b338ea23e0c9de8f33075485f362eb4b998088e5987279ee",
+    "third_party/rocksdb_locktree/compat/include/locktree_port.hpp": "858dcc3fd6a4bdf03ae20407dea4027b32b73a1d0ce221d508df350726154fb9",
+    "third_party/rocksdb_locktree/compat/include/locktree_port_prefix.hpp": "e6269f9e66437b4dc737dfe04f9ae2c8b346490c5c31e6cd03d14b527d2f96c3",
+    "third_party/rocksdb_locktree/compat/include/rocksdb/utilities/transaction_db.h": "288d9c7bdd2152c4637d0c99c58f502856d72001fb2a7c2f245d2062ec3cc871",
+    "third_party/rocksdb_locktree/compat/include/rocksdb/utilities/transaction_db_mutex.h": "1c794cabe858a9aeee3f80e606f0f380ca6adf238195010ec5992301540fe73c",
+    "third_party/rocksdb_locktree/compat/locktree_port.cpp": "b32b87341a5aa02dc68ddb0c58b5f03fa15e0c6bd6ec9dd2446f07089ba2e550"
+  },
+  "validation": "Release integrated suite13/13 passed; expanded adapter endpoint/partial overlap tests passed Release andASanUBSan. No completedlongperformanceclaim.",
+  "current_local_files_sha256": {
+    "common/locktree_lock.hpp": "dd164cefea3f1928e37f122d1afa010408a8cbbab9564f3631e83861473cc4b3",
+    "common/locktree_lock.cpp": "08916788e9c000f702af845c1fa2522cd21ca3dbaeae5e5c325c1ac094022e52",
+    "tests/locktree_lock_test.cpp": "9b068eb7d146ea2424c5190a61e1ec59201565cfe2b6179b5bdfa8e6810dffa4",
+    "integrations/locktree_benchmark.patch": "68e64ce6d6164338933cf34a2b0846dd31a573fa073c4cea732a37709609bb36",
+    "integrations/locktree_benchmark_patch.json": "78e84e927a2ca7d84788eab4f261583f8fd0cd302695766350b853b6451d487b",
+    "third_party/rocksdb_locktree/CMakeLists.txt": "87f6c8f256a0ea201476cc2e804a6ee21e8969ffcbf07419eddc711297a0a83d",
+    "third_party/rocksdb_locktree/README.md": "9f78c8d25d1179c8dbc077577144a09c3f8bf5c2eee0e8593bce14a91572abb6",
+    "third_party/rocksdb_locktree/compat/include/locktree_port.hpp": "858dcc3fd6a4bdf03ae20407dea4027b32b73a1d0ce221d508df350726154fb9",
+    "third_party/rocksdb_locktree/compat/include/locktree_port_prefix.hpp": "e6269f9e66437b4dc737dfe04f9ae2c8b346490c5c31e6cd03d14b527d2f96c3",
+    "third_party/rocksdb_locktree/compat/include/rocksdb/utilities/transaction_db.h": "288d9c7bdd2152c4637d0c99c58f502856d72001fb2a7c2f245d2062ec3cc871",
+    "third_party/rocksdb_locktree/compat/include/rocksdb/utilities/transaction_db_mutex.h": "1c794cabe858a9aeee3f80e606f0f380ca6adf238195010ec5992301540fe73c",
+    "third_party/rocksdb_locktree/compat/locktree_port.cpp": "b32b87341a5aa02dc68ddb0c58b5f03fa15e0c6bd6ec9dd2446f07089ba2e550"
+  }
+}
