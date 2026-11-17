@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-r"""Plan or run sequential benchmarks on physical cores of one Linux NUMA node.
+r"""Plan or run sequential benchmarks on one Linux NUMA node.
 
 Dry-run is the default. Example (run from the repository root):
   python3 scripts/run_single_node.py --threads 32 64 --node auto \
@@ -8,9 +8,9 @@ Dry-run is the default. Example (run from the repository root):
 
 Add --execute before -- to execute the printed plan. Every process, including
 coordinator/rebuilder threads, inherits the selected CPU set and memory policy.
-This is process affinity, not a unique worker-to-core assignment. No server is
-contacted, no SMT sibling substitutes for a physical core, and no node fallback
-or memory-policy fallback is performed.
+By default each selected CPU belongs to a distinct physical core. --allow-smt
+fills one logical CPU per core first, then uses additional hardware threads on
+those cores. For example, use --threads 16 32 --allow-smt on a 16-core SMT2 node.
 """
 from __future__ import annotations
 
@@ -99,33 +99,41 @@ def status_field(text: str, name: str) -> str:
     return matches[0]
 
 
-def eligible_cores(rows: list[CPU], affinity: set[int], memory_nodes: set[int]) -> dict[int, list[CPU]]:
-    """One permitted online logical CPU per physical (socket, core)."""
-    representatives: dict[int, dict[tuple[int, int], CPU]] = {}
+def eligible_cpus(rows: list[CPU], affinity: set[int], memory_nodes: set[int],
+                  allow_smt: bool) -> dict[int, list[CPU]]:
+    """Order allowed CPUs by SMT lane first, then by physical core."""
+    groups: dict[int, dict[tuple[int, int], list[CPU]]] = {}
     for row in rows:
-        if not row.online or row.cpu not in affinity or row.node not in memory_nodes:
-            continue
-        by_core = representatives.setdefault(row.node, {})
-        key = row.socket, row.core
-        if key not in by_core or row.cpu < by_core[key].cpu:
-            by_core[key] = row
-    return {node: sorted(by_core.values(), key=lambda c: (c.socket, c.core, c.cpu))
-            for node, by_core in representatives.items()}
+        if row.online and row.cpu in affinity and row.node in memory_nodes:
+            groups.setdefault(row.node, {}).setdefault((row.socket, row.core), []).append(row)
+    pools = {}
+    for node, by_core in groups.items():
+        cores = [sorted(by_core[key], key=lambda row: row.cpu) for key in sorted(by_core)]
+        lanes = max(map(len, cores)) if allow_smt else 1
+        pools[node] = [core[lane] for lane in range(lanes) for core in cores if lane < len(core)]
+    return pools
+
+
+def core_count(cpus: list[CPU]) -> int:
+    return len({(row.socket, row.core) for row in cpus})
 
 
 def select_node(rows: list[CPU], affinity: set[int], memory_nodes: set[int],
-                requested: list[int], node: str = "auto") -> tuple[int, dict[int, list[CPU]]]:
+                requested: list[int], node: str = "auto", *,
+                allow_smt: bool = False) -> tuple[int, dict[int, list[CPU]]]:
     if not requested or any(n <= 0 for n in requested) or len(set(requested)) != len(requested):
         raise ValueError("worker counts must be positive and distinct")
-    eligible = eligible_cores(rows, affinity, memory_nodes)
+    eligible = eligible_cpus(rows, affinity, memory_nodes, allow_smt)
     largest = max(requested)
+    units = "logical CPUs (including SMT siblings)" if allow_smt else "physical cores"
     if node == "auto":
         candidates = sorted(n for n, cores in eligible.items() if len(cores) >= largest)
         if not candidates:
             capacities = {n: len(cores) for n, cores in sorted(eligible.items())}
-            raise ValueError(f"need {largest} permitted physical cores on ONE memory-allowed NUMA node; "
-                             f"available by node: {capacities}. SMT siblings and other nodes will not be used")
-        selected = candidates[0]
+            raise ValueError(f"need {largest} permitted {units} on ONE memory-allowed NUMA node; "
+                             f"available by node: {capacities}")
+        # Prefer the eligible node that requires the fewest additional SMT lanes.
+        selected = max(candidates, key=lambda n: core_count(eligible[n][:largest]))
     else:
         if not re.fullmatch(r"[0-9]+", node):
             raise ValueError("--node must be auto or a nonnegative NUMA node ID")
@@ -134,8 +142,7 @@ def select_node(rows: list[CPU], affinity: set[int], memory_nodes: set[int],
             raise ValueError(f"NUMA node {selected} is not in Mems_allowed_list")
         count = len(eligible.get(selected, []))
         if count < largest:
-            raise ValueError(f"NUMA node {selected} has {count} permitted physical cores; "
-                             f"{largest} requested. No cross-node/SMT fallback")
+            raise ValueError(f"NUMA node {selected} has {count} permitted {units}; {largest} requested")
     pool = eligible[selected]
     return selected, {n: pool[:n] for n in requested}
 
@@ -157,7 +164,8 @@ def parse_numactl_show(text: str, cpus: list[int], node: int) -> None:
             raise ValueError(f"effective {name} {sorted(actual)} differs from requested {sorted(expected)}")
 
 
-def verify_sysfs(selected: list[CPU], system: Path = Path("/sys/devices/system")) -> dict:
+def verify_sysfs(selected: list[CPU], system: Path = Path("/sys/devices/system"), *,
+                 allow_smt: bool = False) -> dict:
     """Cross-check the chosen CPUs against kernel online, sibling and node masks."""
     online_text = (system / "cpu/online").read_text().strip()
     online = parse_id_list(online_text)
@@ -169,14 +177,25 @@ def verify_sysfs(selected: list[CPU], system: Path = Path("/sys/devices/system")
     node_cpus = parse_id_list(node_text)
     siblings = {}
     occupied: set[int] = set()
+    core_masks: dict[tuple[int, int], set[int]] = {}
     for row in selected:
+        if str(row.cpu) in siblings:
+            raise ValueError(f"duplicate selected CPU {row.cpu}")
         if row.cpu not in online or row.cpu not in node_cpus:
             raise ValueError(f"kernel sysfs disagrees with online/node placement of CPU {row.cpu}")
         text = (system / f"cpu/cpu{row.cpu}/topology/thread_siblings_list").read_text().strip()
         group = parse_id_list(text)
-        if row.cpu not in group or occupied & group:
-            raise ValueError("selected CPUs share a physical core or have invalid SMT sibling masks")
-        occupied.update(group)
+        key = row.socket, row.core
+        if row.cpu not in group:
+            raise ValueError(f"invalid SMT sibling mask for CPU {row.cpu}")
+        if key in core_masks:
+            if not allow_smt or group != core_masks[key]:
+                raise ValueError("selected CPUs share a physical core or have inconsistent SMT sibling masks")
+        else:
+            if occupied & group:
+                raise ValueError("CPUs labelled as distinct cores share a physical core in sysfs")
+            occupied.update(group)
+            core_masks[key] = group
         siblings[str(row.cpu)] = text
     return {"online": online_text, "node": node, "node_cpulist": node_text,
             "thread_siblings_list": siblings}
@@ -256,6 +275,10 @@ def build_jobs(command: list[str], output: Path, cwd: Path, numactl: str,
     jobs = []
     for threads, selected in selections.items():
         cpus = [row.cpu for row in selected]
+        # Keep one representative per core in the existing manifest field.
+        representatives = {}
+        for row in selected:
+            representatives.setdefault((row.socket, row.core), row)
         cpu_list = ",".join(str(cpu) for cpu in cpus)
         replacement = {"{threads}": str(threads), "{output}": str(output / f"{threads}t"),
                        "{node}": str(node), "{cpus}": cpu_list}
@@ -267,7 +290,10 @@ def build_jobs(command: list[str], output: Path, cwd: Path, numactl: str,
         rendered[0] = str(executable_path(rendered[0], cwd))
         binding = [numactl, f"--physcpubind={cpu_list}", f"--membind={node}"]
         jobs.append({"threads": threads, "node": node, "cpus": cpus,
-                     "physical_cores": [asdict(row) for row in selected],
+                     "physical_cores": [asdict(row) for row in representatives.values()],
+                     "cpu_topology": [asdict(row) for row in selected],
+                     "physical_core_count": len(representatives), "logical_cpu_count": len(cpus),
+                     "smt_siblings_used": len(cpus) > len(representatives),
                      "output_placeholder": str(output / f"{threads}t"),
                      "command": binding + rendered, "binding_command": binding,
                      "command_files_sha256": command_hashes(rendered, cwd), "status": "pending"})
@@ -317,6 +343,8 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--threads", type=int, nargs="+", default=[32, 64])
     parser.add_argument("--node", default="auto", help="one NUMA node ID, or auto (default)")
+    parser.add_argument("--allow-smt", action="store_true",
+                        help="use additional allowed hardware threads after selecting one CPU per core")
     parser.add_argument("--output", type=Path, required=True, help="new parent output directory")
     parser.add_argument("--cwd", type=Path, default=Path.cwd(), help="working directory for the command")
     modes = parser.add_mutually_exclusive_group()
@@ -337,15 +365,16 @@ def main(argv: list[str] | None = None) -> int:
         parser.error("lscpu and numactl are required; install util-linux and numactl on the server")
     try:
         rows, affinity, memory_nodes, topology = discover(lscpu)
-        node, selections = select_node(rows, affinity, memory_nodes, args.threads, args.node)
-        topology["selected_sysfs"] = verify_sysfs(selections[max(args.threads)])
+        node, selections = select_node(rows, affinity, memory_nodes, args.threads, args.node, allow_smt=args.allow_smt)
+        topology["selected_sysfs"] = verify_sysfs(selections[max(args.threads)], allow_smt=args.allow_smt)
         jobs = build_jobs(command, output, cwd, numactl, node, selections)
     except (ValueError, RuntimeError, OSError) as error:
         parser.error(str(error))
-    print(f"NUMA node {node}; one online allowed logical CPU per physical core; no SMT siblings.", flush=True)
+    print(f"NUMA node {node}; additional SMT siblings {'allowed' if args.allow_smt else 'disabled'}.", flush=True)
     print("All process threads share each CPU set (including coordinator/rebuilder); no one-to-one worker pinning.", flush=True)
     for job in jobs:
-        print(f"{job['threads']} workers / {len(job['cpus'])} physical cores: CPUs="
+        print(f"{job['threads']} workers / {job['physical_core_count']} physical cores / "
+              f"{job['logical_cpu_count']} logical CPUs: CPUs="
               + ",".join(map(str, job["cpus"])) + f"; memory node={node}", flush=True)
         print(shlex.join(job["command"]), flush=True)
     if not args.execute:
@@ -363,12 +392,12 @@ def main(argv: list[str] | None = None) -> int:
                     "NUMEXPR_NUM_THREADS", "LANG", "LC_ALL")
     manifest = {"status": "running", "started_utc": stamp(), "cwd": str(cwd),
                 "platform": platform.platform(), "python": sys.version,
-                "node": node, "requested_workers": args.threads, "topology": topology,
+                "node": node, "requested_workers": args.threads, "allow_smt": args.allow_smt, "topology": topology,
                 "lscpu_summary": lscpu_summary,
                 "numactl_hardware": numactl_hardware,
                 "environment": {key: os.environ[key] for key in relevant_env if key in os.environ},
-                "method": "Sequential. CPU affinity contains exactly one logical CPU per selected physical core, "
-                          "all on one memory-allowed NUMA node. Memory policy is bind to that node, verified before "
+                "method": "Sequential. CPUs are selected one per physical core first, then additional SMT siblings "
+                          "if enabled. All are on one memory-allowed NUMA node. Memory policy is bind to that node, verified before "
                           "each workload. CPU subsets are nested for increasing worker counts. The coordinator and "
                           "background threads share this budget; workers are not individually pinned. The invoked "
                           "program must not override affinity or NUMA policy. No other benchmark jobs are spawned "
@@ -385,11 +414,12 @@ def main(argv: list[str] | None = None) -> int:
             current = {row.cpu: row for row in current_rows}
             if job["node"] not in current_memory:
                 raise RuntimeError("selected memory node became unavailable")
-            for row in job["physical_cores"]:
+            for row in job["cpu_topology"]:
                 cpu = row["cpu"]
                 if cpu not in current_affinity or current.get(cpu) != CPU(**row):
                     raise RuntimeError("CPU topology/affinity changed after preflight")
-            job["sysfs_before_run"] = verify_sysfs([CPU(**row) for row in job["physical_cores"]])
+            job["sysfs_before_run"] = verify_sysfs([CPU(**row) for row in job["cpu_topology"]],
+                                                  allow_smt=args.allow_smt)
             expected_siblings = topology["selected_sysfs"]["thread_siblings_list"]
             if any(expected_siblings[cpu] != siblings for cpu, siblings in
                    job["sysfs_before_run"]["thread_siblings_list"].items()):

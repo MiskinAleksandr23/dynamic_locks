@@ -62,6 +62,60 @@ class PlacementTests(unittest.TestCase):
         self.assertEqual(node, 0)
         self.assertEqual(len(selected[32]), 32)
 
+    def test_16_and_32_on_one_node_require_explicit_smt(self):
+        rows = topology(16)
+        affinity = {row.cpu for row in rows}
+        with self.assertRaises(ValueError):
+            module.select_node(rows, affinity, {0, 1}, [16, 32])
+        node, selected = module.select_node(rows, affinity, {0, 1}, [16, 32],
+                                             allow_smt=True)
+        self.assertEqual(node, 0)
+        self.assertEqual([row.cpu for row in selected[16]], list(range(0, 32, 2)))
+        self.assertEqual([row.cpu for row in selected[32]],
+                         list(range(0, 32, 2)) + list(range(32, 64, 2)))
+        self.assertEqual(selected[16], selected[32][:16])
+        self.assertEqual(len({(row.socket, row.core) for row in selected[32]}), 16)
+        self.assertEqual(len({row.cpu for row in selected[32]}), 32)
+        self.assertTrue(all(row.node == node for row in selected[32]))
+        # Input order and requested count order must not change nested placement.
+        _, reversed_selected = module.select_node(list(reversed(rows)), affinity,
+                                                   {0, 1}, [32, 16], allow_smt=True)
+        self.assertEqual(reversed_selected, selected)
+
+    def test_smt_uses_every_available_core_before_extra_siblings(self):
+        rows = topology(16)
+        # CPU0 is excluded but its sibling32 is permitted. CPU34 is excluded,
+        # while its core's representative2 remains permitted.
+        affinity = {row.cpu for row in rows if row.node == 0} - {0, 34}
+        node, selected = module.select_node(rows, affinity, {0}, [16, 30],
+                                             allow_smt=True)
+        self.assertEqual(node, 0)
+        self.assertEqual(len({(row.socket, row.core) for row in selected[16]}), 16)
+        self.assertIn(32, {row.cpu for row in selected[16]})
+        self.assertEqual({row.cpu for row in selected[30]}, affinity)
+        self.assertEqual(selected[16], selected[30][:16])
+        with self.assertRaises(ValueError):
+            module.select_node(rows, affinity, {0}, [16, 31], allow_smt=True)
+
+    def test_smt_rejects_cross_node_capacity_and_respects_offline(self):
+        rows = topology(16)
+        affinity = {row.cpu for row in rows}
+        # There are64 logical CPUs overall, but only32 on either node.
+        with self.assertRaises(ValueError):
+            module.select_node(rows, affinity, {0, 1}, [33], allow_smt=True)
+        with self.assertRaisesRegex(ValueError, "Mems_allowed_list"):
+            module.select_node(rows, affinity, {1}, [16, 32], "0", allow_smt=True)
+        rows = [module.CPU(row.cpu, row.core, row.socket, row.node,
+                           row.online and row.cpu != 0) for row in rows]
+        node, selected = module.select_node(rows, affinity, {0, 1}, [16, 32],
+                                             allow_smt=True)
+        self.assertEqual(node, 1)
+        self.assertTrue(all(row.online and row.node == 1 for row in selected[32]))
+        with self.assertRaises(ValueError):
+            module.select_node(rows, affinity, {0, 1}, [32], "0", allow_smt=True)
+        with self.assertRaises(ValueError):
+            module.select_node(rows, affinity, {0}, [32], allow_smt=True)
+
     def test_cpuset_and_memory_nodes(self):
         rows = topology()
         only_second_siblings = {r.cpu for r in rows if r.cpu >= 128}
@@ -117,6 +171,59 @@ class PlacementTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'disagrees'):
                 module.verify_sysfs(selected, system)
 
+    def test_kernel_smt_masks_and_physical_identity_must_agree(self):
+        with tempfile.TemporaryDirectory() as directory:
+            system = Path(directory)
+
+            def put(path, value):
+                target = system / path
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_text(value)
+
+            def masks(first='0,8\n', second='0,8\n', third='2,10\n'):
+                put('cpu/cpu0/topology/thread_siblings_list', first)
+                put('cpu/cpu8/topology/thread_siblings_list', second)
+                put('cpu/cpu2/topology/thread_siblings_list', third)
+
+            put('cpu/online', '0,2,8,10\n')
+            put('node/node0/cpulist', '0,2,8,10\n')
+            masks()
+            selected = [module.CPU(0, 0, 0, 0, True),
+                        module.CPU(2, 1, 0, 0, True),
+                        module.CPU(8, 0, 0, 0, True)]
+            with self.assertRaises(ValueError):
+                module.verify_sysfs(selected, system)
+            self.assertEqual(module.verify_sysfs(selected, system, allow_smt=True)['node'], 0)
+            # Equal core IDs on DIFFERENT sockets are distinct physical keys.
+            fake_sibling = module.CPU(8, 0, 1, 0, True)
+            with self.assertRaises(ValueError):
+                module.verify_sysfs([selected[0], fake_sibling], system, allow_smt=True)
+            fake_sibling = module.CPU(8, 2, 0, 0, True)
+            with self.assertRaises(ValueError):
+                module.verify_sysfs([selected[0], fake_sibling], system, allow_smt=True)
+            # A shared lscpu physical identity cannot have disjoint sysfs masks.
+            masks(second='8,10\n')
+            with self.assertRaises(ValueError):
+                module.verify_sysfs([selected[0], selected[2]], system, allow_smt=True)
+            # Even mutually overlapping masks must match exactly for siblings.
+            masks(second='0,8,10\n')
+            with self.assertRaises(ValueError):
+                module.verify_sysfs([selected[0], selected[2]], system, allow_smt=True)
+            # A selected CPU must occur in its own kernel mask.
+            masks(second='0\n')
+            with self.assertRaises(ValueError):
+                module.verify_sysfs([selected[0], selected[2]], system, allow_smt=True)
+            masks()
+            with self.assertRaises(ValueError):
+                module.verify_sysfs([selected[0], selected[0]], system, allow_smt=True)
+            put('cpu/online', '0,2,10\n')
+            with self.assertRaises(ValueError):
+                module.verify_sysfs(selected, system, allow_smt=True)
+            put('cpu/online', '0,2,8,10\n')
+            put('node/node0/cpulist', '0,2,10\n')
+            with self.assertRaises(ValueError):
+                module.verify_sysfs(selected, system, allow_smt=True)
+
     def test_commands_are_arg_arrays_and_outputs_are_distinct(self):
         rows = topology()
         node, selected = module.select_node(rows, {r.cpu for r in rows}, {0, 1}, [32, 64])
@@ -134,6 +241,29 @@ class PlacementTests(unittest.TestCase):
         for command in ([sys.executable, "--output", "{output}"], [sys.executable, "--threads", "{threads}"]):
             with self.assertRaises(ValueError): module.build_jobs(command, Path('/tmp/new'), ROOT, 'numactl', node, selected)
 
+    def test_smt_job_metadata_distinguishes_logical_cpus_from_physical_cores(self):
+        rows = topology(16)
+        node, selected = module.select_node(rows, {row.cpu for row in rows}, {0},
+                                             [16, 32], allow_smt=True)
+        with tempfile.TemporaryDirectory() as directory:
+            cwd = Path(directory)
+            jobs = module.build_jobs([sys.executable, '-c', 'pass', '--threads', '{threads}',
+                                      '--output', '{output}'], cwd / 'results', cwd,
+                                     '/usr/bin/numactl', node, selected)
+        self.assertEqual([job['logical_cpu_count'] for job in jobs], [16, 32])
+        self.assertEqual([job['physical_core_count'] for job in jobs], [16, 16])
+        self.assertEqual([job['smt_siblings_used'] for job in jobs], [False, True])
+        for job in jobs:
+            self.assertEqual(job['node'], 0)
+            self.assertEqual(len(job['cpu_topology']), job['logical_cpu_count'])
+            self.assertEqual({row['node'] for row in job['cpu_topology']}, {0})
+            self.assertEqual(len({(row['socket'], row['core']) for row in job['cpu_topology']}), 16)
+            self.assertEqual(module.parse_id_list(job['binding_command'][1].split('=', 1)[1]),
+                             set(job['cpus']))
+            self.assertEqual(job['binding_command'][2], '--membind=0')
+        self.assertEqual(jobs[0]['cpus'], jobs[1]['cpus'][:16])
+        self.assertNotEqual(jobs[0]['output_placeholder'], jobs[1]['output_placeholder'])
+
     def test_default_dry_run_launches_nothing_and_creates_nothing(self):
         rows = topology()
         with tempfile.TemporaryDirectory() as directory:
@@ -150,6 +280,31 @@ class PlacementTests(unittest.TestCase):
             self.assertEqual(result, 0)
             self.assertFalse(output.exists())
             launch.assert_not_called()
+            self.assertIn('DRY RUN', printed.getvalue())
+
+    def test_explicit_smt_dry_run_passes_policy_to_kernel_verification(self):
+        rows = topology(16)
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / 'not-created'
+            with mock.patch.object(module.platform, 'system', return_value='Linux'), \
+                 mock.patch.object(module.os, 'sched_getaffinity', create=True), \
+                 mock.patch.object(module.shutil, 'which', side_effect=lambda s: '/usr/bin/'+s), \
+                 mock.patch.object(module, 'discover', return_value=(rows, {r.cpu for r in rows}, {0, 1}, {})), \
+                 mock.patch.object(module, 'verify_sysfs', return_value={}) as verify, \
+                 mock.patch.object(module.subprocess, 'Popen') as launch, \
+                 contextlib.redirect_stdout(io.StringIO()) as printed:
+                result = module.main(['--threads', '16', '32', '--node', '0', '--allow-smt',
+                                      '--output', str(output), '--', sys.executable, '-c', 'pass',
+                                      '--threads', '{threads}', '--output', '{output}'])
+            self.assertEqual(result, 0)
+            self.assertFalse(output.exists())
+            launch.assert_not_called()
+            verify.assert_called_once()
+            self.assertTrue(verify.call_args.kwargs['allow_smt'])
+            selected = verify.call_args.args[0]
+            self.assertEqual(len(selected), 32)
+            self.assertEqual({row.node for row in selected}, {0})
+            self.assertEqual(len({(row.socket, row.core) for row in selected}), 16)
             self.assertIn('DRY RUN', printed.getvalue())
 
     def test_wrong_effective_policy_prevents_workload_launch(self):
