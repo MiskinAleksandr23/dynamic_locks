@@ -48,7 +48,10 @@ MIXED_POLICIES = ("fixed", "balanced", "dynamic_dp", "mgl64", "kdi_list_ex")
 OLD = ROOT / "BENCHMARK_RESULT/server-paper-16-32-20261118-022122"
 
 
-def workload_rows(mixed, short):
+def workload_rows(mixed, short, length_sweep=False):
+    if length_sweep:
+        return [(f"moving_max_{cap}", f"Moving variable, 1–{cap}", "moving_variable_range",
+                 None, cap, 4, False) for cap in (100, 1000, 10000)]
     if mixed:
         return [(key, f"{pct}% points / {100 - pct}% ranges", "steady_range", None, 10_000, 4, False)
                 for key, pct in MIXED_POINTS.items()]
@@ -61,20 +64,21 @@ def save(path, value):
     temporary.replace(path)
 
 
-def placements(rows, affinity, memory_nodes):
+def placements(rows, affinity, memory_nodes, single_16t=False):
     physical = eligible_cpus(rows, affinity, memory_nodes, False)
-    smt = eligible_cpus(rows, affinity, memory_nodes, True)
-    for node in range(4):
+    for node in ([0] if single_16t else range(4)):
         if len(physical.get(node, [])) < 16:
             raise ValueError(f"NUMA node {node} needs 16 permitted physical cores")
-    if len(smt[0]) < 32:
-        raise ValueError("NUMA node 0 needs 32 permitted logical CPUs for the SMT run")
-    specs = (
-        ("16t", physical[0][:16], [0]),
-        ("32t-smt", smt[0][:32], [0]),
-        ("32t-physical", physical[0][:16] + physical[1][:16], [0, 1]),
-        ("64t-physical", sum((physical[n][:16] for n in range(4)), []), list(range(4))),
-    )
+    specs = [("16t", physical[0][:16], [0])]
+    if not single_16t:
+        smt = eligible_cpus(rows, affinity, memory_nodes, True)
+        if len(smt[0]) < 32:
+            raise ValueError("NUMA node 0 needs 32 permitted logical CPUs for the SMT run")
+        specs.extend([
+            ("32t-smt", smt[0][:32], [0]),
+            ("32t-physical", physical[0][:16] + physical[1][:16], [0, 1]),
+            ("64t-physical", sum((physical[n][:16] for n in range(4)), []), list(range(4))),
+        ])
     return {name: {"threads": len(selected), "cpus": [r.cpu for r in selected],
                   "topology": [asdict(r) for r in selected], "nodes": nodes,
                   "physical_cores": len({(r.socket, r.core) for r in selected}),
@@ -140,8 +144,9 @@ def report(out, manifest):
     jobs = {(j["profile"], j["case"], j["implementation"]): j for j in manifest["jobs"]}
     baseline = manifest.get("baseline")
     mixed = manifest.get("mixed_only", False)
-    columns = MIXED_POLICIES[1:] if mixed else (baseline,) if baseline else POLICIES[1:]
-    cases = workload_rows(mixed, manifest.get("short_only"))
+    sweep = manifest.get("length_sweep", False)
+    columns = MIXED_POLICIES[1:] if mixed or sweep else (baseline,) if baseline else POLICIES[1:]
+    cases = workload_rows(mixed, manifest.get("short_only"), sweep)
     scope = (f"Three short workload profiles, each measured for {manifest['jobs'][0]['seconds']:g} s per implementation. "
              if manifest.get("short_only") else "All 18 workload rows from the submitted PDF. ")
     lines = ["# Table 1 on xeon5", "",
@@ -156,8 +161,14 @@ def report(out, manifest):
                     "in the same hot window. The executed counts of each type are recorded in summary.csv.")
     labels = {"balanced": "Bal.", "dynamic_dp": "DP", "global": "Global", "per_element": "Element",
               "mgl64": "MGL64", "kdi_list_ex": "Kogan list-ex"}
-    for profile in PROFILES:
-        headers = ["Workload"] + ([] if mixed else ["Q ref. (M)"]) + [labels[c] for c in columns]
+    if sweep:
+        lines = ["# Moving variable range on xeon5", "",
+                 "Request length is sampled from 1 through the stated maximum. "
+                 "16 physical cores on node 0. Fixed throughput in Mreq/s and all other columns relative to fixed "
+                 "at the same length cap. summary.csv contains absolute throughputs and rebuild counts.", ""]
+    for profile in manifest["profiles"]:
+        metadata_cols = ["Fixed (Mreq/s)"] if sweep else [] if mixed else ["Q ref. (M)"]
+        headers = ["Workload", *metadata_cols, *[labels[c] for c in columns]]
         lines += [f"## {profile}", "", "| " + " | ".join(headers) + " |",
                   "|---|" + "---:|" * (len(headers) - 1)]
         for key, label, _, q, *_ in cases:
@@ -175,13 +186,18 @@ def report(out, manifest):
                 else:
                     ratio = rate(j) / rate(base)
                 value = f"{ratio:.3f}" if ratio < .1 else f"{ratio:.2f}"
-                if j["method"] == "timed" or base["method"] == "timed":
+                if not sweep and (j["method"] == "timed" or base["method"] == "timed"):
                     value += "†"
                 values.append(value)
-            cells = [label] + ([] if mixed else [f"{q / 1e6:g}"]) + values
+            if sweep:
+                metadata = [f"{rate(base) / 1e6:.3f}" if base["status"] == "complete" else base["status"]]
+            else:
+                metadata = [] if mixed else [f"{q / 1e6:g}"]
+            cells = [label, *metadata, *values]
             lines.append("| " + " | ".join(cells) + " |")
         lines.append("")
-    lines += ["† At least one value in the ratio comes from the new fixed-duration run. "
+    if not sweep:
+        lines += ["† At least one value in the ratio comes from the new fixed-duration run. "
               "Every cell uses measured requests / full wall time. These ratios compare complete profiles "
               "with different executed counts and phase residence times. New ordinary runs use 5 s rebuild "
               "checks, short runs 100 ms. Reused counted runs retain their recorded intervals.", ""]
@@ -190,6 +206,8 @@ def report(out, manifest):
               "qps", "rebuilds", "first_publication_s", "last_publication_s", "source", "error", "optimizations"]
     if mixed:
         fields += ["point_percent", "point_operations", "range_operations"]
+    if sweep:
+        fields += ["range_length", "phase_operations"]
     with (out / "summary.csv").open("w", newline="") as stream:
         writer = csv.DictWriter(stream, fieldnames=fields)
         writer.writeheader()
@@ -209,14 +227,16 @@ def main():
     presets = p.add_mutually_exclusive_group()
     presets.add_argument("--short-only", action="store_true", help="run only the three short profiles, each for --seconds")
     presets.add_argument("--mixed-only", action="store_true", help="run just two point/range write mixes with Kogan and MGL64")
+    presets.add_argument("--length-sweep", action="store_true",
+                         help="only moving_variable_range at caps 100, 1000 and 10000 on 16 physical cores")
     p.add_argument("--mgl64", dest="baseline", action="store_const", const="mgl64",
                    help="time MGL with 64 leaves and a fresh fixed reference for each workload")
     p.add_argument("--seconds", type=float, help="duration per implementation in ordinary rows or in --short-only mode")
     p.add_argument("--execute", action="store_true", help="run the displayed plan")
     p.add_argument("--resume", action="store_true", help="continue pending/interrupted cells in the existing output")
     args = p.parse_args()
-    if args.mixed_only and args.baseline:
-        p.error("--mixed-only already includes MGL64")
+    if (args.mixed_only or args.length_sweep) and args.baseline:
+        p.error("this preset already includes MGL64")
     if args.seconds is None:
         args.seconds = 3 if args.baseline and not args.short_only else 20
     if not 1 <= args.seconds <= 120:
@@ -231,9 +251,11 @@ def main():
         default_name += "-" + args.baseline
     if args.mixed_only:
         default_name = "mixed-point-range-xeon5"
+    if args.length_sweep:
+        default_name = "moving-length-sweep-xeon5"
     binary, out = args.binary.resolve(), (args.output or ROOT / "BENCHMARK_RESULT" / default_name).resolve()
     rows, affinity, memory_nodes, topology = discover(lscpu)
-    profiles = placements(rows, affinity, memory_nodes)
+    profiles = placements(rows, affinity, memory_nodes, single_16t=args.length_sweep)
     for name, profile in profiles.items():
         profile["name"] = name
         for node in profile["nodes"]:
@@ -243,6 +265,8 @@ def main():
               f"CPUs={profile['cpus']}, memory {profile['memory_policy']} {profile['nodes']}", flush=True)
     if args.resume:
         manifest = json.loads((out / "manifest.json").read_text())
+        if args.length_sweep != manifest.get("length_sweep", False):
+            p.error("resume with the same --length-sweep setting")
         if args.mixed_only != manifest.get("mixed_only", False):
             p.error("resume with the same --mixed-only setting")
         if args.baseline and args.baseline != manifest.get("baseline"):
@@ -258,23 +282,23 @@ def main():
         if out.exists():
             p.error("output exists; choose --resume or a new directory")
         manifest = {"status": "planned", "profiles": profiles, "topology": topology, "short_only": args.short_only,
-                    "baseline": args.baseline, "mixed_only": args.mixed_only,
+                    "baseline": args.baseline, "mixed_only": args.mixed_only, "length_sweep": args.length_sweep,
                     "binary_sha256": digest(binary), "jobs": [],
                     "source_sha256": {str(f): digest(ROOT / f) for f in (
                         "scripts/full_table.py", "benchmarks/table1_benchmark.cpp",
                         "benchmarks/adaptive_lock_benchmark.cpp", "dynamic/paper_lock.hpp",
                         "dynamic/paper_partitioner.hpp", "common/multigranularity_lock.hpp")}}
-        if args.mixed_only:
+        if args.mixed_only or args.length_sweep:
             header = "common/kdi_exclusive_lock.hpp"
             manifest["source_sha256"][header] = digest(ROOT / header)
         for profile_index, (name, profile) in enumerate(profiles.items()):
-            for case_index, case in enumerate(workload_rows(args.mixed_only, args.short_only)):
-                reused = {} if args.baseline or args.mixed_only else old_rows(case, profile, args.previous.resolve())
+            for case_index, case in enumerate(workload_rows(args.mixed_only, args.short_only, args.length_sweep)):
+                reused = {} if args.baseline or args.mixed_only or args.length_sweep else old_rows(case, profile, args.previous.resolve())
                 seconds = 2 if case[-1] and not args.short_only else args.seconds
                 if case[5] == 9:
                     seconds = max(9 if args.baseline else 60, seconds)
                 policies = POLICIES
-                if args.mixed_only:
+                if args.mixed_only or args.length_sweep:
                     offset = (profile_index + case_index) % len(MIXED_POLICIES)
                     policies = MIXED_POLICIES[offset:] + MIXED_POLICIES[:offset]
                 if args.baseline:
@@ -299,7 +323,8 @@ def main():
     manifest["numactl_hardware"] = command_output([numactl, "--hardware"])
     manifest["status"] = "running"
     report(out, manifest)
-    cases = {c[0]: c for c in workload_rows(manifest.get("mixed_only"), manifest["short_only"])}
+    cases = {c[0]: c for c in workload_rows(manifest.get("mixed_only"), manifest["short_only"],
+                                            manifest.get("length_sweep", False))}
     for job in pending:
         name, impl = job["profile"], job["implementation"]
         profile = profiles[name]
