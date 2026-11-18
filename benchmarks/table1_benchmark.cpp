@@ -218,6 +218,9 @@ int main(int argc, char **argv) {
     else if (name == "mgl64")
       result = RunTimed(input, scenario, options, seconds, cpus,
                         [&] { return MultiGranularityRangeLock(options.array_size, 64); });
+    else if (name == "kdi_list_ex")
+      result = RunTimed(input, scenario, options, seconds, cpus,
+                        [&] { return KdiExclusiveLock(options.array_size, options.threads); });
     else if (name == "balanced" || name == "dynamic_dp") {
       PaperLockConfig config{options.bins, options.sample_rate, options.lambda,
                              options.minimum_samples, options.minimum_improvement};

@@ -34,6 +34,10 @@ add_executable(table1_benchmark benchmarks/table1_benchmark.cpp common/spinlock.
 target_link_libraries(table1_benchmark PRIVATE dynamic_locks)
 
 if(BUILD_TESTING)
+  add_executable(kdi_exclusive_lock_tests tests/kdi_exclusive_lock_test.cpp)
+  target_link_libraries(kdi_exclusive_lock_tests PRIVATE dynamic_locks)
+  add_test(NAME kdi_exclusive_lock_tests COMMAND kdi_exclusive_lock_tests)
+  set_tests_properties(kdi_exclusive_lock_tests PROPERTIES TIMEOUT 60)
   add_executable(srl_array_lock_tests tests/srl_array_lock_test.cpp)
   target_link_libraries(srl_array_lock_tests PRIVATE dynamic_locks)
   add_test(NAME srl_array_lock_tests COMMAND srl_array_lock_tests)

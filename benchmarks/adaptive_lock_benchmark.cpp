@@ -1,6 +1,7 @@
 #include "common/naive_lock.hpp"
 #include "common/multigranularity_lock.hpp"
 #include "common/srl_array_lock.hpp"
+#include "common/kdi_exclusive_lock.hpp"
 #include <bit>
 #include "common/element_lock.hpp"
 #include "common/spinlock.hpp"
@@ -135,7 +136,8 @@ Options ParseOptions(int argc, char **argv) {
                    "  --lock-kind NAME  mutex (default), spinlock, rwlock (std::shared_mutex)\n"
                    "  --read-percent N  read-only queries, 0..100 (default 0)\n"
                    "  --partitions      print final dynamic partition cuts\n"
-                   "  --implementations LIST  comma-separated fixed,balanced,dynamic_dp,genetic,global,per_element,mgl,mgl64,mgl1024,srl4,srl64,srl256\n"
+                   "  --implementations LIST  comma-separated fixed,balanced,dynamic_dp,genetic,global,per_element,mgl,mgl64,mgl1024,srl4,srl64,srl256,kdi_list_ex\n"
+                   "kdi_list_ex: local implementation of Kogan-Dice-Issa's exclusive list; write-only runs.\n"
                    "SRL suffixes are segment sizes in KiB for the uint64_t array; all selected variants share one trace cohort.\n"
                    "Optional baseline when built with BUILD_LOCKTREE_BASELINE: locktree\n"
                    "Scenarios:";
@@ -159,7 +161,7 @@ Options ParseOptions(int argc, char **argv) {
         if ((name != "fixed" && name != "balanced" && name != "dynamic_dp" &&
              name != "genetic" && name != "global" && name != "per_element" &&
              name != "mgl" && name != "mgl64" && name != "mgl1024" &&
-             name != "srl4" && name != "srl64" && name != "srl256"
+             name != "srl4" && name != "srl64" && name != "srl256" && name != "kdi_list_ex"
 #ifdef DYNAMIC_HAS_LOCKTREE
              && name != "locktree"
 #endif
@@ -215,6 +217,9 @@ Options ParseOptions(int argc, char **argv) {
     throw std::invalid_argument("array size must be in [4096, UINT32_MAX]");
   if (!std::has_single_bit(options.mgl_leaves))
     throw std::invalid_argument("mgl leaves must be a power of two");
+  if (options.read_percent && std::find(options.implementations.begin(), options.implementations.end(),
+      "kdi_list_ex") != options.implementations.end())
+    throw std::invalid_argument("kdi_list_ex compares the exclusive write workload; set --read-percent 0");
   if (options.model == "paper") {
     if (options.bins < kLocks || options.bins > options.array_size)
       throw std::invalid_argument("paper bins must be in [64,array_size]");
@@ -583,7 +588,8 @@ void WriteRow(std::ostream &csv, const Scenario &scenario, const Options &option
       << ',' << options.point_percent << ',' << point_operations << ',' << options.operations - point_operations
       << ',' << result.optimize_ms << ',' << result.publication_wait_ms << ',' << result.publication_hold_ms
       << ',' << result.max_publication_pause_ms << ',' << result.last_window_samples << ',' << result.actual_bins << ','
-      << (implementation == "locktree" ? "locktree_native" : implementation.starts_with("mgl") ? "atomic_mgl" :
+      << (implementation == "kdi_list_ex" ? "kdi_exclusive_list" :
+          implementation == "locktree" ? "locktree_native" : implementation.starts_with("mgl") ? "atomic_mgl" :
           implementation.starts_with("srl") ? "atomic_srl" : options.lock_kind)
       << ',' << (implementation == "mgl64" ? 64 : implementation == "mgl1024" ? 1024 : options.mgl_leaves)
       << ',' << result.hierarchy_leaves << ',' << result.hierarchy_nodes
@@ -657,6 +663,8 @@ int main(int argc, char **argv) {
           const size_t implementation = (order + repetition + scenario.id) % names.size();
           const auto &name = names[implementation];
           const auto execute = [&]<class Mutex>() {
+            if (name == "kdi_list_ex")
+              return Run(input, scenario, options, [&] { return KdiExclusiveLock(options.array_size, options.threads); });
             if (name == "mgl" || name == "mgl64" || name == "mgl1024") {
               const size_t leaves = name == "mgl64" ? 64 : name == "mgl1024" ? 1024 : options.mgl_leaves;
               return Run(input, scenario, options, [&] { return MultiGranularityRangeLock(options.array_size, leaves); });

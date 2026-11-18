@@ -43,7 +43,16 @@ CASES = (
     ("moving_short", "Moving variable (short)", "moving_variable_range", 1_000_000, 10_000, 4, True),
 )
 PROFILES = ("16t", "32t-smt", "32t-physical", "64t-physical")
+MIXED_POINTS = {"mixed_90p_10r": 90, "mixed_10p_90r": 10}
+MIXED_POLICIES = ("fixed", "balanced", "dynamic_dp", "mgl64", "kdi_list_ex")
 OLD = ROOT / "BENCHMARK_RESULT/server-paper-16-32-20261118-022122"
+
+
+def workload_rows(mixed, short):
+    if mixed:
+        return [(key, f"{pct}% points / {100 - pct}% ranges", "steady_range", None, 10_000, 4, False)
+                for key, pct in MIXED_POINTS.items()]
+    return [case for case in CASES if not short or case[-1]]
 
 
 def save(path, value):
@@ -130,8 +139,9 @@ def rate(job):
 def report(out, manifest):
     jobs = {(j["profile"], j["case"], j["implementation"]): j for j in manifest["jobs"]}
     baseline = manifest.get("baseline")
-    columns = (baseline,) if baseline else POLICIES[1:]
-    cases = [case for case in CASES if not manifest.get("short_only") or case[-1]]
+    mixed = manifest.get("mixed_only", False)
+    columns = MIXED_POLICIES[1:] if mixed else (baseline,) if baseline else POLICIES[1:]
+    cases = workload_rows(mixed, manifest.get("short_only"))
     scope = (f"Three short workload profiles, each measured for {manifest['jobs'][0]['seconds']:g} s per implementation. "
              if manifest.get("short_only") else "All 18 workload rows from the submitted PDF. ")
     lines = ["# Table 1 on xeon5", "",
@@ -140,10 +150,16 @@ def report(out, manifest):
              "Reused cells retain the complete measured runs. Raw CSV and summary.csv record the method and counts.",
              "", "One NUMA node for 16t and 32t-smt. Two nodes for 32t-physical, four for 64t-physical. "
              "Every worker is pinned to one logical CPU. Memory is bound on one-node runs and interleaved on multi-node runs.", ""]
+    if mixed:
+        lines[0] = "# Mixed point/range updates on xeon5"
+        lines[2] = ("Throughput relative to fixed. Every worker mixes one-element and 10,000-element writes "
+                    "in the same hot window. The executed counts of each type are recorded in summary.csv.")
+    labels = {"balanced": "Bal.", "dynamic_dp": "DP", "global": "Global", "per_element": "Element",
+              "mgl64": "MGL64", "kdi_list_ex": "Kogan list-ex"}
     for profile in PROFILES:
-        labels = [baseline.upper()] if baseline else ["Bal.", "DP", "Global", "Element"]
-        lines += [f"## {profile}", "", "| Workload | Q ref. (M) | " + " | ".join(labels) + " |",
-                  "|---|---:|" + "---:|" * len(columns)]
+        headers = ["Workload"] + ([] if mixed else ["Q ref. (M)"]) + [labels[c] for c in columns]
+        lines += [f"## {profile}", "", "| " + " | ".join(headers) + " |",
+                  "|---|" + "---:|" * (len(headers) - 1)]
         for key, label, _, q, *_ in cases:
             base = jobs[profile, key, "fixed"]
             values = []
@@ -162,7 +178,8 @@ def report(out, manifest):
                 if j["method"] == "timed" or base["method"] == "timed":
                     value += "†"
                 values.append(value)
-            lines.append("| " + " | ".join([label, f"{q / 1e6:g}", *values]) + " |")
+            cells = [label] + ([] if mixed else [f"{q / 1e6:g}"]) + values
+            lines.append("| " + " | ".join(cells) + " |")
         lines.append("")
     lines += ["† At least one value in the ratio comes from the new fixed-duration run. "
               "Every cell uses measured requests / full wall time. These ratios compare complete profiles "
@@ -171,6 +188,8 @@ def report(out, manifest):
     (out / "TABLE.md").write_text("\n".join(lines) + "\n")
     fields = ["profile", "case", "implementation", "status", "method", "operations", "wall_s",
               "qps", "rebuilds", "first_publication_s", "last_publication_s", "source", "error", "optimizations"]
+    if mixed:
+        fields += ["point_percent", "point_operations", "range_operations"]
     with (out / "summary.csv").open("w", newline="") as stream:
         writer = csv.DictWriter(stream, fieldnames=fields)
         writer.writeheader()
@@ -187,13 +206,17 @@ def main():
     p.add_argument("--output", type=Path, help="new output directory, or existing directory for --resume")
     p.add_argument("--previous", type=Path, default=OLD)
     p.add_argument("--binary", type=Path, default=ROOT / "build/full-table/table1_benchmark")
-    p.add_argument("--short-only", action="store_true", help="run only the three short profiles, each for --seconds")
+    presets = p.add_mutually_exclusive_group()
+    presets.add_argument("--short-only", action="store_true", help="run only the three short profiles, each for --seconds")
+    presets.add_argument("--mixed-only", action="store_true", help="run just two point/range write mixes with Kogan and MGL64")
     p.add_argument("--mgl64", dest="baseline", action="store_const", const="mgl64",
                    help="time MGL with 64 leaves and a fresh fixed reference for each workload")
     p.add_argument("--seconds", type=float, help="duration per implementation in ordinary rows or in --short-only mode")
     p.add_argument("--execute", action="store_true", help="run the displayed plan")
     p.add_argument("--resume", action="store_true", help="continue pending/interrupted cells in the existing output")
     args = p.parse_args()
+    if args.mixed_only and args.baseline:
+        p.error("--mixed-only already includes MGL64")
     if args.seconds is None:
         args.seconds = 3 if args.baseline and not args.short_only else 20
     if not 1 <= args.seconds <= 120:
@@ -206,6 +229,8 @@ def main():
     default_name = "short-table-xeon5" if args.short_only else "full-table-xeon5"
     if args.baseline:
         default_name += "-" + args.baseline
+    if args.mixed_only:
+        default_name = "mixed-point-range-xeon5"
     binary, out = args.binary.resolve(), (args.output or ROOT / "BENCHMARK_RESULT" / default_name).resolve()
     rows, affinity, memory_nodes, topology = discover(lscpu)
     profiles = placements(rows, affinity, memory_nodes)
@@ -218,6 +243,8 @@ def main():
               f"CPUs={profile['cpus']}, memory {profile['memory_policy']} {profile['nodes']}", flush=True)
     if args.resume:
         manifest = json.loads((out / "manifest.json").read_text())
+        if args.mixed_only != manifest.get("mixed_only", False):
+            p.error("resume with the same --mixed-only setting")
         if args.baseline and args.baseline != manifest.get("baseline"):
             p.error("selected baseline differs from the saved plan")
         if args.short_only and not manifest.get("short_only"):
@@ -231,21 +258,25 @@ def main():
         if out.exists():
             p.error("output exists; choose --resume or a new directory")
         manifest = {"status": "planned", "profiles": profiles, "topology": topology, "short_only": args.short_only,
-                    "baseline": args.baseline,
+                    "baseline": args.baseline, "mixed_only": args.mixed_only,
                     "binary_sha256": digest(binary), "jobs": [],
                     "source_sha256": {str(f): digest(ROOT / f) for f in (
                         "scripts/full_table.py", "benchmarks/table1_benchmark.cpp",
                         "benchmarks/adaptive_lock_benchmark.cpp", "dynamic/paper_lock.hpp",
                         "dynamic/paper_partitioner.hpp", "common/multigranularity_lock.hpp")}}
+        if args.mixed_only:
+            header = "common/kdi_exclusive_lock.hpp"
+            manifest["source_sha256"][header] = digest(ROOT / header)
         for profile_index, (name, profile) in enumerate(profiles.items()):
-            for case_index, case in enumerate(CASES):
-                if args.short_only and not case[-1]:
-                    continue
-                reused = {} if args.baseline else old_rows(case, profile, args.previous.resolve())
+            for case_index, case in enumerate(workload_rows(args.mixed_only, args.short_only)):
+                reused = {} if args.baseline or args.mixed_only else old_rows(case, profile, args.previous.resolve())
                 seconds = 2 if case[-1] and not args.short_only else args.seconds
                 if case[5] == 9:
                     seconds = max(9 if args.baseline else 60, seconds)
                 policies = POLICIES
+                if args.mixed_only:
+                    offset = (profile_index + case_index) % len(MIXED_POLICIES)
+                    policies = MIXED_POLICIES[offset:] + MIXED_POLICIES[:offset]
                 if args.baseline:
                     policies = ("fixed", args.baseline) if (case_index + profile_index) % 2 == 0 else (args.baseline, "fixed")
                 for impl in policies:
@@ -268,7 +299,7 @@ def main():
     manifest["numactl_hardware"] = command_output([numactl, "--hardware"])
     manifest["status"] = "running"
     report(out, manifest)
-    cases = {c[0]: c for c in CASES}
+    cases = {c[0]: c for c in workload_rows(manifest.get("mixed_only"), manifest["short_only"])}
     for job in pending:
         name, impl = job["profile"], job["implementation"]
         profile = profiles[name]
@@ -285,6 +316,7 @@ def main():
                    "--scenario", scenario, "--implementations", impl, "--repetitions", "1",
                    "--csv", str(csv_path), "--array-size", str(2**26 if ranges else 2**20),
                    "--hot-width", str(2**22 if ranges else 2**14), "--range-length", str(length),
+                   "--point-percent", str(MIXED_POINTS.get(key, 0)), "--read-percent", "0",
                    "--model", "paper", "--write-body", "range", "--seed", "97",
                    "--trace-size", "1048576", "--rebuild-ms", "100" if short else "5000",
                    "--bins", "1024", "--lambda", "10000", "--min-samples", "640",
@@ -321,6 +353,11 @@ def main():
                 raise ValueError("unverified result or wrong implementation")
             if impl == "mgl64" and (result["hierarchy_leaves"], result["hierarchy_nodes"]) != ("64", "127"):
                 raise ValueError("unexpected MGL64 geometry")
+            if key in MIXED_POINTS:
+                n, point, span = (int(result[c]) for c in ("operations", "point_operations", "range_operations"))
+                if (int(result["point_percent"]) != MIXED_POINTS[key] or min(point, span) <= 0
+                        or point + span != n or int(result["write_operations"]) != n):
+                    raise ValueError("mixed workload must execute both point and range writes")
             counts = [int(n) for n in result["phase_operations"].split(";")]
             if len(counts) != phases or min(counts) <= 0 or sum(counts) != int(result["operations"]):
                 raise ValueError("phase operation counts mismatch")
