@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Placement and reuse regressions for the complete submitted workload table."""
 import csv
+import copy
 import json
 from pathlib import Path
 import sys
@@ -13,6 +14,92 @@ from run_single_node import CPU
 
 
 class TableTests(unittest.TestCase):
+    def mixed_manifest(self):
+        policies = ("fixed", "balanced", "dynamic_dp", "mgl64", "kdi_list_ex")
+        factors = {"fixed": 1, "balanced": 2, "dynamic_dp": 1.5, "mgl64": 0.8,
+                   "kdi_list_ex": 0.5}
+        manifest = {"status": "complete", "mixed_only": True, "short_only": False,
+                    "length_sweep": False, "baseline": None,
+                    "profiles": {name: {} for name in suite.PROFILES}, "jobs": []}
+        for profile_index, profile in enumerate(suite.PROFILES):
+            for case_index, (case, points) in enumerate(suite.MIXED_POINTS.items()):
+                count = 12_345_678 if case_index == 0 else 1234
+                seconds = 10 + profile_index * 2 + case_index
+                for policy in policies:
+                    manifest["jobs"].append({
+                        "profile": profile, "case": case, "implementation": policy,
+                        "status": "complete", "method": "timed", "seconds": seconds,
+                        "source": f"{profile}/{case}/{policy}.csv",
+                        "results": [{"operations": str(count), "wall_s": str(10 / factors[policy]),
+                                     "point_percent": str(points), "rebuilds": "0"}],
+                    })
+        return manifest
+
+    def test_extend_mixed_adds_missing_baselines_and_preserves_results(self):
+        manifest = self.mixed_manifest()
+        before = copy.deepcopy(manifest["jobs"])
+        suite.extend_mixed_baselines(manifest)
+        indexed = {(j["profile"], j["case"], j["implementation"]): j for j in manifest["jobs"]}
+        self.assertEqual(len(manifest["jobs"]), 56)
+        self.assertEqual(len(indexed), 56)
+        for job in before:
+            key = job["profile"], job["case"], job["implementation"]
+            self.assertEqual(indexed[key], job)
+        for profile in suite.PROFILES:
+            for case in suite.MIXED_POINTS:
+                fixed = indexed[profile, case, "fixed"]
+                for policy in ("global", "per_element"):
+                    added = indexed[profile, case, policy]
+                    self.assertEqual(added["seconds"], fixed["seconds"])
+                    self.assertEqual(added["status"], "pending")
+                    self.assertEqual(added["results"], [])
+        extended = copy.deepcopy(manifest)
+        suite.extend_mixed_baselines(manifest)
+        self.assertEqual(manifest, extended)
+
+    def test_extend_mixed_keeps_existing_baseline_measurement(self):
+        manifest = self.mixed_manifest()
+        existing = dict(copy.deepcopy(manifest["jobs"][0]), implementation="global",
+                        seconds=77, source="existing-global.csv")
+        manifest["jobs"].append(existing)
+        saved = copy.deepcopy(existing)
+        suite.extend_mixed_baselines(manifest)
+        matches = [j for j in manifest["jobs"] if (j["profile"], j["case"], j["implementation"]) ==
+                   (existing["profile"], existing["case"], "global")]
+        self.assertEqual(matches, [saved])
+        self.assertEqual(len(manifest["jobs"]), 56)
+
+    def test_mixed_report_has_actual_fixed_q_and_requested_baselines(self):
+        manifest = self.mixed_manifest()
+        suite.extend_mixed_baselines(manifest)
+        for job in manifest["jobs"]:
+            if job["status"] == "pending":
+                factor = 0.25 if job["implementation"] == "global" else 4
+                count = 12_345_678 if job["case"] == "mixed_90p_10r" else 1234
+                job.update(status="complete", results=[{"operations": str(count),
+                                                         "wall_s": str(10 / factor), "rebuilds": "0"}])
+        with tempfile.TemporaryDirectory() as temp:
+            directory = Path(temp)
+            suite.report(directory, manifest)
+            text = (directory / "TABLE.md").read_text()
+            self.assertNotIn("Kogan", text)
+            self.assertNotIn("kdi_list_ex", text)
+            headers = [line for line in text.splitlines() if line.startswith("| Workload |")]
+            self.assertEqual(len(headers), 4)
+            for header in headers:
+                self.assertIn("| Q fixed (M) |", header)
+                self.assertIn("| Global |", header)
+                self.assertIn("| Element |", header)
+                self.assertIn("| MGL64 |", header)
+            rows = [[cell.strip() for cell in line.strip("|").split("|")]
+                    for line in text.splitlines() if line.startswith(("| 90% points", "| 10% points"))]
+            self.assertEqual(len(rows), 8)
+            self.assertEqual([row[1] for row in rows], ["12.3", "0.00123"] * 4)
+            persisted = json.loads((directory / "manifest.json").read_text())
+            kdi = [j for j in persisted["jobs"] if j["implementation"] == "kdi_list_ex"]
+            self.assertEqual(len(kdi), 8)
+            self.assertTrue(all(j["results"] and j["status"] == "complete" for j in kdi))
+
     def topology(self):
         return [CPU(core + lane * 64, core, core // 32, core // 16, True)
                 for core in range(64) for lane in (0, 1)]

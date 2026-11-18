@@ -44,7 +44,8 @@ CASES = (
 )
 PROFILES = ("16t", "32t-smt", "32t-physical", "64t-physical")
 MIXED_POINTS = {"mixed_90p_10r": 90, "mixed_10p_90r": 10}
-MIXED_POLICIES = ("fixed", "balanced", "dynamic_dp", "mgl64", "kdi_list_ex")
+MIXED_POLICIES = (*POLICIES, "mgl64")
+SWEEP_POLICIES = ("fixed", "balanced", "dynamic_dp", "mgl64", "kdi_list_ex")
 OLD = ROOT / "BENCHMARK_RESULT/server-paper-16-32-20261118-022122"
 
 
@@ -139,12 +140,25 @@ def rate(job):
     return statistics.median(int(r["operations"]) / float(r["wall_s"]) for r in job["results"])
 
 
+def extend_mixed_baselines(manifest):
+    jobs = manifest["jobs"]
+    keys = {(j["profile"], j["case"], j["implementation"]) for j in jobs}
+    for fixed in [j for j in jobs if j["implementation"] == "fixed"]:
+        for policy in ("global", "per_element"):
+            key = (fixed["profile"], fixed["case"], policy)
+            if key not in keys:
+                jobs.append({"profile": fixed["profile"], "case": fixed["case"], "implementation": policy,
+                             "seconds": fixed["seconds"], "method": "timed", "status": "pending", "results": []})
+                keys.add(key)
+
+
 def report(out, manifest):
     jobs = {(j["profile"], j["case"], j["implementation"]): j for j in manifest["jobs"]}
     baseline = manifest.get("baseline")
     mixed = manifest.get("mixed_only", False)
     sweep = manifest.get("length_sweep", False)
-    columns = MIXED_POLICIES[1:] if mixed or sweep else (baseline,) if baseline else POLICIES[1:]
+    columns = (MIXED_POLICIES[1:] if mixed else SWEEP_POLICIES[1:] if sweep
+               else (baseline,) if baseline else POLICIES[1:])
     cases = workload_rows(mixed, manifest.get("short_only"), sweep)
     scope = (f"Three short workload profiles, each measured for {manifest['jobs'][0]['seconds']:g} s per implementation. "
              if manifest.get("short_only") else "All 18 workload rows from the submitted PDF. ")
@@ -156,8 +170,9 @@ def report(out, manifest):
              "Every worker is pinned to one logical CPU. Memory is bound on one-node runs and interleaved on multi-node runs.", ""]
     if mixed:
         lines[0] = "# Mixed point/range updates on xeon5"
-        lines[2] = ("Throughput relative to fixed. Every worker mixes one-element and 10,000-element writes "
-                    "in the same hot window. The executed counts of each type are recorded in summary.csv.")
+        lines[2] = ("Throughput relative to fixed. All writes of length 1 or 10,000 fall within the first N/16 "
+                    "elements. Q fixed (M) is the measured number of requests completed by fixed across all workers, "
+                    "in millions. summary.csv gives the exact count for each implementation.")
     labels = {"balanced": "Bal.", "dynamic_dp": "DP", "global": "Global", "per_element": "Element",
               "mgl64": "MGL64", "kdi_list_ex": "Kogan list-ex"}
     if sweep:
@@ -166,7 +181,7 @@ def report(out, manifest):
                  "16t and 32t-smt on node 0; 32t-physical on two nodes and 64t-physical on four. Fixed throughput in Mreq/s and all other columns relative to fixed "
                  "at the same length cap. summary.csv contains absolute throughputs and rebuild counts.", ""]
     for profile in manifest["profiles"]:
-        metadata_cols = ["Fixed (Mreq/s)"] if sweep else [] if mixed else ["Q ref. (M)"]
+        metadata_cols = ["Fixed (Mreq/s)" if sweep else "Q fixed (M)" if mixed else "Q ref. (M)"]
         headers = ["Workload", *metadata_cols, *[labels[c] for c in columns]]
         lines += [f"## {profile}", "", "| " + " | ".join(headers) + " |",
                   "|---|" + "---:|" * (len(headers) - 1)]
@@ -185,17 +200,20 @@ def report(out, manifest):
                 else:
                     ratio = rate(j) / rate(base)
                 value = f"{ratio:.3f}" if ratio < .1 else f"{ratio:.2f}"
-                if not sweep and (j["method"] == "timed" or base["method"] == "timed"):
+                if not (sweep or mixed) and (j["method"] == "timed" or base["method"] == "timed"):
                     value += "†"
                 values.append(value)
             if sweep:
                 metadata = [f"{rate(base) / 1e6:.3f}" if base["status"] == "complete" else base["status"]]
+            elif mixed:
+                metadata = ([format(int(base["results"][0]["operations"]) / 1e6, ".3g")]
+                            if base["status"] == "complete" else [base["status"]])
             else:
-                metadata = [] if mixed else [f"{q / 1e6:g}"]
+                metadata = [f"{q / 1e6:g}"]
             cells = [label, *metadata, *values]
             lines.append("| " + " | ".join(cells) + " |")
         lines.append("")
-    if not sweep:
+    if not (sweep or mixed):
         lines += ["† At least one value in the ratio comes from the new fixed-duration run. "
               "Every cell uses measured requests / full wall time. These ratios compare complete profiles "
               "with different executed counts and phase residence times. New ordinary runs use 5 s rebuild "
@@ -225,7 +243,7 @@ def main():
     p.add_argument("--binary", type=Path, default=ROOT / "build/full-table/table1_benchmark")
     presets = p.add_mutually_exclusive_group()
     presets.add_argument("--short-only", action="store_true", help="run only the three short profiles, each for --seconds")
-    presets.add_argument("--mixed-only", action="store_true", help="run just two point/range write mixes with Kogan and MGL64")
+    presets.add_argument("--mixed-only", action="store_true", help="two point/range write mixes with fixed, Balanced, DP, Global, Element and MGL64")
     presets.add_argument("--length-sweep", action="store_true",
                          help="only moving_variable_range at caps 100, 1000 and 10000 on all four placements")
     p.add_argument("--mgl64", dest="baseline", action="store_const", const="mgl64",
@@ -287,6 +305,8 @@ def main():
         extend = args.length_sweep and set(saved) == {"16t"} and saved["16t"] == profiles["16t"]
         if (saved != profiles and not extend) or manifest["binary_sha256"] != digest(binary):
             raise ValueError("Resume requires the same CPU placement and binary")
+        if args.mixed_only:
+            extend_mixed_baselines(manifest)
         new_profiles = {name: profile for name, profile in profiles.items() if name not in saved}
         if new_profiles:
             durations = {j["seconds"] for j in manifest["jobs"]}
@@ -306,7 +326,7 @@ def main():
                         "scripts/full_table.py", "benchmarks/table1_benchmark.cpp",
                         "benchmarks/adaptive_lock_benchmark.cpp", "dynamic/paper_lock.hpp",
                         "dynamic/paper_partitioner.hpp", "common/multigranularity_lock.hpp")}}
-        if args.mixed_only or args.length_sweep:
+        if args.length_sweep:
             header = "common/kdi_exclusive_lock.hpp"
             manifest["source_sha256"][header] = digest(ROOT / header)
     for name, profile in new_profiles.items():
@@ -318,16 +338,18 @@ def main():
                 seconds = max(9 if args.baseline else 60, seconds)
             policies = POLICIES
             if args.mixed_only or args.length_sweep:
-                offset = (profile_index + case_index) % len(MIXED_POLICIES)
-                policies = MIXED_POLICIES[offset:] + MIXED_POLICIES[:offset]
+                policies = MIXED_POLICIES if args.mixed_only else SWEEP_POLICIES
+                offset = (profile_index + case_index) % len(policies)
+                policies = policies[offset:] + policies[:offset]
             if args.baseline:
                 policies = ("fixed", args.baseline) if (case_index + profile_index) % 2 == 0 else (args.baseline, "fixed")
             for impl in policies:
                 manifest["jobs"].append({"profile": name, "case": case[0], "implementation": impl,
                     **reused.get(impl, {"status": "pending", "method": "timed", "results": []}),
                     "seconds": seconds})
-    pending = [j for j in manifest["jobs"] if j["status"] == "pending"]
-    print(f"{len(manifest['jobs']) - len(pending)} existing cells, {len(pending)} new cells; "
+    active = [j for j in manifest["jobs"] if not args.mixed_only or j["implementation"] in MIXED_POLICIES]
+    pending = [j for j in active if j["status"] == "pending"]
+    print(f"{len(active) - len(pending)} existing cells, {len(pending)} new cells; "
           f"{sum(j['seconds'] for j in pending) / 60:.1f} minutes of timed work plus allocation/verification.",
           flush=True)
     if not args.execute:
@@ -409,7 +431,7 @@ def main():
         job["elapsed_s"] = time.monotonic() - started
         report(out, manifest)
         print(f"{job['status'].upper()} {name} {key} {impl} ({job['elapsed_s']:.1f}s)", flush=True)
-    manifest["status"] = "complete" if all(j["status"] == "complete" for j in manifest["jobs"]) else "incomplete"
+    manifest["status"] = "complete" if all(j["status"] == "complete" for j in active) else "incomplete"
     report(out, manifest)
     print(f"{manifest['status'].upper()}: {out / 'TABLE.md'}", flush=True)
     return 0 if manifest["status"] == "complete" else 1
