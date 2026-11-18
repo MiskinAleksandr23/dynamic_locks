@@ -1,5 +1,6 @@
 #include "common/naive_lock.hpp"
 #include "common/multigranularity_lock.hpp"
+#include "common/srl_array_lock.hpp"
 #include <bit>
 #include "common/element_lock.hpp"
 #include "common/spinlock.hpp"
@@ -122,7 +123,7 @@ Options ParseOptions(int argc, char **argv) {
                    "  --scenario NAME   all (default) or one name below\n"
                    "  --model NAME      paper (default) or legacy\n"
                    "  --write-body NAME range: increment every element by 1 (default); single: legacy body\n"
-                   "  --mgl-leaves N    fixed hierarchy leaves, power of two (default 1024)\n"
+                   "  --mgl-leaves N    leaves for mgl; mgl64/mgl1024 use fixed named counts (default 1024)\n"
                    "  --bins N          paper elementary blocks (default 1024)\n"
                    "  --lambda N        paper boundary-crossing penalty, integer >=0 (default 10000)\n"
                    "  --min-samples N   paper minimum sampled queries (default 640)\n"
@@ -134,7 +135,8 @@ Options ParseOptions(int argc, char **argv) {
                    "  --lock-kind NAME  mutex (default), spinlock, rwlock (std::shared_mutex)\n"
                    "  --read-percent N  read-only queries, 0..100 (default 0)\n"
                    "  --partitions      print final dynamic partition cuts\n"
-                   "  --implementations LIST  comma-separated fixed,balanced,dynamic_dp,genetic,global,per_element,mgl\n"
+                   "  --implementations LIST  comma-separated fixed,balanced,dynamic_dp,genetic,global,per_element,mgl,mgl64,mgl1024,srl4,srl64,srl256\n"
+                   "SRL suffixes are segment sizes in KiB for the uint64_t array; all selected variants share one trace cohort.\n"
                    "Optional baseline when built with BUILD_LOCKTREE_BASELINE: locktree\n"
                    "Scenarios:";
       for (const auto &scenario : kScenarios) std::cout << ' ' << scenario.name;
@@ -155,7 +157,9 @@ Options ParseOptions(int argc, char **argv) {
         const size_t end = value.find(',', start);
         const auto name = value.substr(start, end - start);
         if ((name != "fixed" && name != "balanced" && name != "dynamic_dp" &&
-             name != "genetic" && name != "global" && name != "per_element" && name != "mgl"
+             name != "genetic" && name != "global" && name != "per_element" &&
+             name != "mgl" && name != "mgl64" && name != "mgl1024" &&
+             name != "srl4" && name != "srl64" && name != "srl256"
 #ifdef DYNAMIC_HAS_LOCKTREE
              && name != "locktree"
 #endif
@@ -409,6 +413,7 @@ struct Result {
   uint64_t last_window_samples = 0;
   size_t actual_bins = 0;
   size_t hierarchy_leaves = 0, hierarchy_nodes = 0, hierarchy_bytes = 0;
+  size_t srl_segment_kib = 0, srl_segments = 0;
   uint64_t read_checksum = 0;
   std::vector<size_t> cuts;
   std::vector<double> phase_seconds;
@@ -504,7 +509,10 @@ Result Run(const Input &input, const Scenario &scenario, const Options &options,
     if constexpr (requires { lock.GetBinCount(); }) result.actual_bins = lock.GetBinCount();
     if constexpr (requires { lock.GetLeafCount(); }) result.hierarchy_leaves = lock.GetLeafCount();
     if constexpr (requires { lock.GetNodeCount(); }) result.hierarchy_nodes = lock.GetNodeCount();
-    if constexpr (requires { lock.GetAllocatedBytes(); }) result.hierarchy_bytes = lock.GetAllocatedBytes();
+    if constexpr (requires { lock.GetLeafCount(); lock.GetAllocatedBytes(); })
+      result.hierarchy_bytes = lock.GetAllocatedBytes();
+    if constexpr (requires { lock.GetSegmentKiB(); }) result.srl_segment_kib = lock.GetSegmentKiB();
+    if constexpr (requires { lock.GetSegmentCount(); }) result.srl_segments = lock.GetSegmentCount();
     result.read_checksum = std::accumulate(checksums.begin(), checksums.end(), uint64_t{0});
   }
   result.wall_seconds = std::chrono::duration<double>(Clock::now() - start).count();
@@ -564,9 +572,11 @@ void WriteRow(std::ostream &csv, const Scenario &scenario, const Options &option
       << ',' << options.point_percent << ',' << point_operations << ',' << options.operations - point_operations
       << ',' << result.optimize_ms << ',' << result.publication_wait_ms << ',' << result.publication_hold_ms
       << ',' << result.max_publication_pause_ms << ',' << result.last_window_samples << ',' << result.actual_bins << ','
-      << (implementation == "locktree" ? "locktree_native" : implementation == "mgl" ? "atomic_mgl" : options.lock_kind)
-      << ',' << options.mgl_leaves << ',' << result.hierarchy_leaves << ',' << result.hierarchy_nodes
-      << ',' << result.hierarchy_bytes << '\n';
+      << (implementation == "locktree" ? "locktree_native" : implementation.starts_with("mgl") ? "atomic_mgl" :
+          implementation.starts_with("srl") ? "atomic_srl" : options.lock_kind)
+      << ',' << (implementation == "mgl64" ? 64 : implementation == "mgl1024" ? 1024 : options.mgl_leaves)
+      << ',' << result.hierarchy_leaves << ',' << result.hierarchy_nodes
+      << ',' << result.hierarchy_bytes << ',' << result.srl_segment_kib << ',' << result.srl_segments << '\n';
   csv.flush();
   if (!csv) throw std::runtime_error("failed to write benchmark CSV");
 }
@@ -581,7 +591,7 @@ int main(int argc, char **argv) {
       if (!csv) throw std::runtime_error("cannot write " + options.csv);
       csv << "scenario,repetition,implementation,threads,operations,trace_size,unique_queries,array_size,hot_width,range_length,seed,"
              "sample_rate,rebuild_interval_ms,wall_s,cpu_s,rebuilds,rebuild_ms,"
-             "read_checksum,verified,phase_wall_s,partition_cuts,optimizations,lock_kind,read_percent,read_operations,write_operations,model,bins,lambda,min_samples,min_improvement,write_body,point_percent,point_operations,range_operations,optimize_ms,publication_wait_ms,publication_hold_ms,max_publication_pause_ms,last_window_samples,actual_bins,effective_lock_kind,mgl_leaves,hierarchy_leaves,hierarchy_nodes,hierarchy_bytes\n";
+             "read_checksum,verified,phase_wall_s,partition_cuts,optimizations,lock_kind,read_percent,read_operations,write_operations,model,bins,lambda,min_samples,min_improvement,write_body,point_percent,point_operations,range_operations,optimize_ms,publication_wait_ms,publication_hold_ms,max_publication_pause_ms,last_window_samples,actual_bins,effective_lock_kind,mgl_leaves,hierarchy_leaves,hierarchy_nodes,hierarchy_bytes,srl_segment_kib,srl_segments\n";
     }
     std::cout << "fixed/adaptive: 64 mutexes; global: 1; per_element: array_size mutexes.\n"
               << "sizeof(std::mutex)=" << sizeof(std::mutex) << " bytes\n"
@@ -624,8 +634,14 @@ int main(int argc, char **argv) {
           const size_t implementation = (order + repetition + scenario.id) % names.size();
           const auto &name = names[implementation];
           const auto execute = [&]<class Mutex>() {
-            if (name == "mgl")
-              return Run(input, scenario, options, [&] { return MultiGranularityRangeLock(options.array_size, options.mgl_leaves); });
+            if (name == "mgl" || name == "mgl64" || name == "mgl1024") {
+              const size_t leaves = name == "mgl64" ? 64 : name == "mgl1024" ? 1024 : options.mgl_leaves;
+              return Run(input, scenario, options, [&] { return MultiGranularityRangeLock(options.array_size, leaves); });
+            }
+            if (name == "srl4" || name == "srl64" || name == "srl256") {
+              const size_t segment_kib = name == "srl4" ? 4 : name == "srl64" ? 64 : 256;
+              return Run(input, scenario, options, [&] { return SrlArrayLock(options.array_size, segment_kib); });
+            }
 #ifdef DYNAMIC_HAS_LOCKTREE
             if (name == "locktree")
               return Run(input, scenario, options, [&] { return LockTreeRangeLock(options.array_size); });
@@ -668,6 +684,8 @@ int main(int argc, char **argv) {
                     << " publication_hold_ms=" << result.publication_hold_ms
                     << " max_publication_pause_ms=" << result.max_publication_pause_ms
                     << " last_window_samples=" << result.last_window_samples
+                    << " srl_segment_kib=" << result.srl_segment_kib
+                    << " srl_segments=" << result.srl_segments
                     << " read_checksum=" << result.read_checksum << " verified=true\n";
           if (scenario.phases > 1) {
             std::cout << "    phase_wall_s=";

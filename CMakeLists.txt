@@ -32,6 +32,14 @@ add_executable(example example/main.cpp)
 target_link_libraries(example PRIVATE dynamic_locks)
 
 if(BUILD_TESTING)
+  add_executable(srl_array_lock_tests tests/srl_array_lock_test.cpp)
+  target_link_libraries(srl_array_lock_tests PRIVATE dynamic_locks)
+  add_test(NAME srl_array_lock_tests COMMAND srl_array_lock_tests)
+  add_test(NAME benchmark_srl_smoke COMMAND adaptive_lock_benchmark
+    --implementations srl4,srl64,srl256 --scenario steady_range
+    --array-size 65537 --hot-width 65536 --range-length 1025 --write-body range
+    --operations 1025 --threads 3 --trace-size 17 --repetitions 1 --read-percent 70)
+  set_tests_properties(srl_array_lock_tests benchmark_srl_smoke PROPERTIES TIMEOUT 60)
   add_executable(multigranularity_lock_tests tests/multigranularity_lock_test.cpp)
   target_link_libraries(multigranularity_lock_tests PRIVATE dynamic_locks)
   add_test(NAME multigranularity_lock_tests COMMAND multigranularity_lock_tests)

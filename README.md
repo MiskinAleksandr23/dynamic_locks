@@ -142,6 +142,8 @@ python3 scripts/paper_experiments.py \
 
 ## Сравнение с multi-granularity locking
 
+Для отдельного сравнения fixed, Balanced и DP с MGL и SRL(array) на xeon5 подготовлены [четыре коротких запуска](docs/RANGE_LOCK_BASELINE.md#короткие-сравнения-на-xeon5). Один сценарий занимает ориентировочно 2–3 минуты вместе с калибровкой.
+
 Новый baseline `mgl` — **наша реализация классического протокола IS/IX/S/X**, не авторский artifact другой статьи. Основа — [multi-granularity locking Gray et al.](https://jimgray.azurewebsites.net/papers/Granularity%20of%20Locks%20In%20a%20Large%20Shared%20Databse%20RJ%201606.pdf). Код: [MultiGranularityRangeLock](common/multigranularity_lock.hpp).
 
 Статическое двоичное дерево делит массив на листья. Частично покрытые запросом узлы берут IS для чтения или IX для записи; максимально крупные полностью покрытые узлы — S или X. Все состояния удерживаются до завершения callback, освобождаются в обратном порядке. Общий preorder дерева предотвращает циклы захвата; upgrades нет. SIX для этих одиночных read-only/write-range операций не требуется. Совместимость реализована атомарным 64-битным словом на узел и `atomic::wait/notify`; per-query heap allocation отсутствует. FIFO и starvation-freedom не заявляются.
