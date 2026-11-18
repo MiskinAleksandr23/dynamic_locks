@@ -54,6 +54,22 @@ python3 scripts/summarize_paper.py BENCHMARK_RESULT/server-paper-16-32/16t
 python3 scripts/summarize_paper.py BENCHMARK_RESULT/server-paper-16-32/32t
 ```
 
+Чтобы сократить уже идущую полную серию до одного повтора для каждой ещё не начатой пары
+«сценарий × число потоков», укажите фактический каталог прежней серии. Команда без
+`--execute` печатает список. На Linux с Python 3.12 команда с `--execute` останавливает
+текущий измеряемый процесс по его PID-дескриптору и ждёт завершения прежнего запуска.
+
+```sh
+old=BENCHMARK_RESULT/server-paper-16-32-20261118-022122
+python3 scripts/paper_remainder.py "$old"
+nohup python3 -u scripts/paper_remainder.py "$old" --execute > "$old-once.log" 2>&1 < /dev/null &
+```
+
+Сохранённые строки остаются в прежних CSV. При остановке посреди измерения старый
+супервизор записывает `failed` для этого сценария. Новый план сохраняется в
+`${old}-once/plan.json`, журнал 16 потоков в `${old}-once/placement-16/16t.console.log`,
+CSV в `${old}-once/placement-16/16t/`. Для 32 потоков подставьте `32` в оба места.
+
 Следующие разделы сохраняют отдельный строгий вариант **32/64 физических ядра без SMT**: в этих командах `--allow-smt` отсутствует.
 
 ## Исходники и требования
