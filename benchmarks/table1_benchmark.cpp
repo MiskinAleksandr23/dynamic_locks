@@ -58,10 +58,11 @@ Result RunTimed(Input &input, const Scenario &scenario, Options &options,
       for (size_t t = 0; t < options.threads; ++t) workers.emplace_back([&, t] {
         try { PinWorker(t, cpus); }
         catch (...) { errors[t] = std::current_exception(); cancelled.store(true); }
+        uint64_t checksum = 0;
         gate.arrive_and_wait();
         for (size_t phase = 0; phase < scenario.phases; ++phase) {
           const auto &trace = input.traces[t][phase].queries;
-          size_t cursor = 0;
+          size_t cursor = 0, count = 0;
           try {
             // Finish requests atomically. Every policy checks the clock after
             // the same 64-request batch. Overshoot is included in wall time.
@@ -70,24 +71,28 @@ Result RunTimed(Input &input, const Scenario &scenario, Options &options,
                 const auto &q = trace[cursor];
                 if (q.delta == 0)
                   lock.ReadQuery(q.left, q.right, [&](size_t lo, size_t hi) {
-                    for (size_t i = lo; i <= hi; ++i) checksums[t] += data[i];
+                    for (size_t i = lo; i <= hi; ++i) checksum += data[i];
                   });
                 else
                   lock.WriteQuery(q.left, q.right, [&](size_t lo, size_t hi) {
                     if (options.write_body == "range")
                       for (size_t i = lo; i <= hi; ++i) ++data[i];
                     else {
-                      for (size_t i = lo; i <= hi; ++i) checksums[t] += data[i];
+                      for (size_t i = lo; i <= hi; ++i) checksum += data[i];
                       data[q.target] += q.delta;
                     }
                   });
-                ++completed[t][phase];
+                ++count;
                 if (++cursor == trace.size()) cursor = 0;
               }
             }
           } catch (...) { errors[t] = std::current_exception(); cancelled.store(true); }
+          // Publish diagnostics only once per phase. Per-request writes to
+          // adjacent workers' heap counters can cause severe false sharing.
+          completed[t][phase] = count;
           gate.arrive_and_wait();
         }
+        checksums[t] = checksum;
       });
     } catch (...) {
       cancelled.store(true);
