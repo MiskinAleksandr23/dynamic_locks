@@ -105,6 +105,11 @@ Result RunTimed(Input &input, const Scenario &scenario, Options &options,
     if constexpr (requires { lock.RethrowBackgroundError(); }) lock.RethrowBackgroundError();
     for (auto error : errors) if (error) std::rethrow_exception(error);
     result.rebuilds = lock.GetRebuildCount();
+    if constexpr (requires { lock.GetLeafCount(); }) {
+      result.hierarchy_leaves = lock.GetLeafCount();
+      result.hierarchy_nodes = lock.GetNodeCount();
+      result.hierarchy_bytes = lock.GetAllocatedBytes();
+    }
     if constexpr (requires { lock.GetPublicationTimes(); }) {
       result.optimizations = lock.GetOptimizationCount();
       result.rebuild_ms = lock.GetRebuildTimeMs();
@@ -210,6 +215,9 @@ int main(int argc, char **argv) {
       result = RunTimed(input, scenario, options, seconds, cpus, [&] { return NaiveLock<1>(options.array_size); });
     else if (name == "per_element")
       result = RunTimed(input, scenario, options, seconds, cpus, [&] { return ElementLock<>(options.array_size); });
+    else if (name == "mgl64")
+      result = RunTimed(input, scenario, options, seconds, cpus,
+                        [&] { return MultiGranularityRangeLock(options.array_size, 64); });
     else if (name == "balanced" || name == "dynamic_dp") {
       PaperLockConfig config{options.bins, options.sample_rate, options.lambda,
                              options.minimum_samples, options.minimum_improvement};

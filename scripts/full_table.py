@@ -129,6 +129,8 @@ def rate(job):
 
 def report(out, manifest):
     jobs = {(j["profile"], j["case"], j["implementation"]): j for j in manifest["jobs"]}
+    baseline = manifest.get("baseline")
+    columns = (baseline,) if baseline else POLICIES[1:]
     cases = [case for case in CASES if not manifest.get("short_only") or case[-1]]
     scope = (f"Three short workload profiles, each measured for {manifest['jobs'][0]['seconds']:g} s per implementation. "
              if manifest.get("short_only") else "All 18 workload rows from the submitted PDF. ")
@@ -139,15 +141,16 @@ def report(out, manifest):
              "", "One NUMA node for 16t and 32t-smt. Two nodes for 32t-physical, four for 64t-physical. "
              "Every worker is pinned to one logical CPU. Memory is bound on one-node runs and interleaved on multi-node runs.", ""]
     for profile in PROFILES:
-        lines += [f"## {profile}", "", "| Workload | Q ref. (M) | Bal. | DP | Global | Element |",
-                  "|---|---:|---:|---:|---:|---:|"]
+        labels = [baseline.upper()] if baseline else ["Bal.", "DP", "Global", "Element"]
+        lines += [f"## {profile}", "", "| Workload | Q ref. (M) | " + " | ".join(labels) + " |",
+                  "|---|---:|" + "---:|" * len(columns)]
         for key, label, _, q, *_ in cases:
             base = jobs[profile, key, "fixed"]
             values = []
-            for p in POLICIES[1:]:
+            for p in columns:
                 j = jobs[profile, key, p]
                 if j["status"] != "complete" or base["status"] != "complete":
-                    values.append(j["status"])
+                    values.append(j["status"] if j["status"] != "complete" else f"fixed {base['status']}")
                     continue
                 if j["method"] == base["method"] == "reused_counted":
                     fixed = {r["repetition"]: r for r in base["results"]}
@@ -185,10 +188,14 @@ def main():
     p.add_argument("--previous", type=Path, default=OLD)
     p.add_argument("--binary", type=Path, default=ROOT / "build/full-table/table1_benchmark")
     p.add_argument("--short-only", action="store_true", help="run only the three short profiles, each for --seconds")
-    p.add_argument("--seconds", type=float, default=20, help="duration per implementation in ordinary rows or in --short-only mode")
+    p.add_argument("--mgl64", dest="baseline", action="store_const", const="mgl64",
+                   help="time MGL with 64 leaves and a fresh fixed reference for each workload")
+    p.add_argument("--seconds", type=float, help="duration per implementation in ordinary rows or in --short-only mode")
     p.add_argument("--execute", action="store_true", help="run the displayed plan")
     p.add_argument("--resume", action="store_true", help="continue pending/interrupted cells in the existing output")
     args = p.parse_args()
+    if args.seconds is None:
+        args.seconds = 3 if args.baseline and not args.short_only else 20
     if not 1 <= args.seconds <= 120:
         p.error("seconds must be between 1 and 120")
     if platform.system() != "Linux":
@@ -197,6 +204,8 @@ def main():
     if not numactl or not lscpu:
         p.error("numactl and lscpu are required")
     default_name = "short-table-xeon5" if args.short_only else "full-table-xeon5"
+    if args.baseline:
+        default_name += "-" + args.baseline
     binary, out = args.binary.resolve(), (args.output or ROOT / "BENCHMARK_RESULT" / default_name).resolve()
     rows, affinity, memory_nodes, topology = discover(lscpu)
     profiles = placements(rows, affinity, memory_nodes)
@@ -209,6 +218,8 @@ def main():
               f"CPUs={profile['cpus']}, memory {profile['memory_policy']} {profile['nodes']}", flush=True)
     if args.resume:
         manifest = json.loads((out / "manifest.json").read_text())
+        if args.baseline and args.baseline != manifest.get("baseline"):
+            p.error("selected baseline differs from the saved plan")
         if args.short_only and not manifest.get("short_only"):
             p.error("this is a full-series manifest; use a separate directory for --short-only")
         if manifest["profiles"] != profiles or manifest["binary_sha256"] != digest(binary):
@@ -220,20 +231,24 @@ def main():
         if out.exists():
             p.error("output exists; choose --resume or a new directory")
         manifest = {"status": "planned", "profiles": profiles, "topology": topology, "short_only": args.short_only,
+                    "baseline": args.baseline,
                     "binary_sha256": digest(binary), "jobs": [],
                     "source_sha256": {str(f): digest(ROOT / f) for f in (
                         "scripts/full_table.py", "benchmarks/table1_benchmark.cpp",
                         "benchmarks/adaptive_lock_benchmark.cpp", "dynamic/paper_lock.hpp",
-                        "dynamic/paper_partitioner.hpp")}}
-        for name, profile in profiles.items():
-            for case in CASES:
+                        "dynamic/paper_partitioner.hpp", "common/multigranularity_lock.hpp")}}
+        for profile_index, (name, profile) in enumerate(profiles.items()):
+            for case_index, case in enumerate(CASES):
                 if args.short_only and not case[-1]:
                     continue
-                reused = old_rows(case, profile, args.previous.resolve())
+                reused = {} if args.baseline else old_rows(case, profile, args.previous.resolve())
                 seconds = 2 if case[-1] and not args.short_only else args.seconds
                 if case[5] == 9:
-                    seconds = max(60, seconds)
-                for impl in POLICIES:
+                    seconds = max(9 if args.baseline else 60, seconds)
+                policies = POLICIES
+                if args.baseline:
+                    policies = ("fixed", args.baseline) if (case_index + profile_index) % 2 == 0 else (args.baseline, "fixed")
+                for impl in policies:
                     manifest["jobs"].append({"profile": name, "case": case[0], "implementation": impl,
                         **reused.get(impl, {"status": "pending", "method": "timed", "results": []}),
                         "seconds": seconds})
@@ -304,6 +319,8 @@ def main():
                     or result["scenario"] != scenario or int(result["threads"]) != profile["threads"]
                     or int(result["range_length"]) != length):
                 raise ValueError("unverified result or wrong implementation")
+            if impl == "mgl64" and (result["hierarchy_leaves"], result["hierarchy_nodes"]) != ("64", "127"):
+                raise ValueError("unexpected MGL64 geometry")
             counts = [int(n) for n in result["phase_operations"].split(";")]
             if len(counts) != phases or min(counts) <= 0 or sum(counts) != int(result["operations"]):
                 raise ValueError("phase operation counts mismatch")
