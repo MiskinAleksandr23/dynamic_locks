@@ -179,6 +179,9 @@ void CrossingPenaltyAndMinimumMass(PaperStrategy strategy) {
   Check(low_penalty.RebuildNow(), "without crossing penalty the hot segment should be subdivided");
   Check(!high_penalty.RebuildNow() && high_penalty.PartitionCuts() == initial,
         "publication ignored the full crossing-penalized objective");
+  const auto [first, last] = high_penalty.GetPublicationTimes();
+  Check(first == std::chrono::steady_clock::time_point{} &&
+        last == std::chrono::steady_clock::time_point{}, "rejected cuts must not record a publication");
   Check(low_penalty.CountLocksForRange(0, 39) > high_penalty.CountLocksForRange(0, 39),
         "penalty integration test must distinguish acquisition counts");
 }
@@ -372,6 +375,9 @@ template <class Mutex> void ConcurrentRebuilds(PaperStrategy strategy) {
   lock.StopRebuilder();
   Check(!invalid && data == expected, "concurrent publication broke atomic range semantics or lost updates");
   Check(lock.GetRebuildCount() >= 2, "moving load must cause multiple actual publications");
+  const auto [first, last] = lock.GetPublicationTimes();
+  Check(first != std::chrono::steady_clock::time_point{} && first < last &&
+        last <= std::chrono::steady_clock::now(), "publication timings must record first and last changes");
   Coverage(lock, data.size());
 }
 } // namespace

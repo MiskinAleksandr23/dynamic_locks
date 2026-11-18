@@ -170,6 +170,8 @@ public:
       }
     }
     const auto finish = Clock::now();
+    if (rebuilds_ == 0) first_publication_ = finish;
+    last_publication_ = finish;
     ++rebuilds_;
     publication_wait_ms_ += Milliseconds(acquired - pause_start);
     publication_hold_ms_ += Milliseconds(published - acquired);
@@ -187,6 +189,10 @@ public:
   double GetPublicationWaitTimeMs() const { std::lock_guard g(rebuild_mutex_); return publication_wait_ms_; }
   double GetPublicationHoldTimeMs() const { std::lock_guard g(rebuild_mutex_); return publication_hold_ms_; }
   double GetMaxPublicationPauseMs() const { std::lock_guard g(rebuild_mutex_); return max_pause_ms_; }
+  std::pair<Clock::time_point, Clock::time_point> GetPublicationTimes() const {
+    std::lock_guard g(rebuild_mutex_);
+    return {first_publication_, last_publication_};
+  }
   std::vector<size_t> PartitionCuts() const {
     std::lock_guard g(rebuild_mutex_);
     auto cuts = cuts_;
@@ -307,6 +313,7 @@ private:
   std::exception_ptr background_error_;
   Snapshot previous_;
   size_t rebuilds_ = 0, optimizations_ = 0;
+  Clock::time_point first_publication_{}, last_publication_{};
   uint64_t last_samples_ = 0;
   double rebuild_ms_ = 0, optimize_ms_ = 0, publication_wait_ms_ = 0,
          publication_hold_ms_ = 0, max_pause_ms_ = 0;

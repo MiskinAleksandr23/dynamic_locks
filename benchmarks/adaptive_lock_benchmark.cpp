@@ -417,6 +417,7 @@ struct Result {
   uint64_t read_checksum = 0;
   std::vector<size_t> cuts;
   std::vector<double> phase_seconds;
+  double work_start_s = 0, first_publication_s = -1, last_publication_s = -1;
 };
 
 // std::clock is process CPU time: workers and the background rebuilder count.
@@ -440,7 +441,9 @@ Result Run(const Input &input, const Scenario &scenario, const Options &options,
     size_t boundary = 0;
     auto complete = [&]() noexcept {
       const auto now = Clock::now();
-      if (boundary != 0)
+      if (boundary == 0)
+        result.work_start_s = std::chrono::duration<double>(now - start).count();
+      else
         result.phase_seconds[boundary - 1] =
             std::chrono::duration<double>(now - phase_start).count();
       phase_start = now;
@@ -496,6 +499,13 @@ Result Run(const Input &input, const Scenario &scenario, const Options &options,
     if constexpr (requires { lock.StopRebuilder(); }) lock.StopRebuilder();
     if constexpr (requires { lock.RethrowBackgroundError(); }) lock.RethrowBackgroundError();
     result.rebuilds = lock.GetRebuildCount();
+    if constexpr (requires { lock.GetPublicationTimes(); }) {
+      if (result.rebuilds != 0) {
+        const auto [first, last] = lock.GetPublicationTimes();
+        result.first_publication_s = std::chrono::duration<double>(first - start).count();
+        result.last_publication_s = std::chrono::duration<double>(last - start).count();
+      }
+    }
     if constexpr (requires { lock.GetOptimizationCount(); })
       result.optimizations = lock.GetOptimizationCount();
     if constexpr (requires { lock.GetRebuildTimeMs(); })
@@ -576,7 +586,13 @@ void WriteRow(std::ostream &csv, const Scenario &scenario, const Options &option
           implementation.starts_with("srl") ? "atomic_srl" : options.lock_kind)
       << ',' << (implementation == "mgl64" ? 64 : implementation == "mgl1024" ? 1024 : options.mgl_leaves)
       << ',' << result.hierarchy_leaves << ',' << result.hierarchy_nodes
-      << ',' << result.hierarchy_bytes << ',' << result.srl_segment_kib << ',' << result.srl_segments << '\n';
+      << ',' << result.hierarchy_bytes << ',' << result.srl_segment_kib << ',' << result.srl_segments
+      << ',' << result.work_start_s << ',';
+  if (result.first_publication_s >= 0)
+    csv << result.first_publication_s << ',' << result.last_publication_s;
+  else
+    csv << ',';
+  csv << '\n';
   csv.flush();
   if (!csv) throw std::runtime_error("failed to write benchmark CSV");
 }
@@ -591,7 +607,7 @@ int main(int argc, char **argv) {
       if (!csv) throw std::runtime_error("cannot write " + options.csv);
       csv << "scenario,repetition,implementation,threads,operations,trace_size,unique_queries,array_size,hot_width,range_length,seed,"
              "sample_rate,rebuild_interval_ms,wall_s,cpu_s,rebuilds,rebuild_ms,"
-             "read_checksum,verified,phase_wall_s,partition_cuts,optimizations,lock_kind,read_percent,read_operations,write_operations,model,bins,lambda,min_samples,min_improvement,write_body,point_percent,point_operations,range_operations,optimize_ms,publication_wait_ms,publication_hold_ms,max_publication_pause_ms,last_window_samples,actual_bins,effective_lock_kind,mgl_leaves,hierarchy_leaves,hierarchy_nodes,hierarchy_bytes,srl_segment_kib,srl_segments\n";
+             "read_checksum,verified,phase_wall_s,partition_cuts,optimizations,lock_kind,read_percent,read_operations,write_operations,model,bins,lambda,min_samples,min_improvement,write_body,point_percent,point_operations,range_operations,optimize_ms,publication_wait_ms,publication_hold_ms,max_publication_pause_ms,last_window_samples,actual_bins,effective_lock_kind,mgl_leaves,hierarchy_leaves,hierarchy_nodes,hierarchy_bytes,srl_segment_kib,srl_segments,work_start_s,first_publication_s,last_publication_s\n";
     }
     std::cout << "fixed/adaptive: 64 mutexes; global: 1; per_element: array_size mutexes.\n"
               << "sizeof(std::mutex)=" << sizeof(std::mutex) << " bytes\n"
