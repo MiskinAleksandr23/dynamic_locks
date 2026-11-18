@@ -64,21 +64,20 @@ def save(path, value):
     temporary.replace(path)
 
 
-def placements(rows, affinity, memory_nodes, single_16t=False):
+def placements(rows, affinity, memory_nodes):
     physical = eligible_cpus(rows, affinity, memory_nodes, False)
-    for node in ([0] if single_16t else range(4)):
+    for node in range(4):
         if len(physical.get(node, [])) < 16:
             raise ValueError(f"NUMA node {node} needs 16 permitted physical cores")
     specs = [("16t", physical[0][:16], [0])]
-    if not single_16t:
-        smt = eligible_cpus(rows, affinity, memory_nodes, True)
-        if len(smt[0]) < 32:
-            raise ValueError("NUMA node 0 needs 32 permitted logical CPUs for the SMT run")
-        specs.extend([
-            ("32t-smt", smt[0][:32], [0]),
-            ("32t-physical", physical[0][:16] + physical[1][:16], [0, 1]),
-            ("64t-physical", sum((physical[n][:16] for n in range(4)), []), list(range(4))),
-        ])
+    smt = eligible_cpus(rows, affinity, memory_nodes, True)
+    if len(smt[0]) < 32:
+        raise ValueError("NUMA node 0 needs 32 permitted logical CPUs for the SMT run")
+    specs.extend([
+        ("32t-smt", smt[0][:32], [0]),
+        ("32t-physical", physical[0][:16] + physical[1][:16], [0, 1]),
+        ("64t-physical", sum((physical[n][:16] for n in range(4)), []), list(range(4))),
+    ])
     return {name: {"threads": len(selected), "cpus": [r.cpu for r in selected],
                   "topology": [asdict(r) for r in selected], "nodes": nodes,
                   "physical_cores": len({(r.socket, r.core) for r in selected}),
@@ -164,7 +163,7 @@ def report(out, manifest):
     if sweep:
         lines = ["# Moving variable range on xeon5", "",
                  "Request length is sampled from 1 through the stated maximum. "
-                 "16 physical cores on node 0. Fixed throughput in Mreq/s and all other columns relative to fixed "
+                 "16t and 32t-smt on node 0; 32t-physical on two nodes and 64t-physical on four. Fixed throughput in Mreq/s and all other columns relative to fixed "
                  "at the same length cap. summary.csv contains absolute throughputs and rebuild counts.", ""]
     for profile in manifest["profiles"]:
         metadata_cols = ["Fixed (Mreq/s)"] if sweep else [] if mixed else ["Q ref. (M)"]
@@ -228,7 +227,7 @@ def main():
     presets.add_argument("--short-only", action="store_true", help="run only the three short profiles, each for --seconds")
     presets.add_argument("--mixed-only", action="store_true", help="run just two point/range write mixes with Kogan and MGL64")
     presets.add_argument("--length-sweep", action="store_true",
-                         help="only moving_variable_range at caps 100, 1000 and 10000 on 16 physical cores")
+                         help="only moving_variable_range at caps 100, 1000 and 10000 on all four placements")
     p.add_argument("--mgl64", dest="baseline", action="store_const", const="mgl64",
                    help="time MGL with 64 leaves and a fresh fixed reference for each workload")
     p.add_argument("--seconds", type=float, help="duration per implementation in ordinary rows or in --short-only mode")
@@ -255,7 +254,7 @@ def main():
         default_name = "moving-length-sweep-xeon5"
     binary, out = args.binary.resolve(), (args.output or ROOT / "BENCHMARK_RESULT" / default_name).resolve()
     rows, affinity, memory_nodes, topology = discover(lscpu)
-    profiles = placements(rows, affinity, memory_nodes, single_16t=args.length_sweep)
+    profiles = placements(rows, affinity, memory_nodes)
     for name, profile in profiles.items():
         profile["name"] = name
         for node in profile["nodes"]:
@@ -263,6 +262,17 @@ def main():
                          allow_smt=name == "32t-smt")
         print(f"{name}: {profile['threads']} workers, {profile['physical_cores']} physical cores, "
               f"CPUs={profile['cpus']}, memory {profile['memory_policy']} {profile['nodes']}", flush=True)
+    if out.exists() and not args.resume:
+        p.error("output exists; choose --resume or a new directory")
+    if args.execute:
+        if not args.resume:
+            out.mkdir(parents=True, exist_ok=False)
+        run_lock = (out / ".run.lock").open("a")
+        try:
+            fcntl.flock(run_lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            raise RuntimeError("This output directory already has an active suite") from None
+    new_profiles = dict(profiles)
     if args.resume:
         manifest = json.loads((out / "manifest.json").read_text())
         if args.length_sweep != manifest.get("length_sweep", False):
@@ -273,14 +283,22 @@ def main():
             p.error("selected baseline differs from the saved plan")
         if args.short_only and not manifest.get("short_only"):
             p.error("this is a full-series manifest; use a separate directory for --short-only")
-        if manifest["profiles"] != profiles or manifest["binary_sha256"] != digest(binary):
+        saved = manifest["profiles"]
+        extend = args.length_sweep and set(saved) == {"16t"} and saved["16t"] == profiles["16t"]
+        if (saved != profiles and not extend) or manifest["binary_sha256"] != digest(binary):
             raise ValueError("Resume requires the same CPU placement and binary")
+        new_profiles = {name: profile for name, profile in profiles.items() if name not in saved}
+        if new_profiles:
+            durations = {j["seconds"] for j in manifest["jobs"]}
+            if len(durations) != 1:
+                raise ValueError("Cannot extend a length sweep with inconsistent measurement durations")
+            args.seconds = durations.pop()
+            manifest["profiles"] = profiles
+            manifest["extended_by_script_sha256"] = digest(Path(__file__))
         for job in manifest["jobs"]:
             if job["status"] in ("running", "interrupted", "failed"):
                 job["status"] = "pending"
     else:
-        if out.exists():
-            p.error("output exists; choose --resume or a new directory")
         manifest = {"status": "planned", "profiles": profiles, "topology": topology, "short_only": args.short_only,
                     "baseline": args.baseline, "mixed_only": args.mixed_only, "length_sweep": args.length_sweep,
                     "binary_sha256": digest(binary), "jobs": [],
@@ -291,34 +309,29 @@ def main():
         if args.mixed_only or args.length_sweep:
             header = "common/kdi_exclusive_lock.hpp"
             manifest["source_sha256"][header] = digest(ROOT / header)
-        for profile_index, (name, profile) in enumerate(profiles.items()):
-            for case_index, case in enumerate(workload_rows(args.mixed_only, args.short_only, args.length_sweep)):
-                reused = {} if args.baseline or args.mixed_only or args.length_sweep else old_rows(case, profile, args.previous.resolve())
-                seconds = 2 if case[-1] and not args.short_only else args.seconds
-                if case[5] == 9:
-                    seconds = max(9 if args.baseline else 60, seconds)
-                policies = POLICIES
-                if args.mixed_only or args.length_sweep:
-                    offset = (profile_index + case_index) % len(MIXED_POLICIES)
-                    policies = MIXED_POLICIES[offset:] + MIXED_POLICIES[:offset]
-                if args.baseline:
-                    policies = ("fixed", args.baseline) if (case_index + profile_index) % 2 == 0 else (args.baseline, "fixed")
-                for impl in policies:
-                    manifest["jobs"].append({"profile": name, "case": case[0], "implementation": impl,
-                        **reused.get(impl, {"status": "pending", "method": "timed", "results": []}),
-                        "seconds": seconds})
+    for name, profile in new_profiles.items():
+        profile_index = PROFILES.index(name)
+        for case_index, case in enumerate(workload_rows(args.mixed_only, args.short_only, args.length_sweep)):
+            reused = {} if args.baseline or args.mixed_only or args.length_sweep else old_rows(case, profile, args.previous.resolve())
+            seconds = 2 if case[-1] and not args.short_only else args.seconds
+            if case[5] == 9:
+                seconds = max(9 if args.baseline else 60, seconds)
+            policies = POLICIES
+            if args.mixed_only or args.length_sweep:
+                offset = (profile_index + case_index) % len(MIXED_POLICIES)
+                policies = MIXED_POLICIES[offset:] + MIXED_POLICIES[:offset]
+            if args.baseline:
+                policies = ("fixed", args.baseline) if (case_index + profile_index) % 2 == 0 else (args.baseline, "fixed")
+            for impl in policies:
+                manifest["jobs"].append({"profile": name, "case": case[0], "implementation": impl,
+                    **reused.get(impl, {"status": "pending", "method": "timed", "results": []}),
+                    "seconds": seconds})
     pending = [j for j in manifest["jobs"] if j["status"] == "pending"]
     print(f"{len(manifest['jobs']) - len(pending)} existing cells, {len(pending)} new cells; "
           f"{sum(j['seconds'] for j in pending) / 60:.1f} minutes of timed work plus allocation/verification.",
           flush=True)
     if not args.execute:
         return
-    out.mkdir(parents=True, exist_ok=args.resume)
-    run_lock = (out / ".run.lock").open("a")
-    try:
-        fcntl.flock(run_lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
-    except BlockingIOError:
-        raise RuntimeError("This output directory already has an active suite") from None
     manifest["lscpu"] = command_output([lscpu])
     manifest["numactl_hardware"] = command_output([numactl, "--hardware"])
     manifest["status"] = "running"
