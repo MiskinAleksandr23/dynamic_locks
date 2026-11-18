@@ -38,7 +38,7 @@ class TableTests(unittest.TestCase):
     def test_extend_mixed_adds_missing_baselines_and_preserves_results(self):
         manifest = self.mixed_manifest()
         before = copy.deepcopy(manifest["jobs"])
-        suite.extend_mixed_baselines(manifest)
+        suite.extend_table_baselines(manifest)
         indexed = {(j["profile"], j["case"], j["implementation"]): j for j in manifest["jobs"]}
         self.assertEqual(len(manifest["jobs"]), 56)
         self.assertEqual(len(indexed), 56)
@@ -54,7 +54,7 @@ class TableTests(unittest.TestCase):
                     self.assertEqual(added["status"], "pending")
                     self.assertEqual(added["results"], [])
         extended = copy.deepcopy(manifest)
-        suite.extend_mixed_baselines(manifest)
+        suite.extend_table_baselines(manifest)
         self.assertEqual(manifest, extended)
 
     def test_extend_mixed_keeps_existing_baseline_measurement(self):
@@ -63,7 +63,7 @@ class TableTests(unittest.TestCase):
                         seconds=77, source="existing-global.csv")
         manifest["jobs"].append(existing)
         saved = copy.deepcopy(existing)
-        suite.extend_mixed_baselines(manifest)
+        suite.extend_table_baselines(manifest)
         matches = [j for j in manifest["jobs"] if (j["profile"], j["case"], j["implementation"]) ==
                    (existing["profile"], existing["case"], "global")]
         self.assertEqual(matches, [saved])
@@ -71,7 +71,7 @@ class TableTests(unittest.TestCase):
 
     def test_mixed_report_has_actual_fixed_q_and_requested_baselines(self):
         manifest = self.mixed_manifest()
-        suite.extend_mixed_baselines(manifest)
+        suite.extend_table_baselines(manifest)
         for job in manifest["jobs"]:
             if job["status"] == "pending":
                 factor = 0.25 if job["implementation"] == "global" else 4
@@ -99,6 +99,84 @@ class TableTests(unittest.TestCase):
             kdi = [j for j in persisted["jobs"] if j["implementation"] == "kdi_list_ex"]
             self.assertEqual(len(kdi), 8)
             self.assertTrue(all(j["results"] and j["status"] == "complete" for j in kdi))
+
+    def sweep_manifest(self, profiles):
+        policies = ("fixed", "balanced", "dynamic_dp", "mgl64", "kdi_list_ex")
+        manifest = {"status": "complete", "mixed_only": False, "short_only": False,
+                    "length_sweep": True, "baseline": None,
+                    "profiles": {name: {} for name in profiles}, "jobs": []}
+        counts = (12_345_678, 1234, 987_654_321)
+        for profile_index, profile in enumerate(profiles):
+            for case_index, (cap, count) in enumerate(zip((100, 1000, 10000), counts)):
+                case = f"moving_max_{cap}"
+                seconds = 20 + profile_index * 3 + case_index
+                for policy in policies:
+                    manifest["jobs"].append({
+                        "profile": profile, "case": case, "implementation": policy,
+                        "status": "complete", "method": "timed", "seconds": seconds,
+                        "source": f"{profile}/{case}/{policy}.csv",
+                        "results": [{"operations": str(count), "wall_s": "10",
+                                     "range_length": str(cap), "rebuilds": "1"}],
+                    })
+        return manifest
+
+    def test_extend_legacy_length_sweep_preserves_existing_profiles_and_results(self):
+        for profiles in (suite.PROFILES, ("16t",)):
+            with self.subTest(profiles=profiles):
+                manifest = self.sweep_manifest(profiles)
+                before = copy.deepcopy(manifest["jobs"])
+                suite.extend_table_baselines(manifest)
+                indexed = {(j["profile"], j["case"], j["implementation"]): j
+                           for j in manifest["jobs"]}
+                expected_new = 24 if len(profiles) == 4 else 6
+                self.assertEqual(len(manifest["jobs"]) - len(before), expected_new)
+                self.assertEqual(len(indexed), len(manifest["jobs"]))
+                self.assertEqual({j["profile"] for j in manifest["jobs"]}, set(profiles))
+                for job in before:
+                    key = job["profile"], job["case"], job["implementation"]
+                    self.assertEqual(indexed[key], job)
+                for profile in profiles:
+                    for cap in (100, 1000, 10000):
+                        case = f"moving_max_{cap}"
+                        fixed = indexed[profile, case, "fixed"]
+                        for policy in ("global", "per_element"):
+                            added = indexed[profile, case, policy]
+                            self.assertEqual(added["seconds"], fixed["seconds"])
+                            self.assertEqual(added["status"], "pending")
+                            self.assertEqual(added["results"], [])
+                once = copy.deepcopy(manifest)
+                suite.extend_table_baselines(manifest)
+                self.assertEqual(manifest, once)
+
+    def test_length_sweep_report_keeps_legacy_data_and_displays_requested_columns(self):
+        manifest = self.sweep_manifest(suite.PROFILES)
+        suite.extend_table_baselines(manifest)
+        fixed = {(j["profile"], j["case"]): j for j in manifest["jobs"]
+                 if j["implementation"] == "fixed"}
+        for job in manifest["jobs"]:
+            if job["status"] == "pending":
+                row = copy.deepcopy(fixed[job["profile"], job["case"]]["results"][0])
+                row["wall_s"] = "20" if job["implementation"] == "global" else "5"
+                job.update(status="complete", results=[row])
+        with tempfile.TemporaryDirectory() as temp:
+            directory = Path(temp)
+            suite.report(directory, manifest)
+            text = (directory / "TABLE.md").read_text()
+            self.assertNotIn("Kogan", text)
+            self.assertNotIn("kdi_list_ex", text)
+            headers = [line for line in text.splitlines() if line.startswith("| Workload |")]
+            self.assertEqual(len(headers), 4)
+            for header in headers:
+                for column in ("Q fixed (M)", "Fixed (Mreq/s)", "Global", "Element", "MGL64"):
+                    self.assertIn(f"| {column} |", header)
+            rows = [[cell.strip() for cell in line.strip("|").split("|")]
+                    for line in text.splitlines() if line.startswith("| Moving variable,")]
+            self.assertEqual(len(rows), 12)
+            self.assertEqual([row[1] for row in rows], ["12.3", "0.00123", "988"] * 4)
+            persisted = json.loads((directory / "manifest.json").read_text())
+            kdi = [j for j in persisted["jobs"] if j["implementation"] == "kdi_list_ex"]
+            self.assertEqual(len(kdi), 12)
+            self.assertTrue(all(j["status"] == "complete" and j["results"] for j in kdi))
 
     def topology(self):
         return [CPU(core + lane * 64, core, core // 32, core // 16, True)

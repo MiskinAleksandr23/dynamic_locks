@@ -44,8 +44,7 @@ CASES = (
 )
 PROFILES = ("16t", "32t-smt", "32t-physical", "64t-physical")
 MIXED_POINTS = {"mixed_90p_10r": 90, "mixed_10p_90r": 10}
-MIXED_POLICIES = (*POLICIES, "mgl64")
-SWEEP_POLICIES = ("fixed", "balanced", "dynamic_dp", "mgl64", "kdi_list_ex")
+COMPARISON_POLICIES = (*POLICIES, "mgl64")
 OLD = ROOT / "BENCHMARK_RESULT/server-paper-16-32-20261118-022122"
 
 
@@ -140,7 +139,7 @@ def rate(job):
     return statistics.median(int(r["operations"]) / float(r["wall_s"]) for r in job["results"])
 
 
-def extend_mixed_baselines(manifest):
+def extend_table_baselines(manifest):
     jobs = manifest["jobs"]
     keys = {(j["profile"], j["case"], j["implementation"]) for j in jobs}
     for fixed in [j for j in jobs if j["implementation"] == "fixed"]:
@@ -152,13 +151,33 @@ def extend_mixed_baselines(manifest):
                 keys.add(key)
 
 
+def table_policies(manifest):
+    if manifest.get("mixed_only") or manifest.get("length_sweep"):
+        return COMPARISON_POLICIES
+    baseline = manifest.get("baseline")
+    return ("fixed", baseline) if baseline else POLICIES
+
+
+def show_status(manifest):
+    policies = table_policies(manifest)
+    cases = workload_rows(manifest.get("mixed_only"), manifest.get("short_only"), manifest.get("length_sweep"))
+    jobs = {(j["profile"], j["case"], j["implementation"]): j["status"] for j in manifest["jobs"]}
+    print(f"Saved run: {manifest['status']}")
+    print(f"{'profile':13} {'workload':24}" + "".join(f"{p:>13}" for p in policies))
+    complete = 0
+    for profile in PROFILES:
+        for key, *_ in cases:
+            states = [jobs.get((profile, key, p), "absent") for p in policies]
+            complete += states.count("complete")
+            print(f"{profile:13} {key:24}" + "".join(f"{s:>13}" for s in states))
+    print(f"Requested measurements complete: {complete}/{len(PROFILES) * len(cases) * len(policies)}")
+
+
 def report(out, manifest):
     jobs = {(j["profile"], j["case"], j["implementation"]): j for j in manifest["jobs"]}
-    baseline = manifest.get("baseline")
     mixed = manifest.get("mixed_only", False)
     sweep = manifest.get("length_sweep", False)
-    columns = (MIXED_POLICIES[1:] if mixed else SWEEP_POLICIES[1:] if sweep
-               else (baseline,) if baseline else POLICIES[1:])
+    columns = table_policies(manifest)[1:]
     cases = workload_rows(mixed, manifest.get("short_only"), sweep)
     scope = (f"Three short workload profiles, each measured for {manifest['jobs'][0]['seconds']:g} s per implementation. "
              if manifest.get("short_only") else "All 18 workload rows from the submitted PDF. ")
@@ -174,14 +193,17 @@ def report(out, manifest):
                     "elements. Q fixed (M) is the measured number of requests completed by fixed across all workers, "
                     "in millions. summary.csv gives the exact count for each implementation.")
     labels = {"balanced": "Bal.", "dynamic_dp": "DP", "global": "Global", "per_element": "Element",
-              "mgl64": "MGL64", "kdi_list_ex": "Kogan list-ex"}
+              "mgl64": "MGL64"}
     if sweep:
         lines = ["# Moving variable range on xeon5", "",
                  "Request length is sampled from 1 through the stated maximum. "
-                 "16t and 32t-smt on node 0; 32t-physical on two nodes and 64t-physical on four. Fixed throughput in Mreq/s and all other columns relative to fixed "
-                 "at the same length cap. summary.csv contains absolute throughputs and rebuild counts.", ""]
+                 "Q fixed (M) counts completed requests across all fixed workers, in millions. "
+                 "Throughput ratios use fixed at the same length cap and placement. "
+                 "summary.csv contains exact counts and throughputs for each implementation.", ""]
+    metadata_cols = ["Q fixed (M)" if mixed or sweep else "Q ref. (M)"]
+    if sweep:
+        metadata_cols.append("Fixed (Mreq/s)")
     for profile in manifest["profiles"]:
-        metadata_cols = ["Fixed (Mreq/s)" if sweep else "Q fixed (M)" if mixed else "Q ref. (M)"]
         headers = ["Workload", *metadata_cols, *[labels[c] for c in columns]]
         lines += [f"## {profile}", "", "| " + " | ".join(headers) + " |",
                   "|---|" + "---:|" * (len(headers) - 1)]
@@ -203,11 +225,11 @@ def report(out, manifest):
                 if not (sweep or mixed) and (j["method"] == "timed" or base["method"] == "timed"):
                     value += "†"
                 values.append(value)
-            if sweep:
-                metadata = [f"{rate(base) / 1e6:.3f}" if base["status"] == "complete" else base["status"]]
-            elif mixed:
+            if mixed or sweep:
                 metadata = ([format(int(base["results"][0]["operations"]) / 1e6, ".3g")]
                             if base["status"] == "complete" else [base["status"]])
+                if sweep:
+                    metadata.append(f"{rate(base) / 1e6:.3f}" if base["status"] == "complete" else base["status"])
             else:
                 metadata = [f"{q / 1e6:g}"]
             cells = [label, *metadata, *values]
@@ -251,6 +273,7 @@ def main():
     p.add_argument("--seconds", type=float, help="duration per implementation in ordinary rows or in --short-only mode")
     p.add_argument("--execute", action="store_true", help="run the displayed plan")
     p.add_argument("--resume", action="store_true", help="continue pending/interrupted cells in the existing output")
+    p.add_argument("--status", action="store_true", help="show recorded status for each requested measurement and exit")
     args = p.parse_args()
     if (args.mixed_only or args.length_sweep) and args.baseline:
         p.error("this preset already includes MGL64")
@@ -258,11 +281,6 @@ def main():
         args.seconds = 3 if args.baseline and not args.short_only else 20
     if not 1 <= args.seconds <= 120:
         p.error("seconds must be between 1 and 120")
-    if platform.system() != "Linux":
-        p.error("run this launcher on Linux")
-    numactl, lscpu = shutil.which("numactl"), shutil.which("lscpu")
-    if not numactl or not lscpu:
-        p.error("numactl and lscpu are required")
     default_name = "short-table-xeon5" if args.short_only else "full-table-xeon5"
     if args.baseline:
         default_name += "-" + args.baseline
@@ -271,6 +289,20 @@ def main():
     if args.length_sweep:
         default_name = "moving-length-sweep-xeon5"
     binary, out = args.binary.resolve(), (args.output or ROOT / "BENCHMARK_RESULT" / default_name).resolve()
+    if args.status:
+        if args.execute:
+            p.error("--status and --execute cannot be combined")
+        manifest_path = out / "manifest.json"
+        if not manifest_path.exists():
+            p.error(f"no saved run at {manifest_path}")
+        manifest = json.loads(manifest_path.read_text())
+        show_status(manifest)
+        return
+    if platform.system() != "Linux":
+        p.error("run this launcher on Linux")
+    numactl, lscpu = shutil.which("numactl"), shutil.which("lscpu")
+    if not numactl or not lscpu:
+        p.error("numactl and lscpu are required")
     rows, affinity, memory_nodes, topology = discover(lscpu)
     profiles = placements(rows, affinity, memory_nodes)
     for name, profile in profiles.items():
@@ -305,8 +337,8 @@ def main():
         extend = args.length_sweep and set(saved) == {"16t"} and saved["16t"] == profiles["16t"]
         if (saved != profiles and not extend) or manifest["binary_sha256"] != digest(binary):
             raise ValueError("Resume requires the same CPU placement and binary")
-        if args.mixed_only:
-            extend_mixed_baselines(manifest)
+        if args.mixed_only or args.length_sweep:
+            extend_table_baselines(manifest)
         new_profiles = {name: profile for name, profile in profiles.items() if name not in saved}
         if new_profiles:
             durations = {j["seconds"] for j in manifest["jobs"]}
@@ -326,9 +358,6 @@ def main():
                         "scripts/full_table.py", "benchmarks/table1_benchmark.cpp",
                         "benchmarks/adaptive_lock_benchmark.cpp", "dynamic/paper_lock.hpp",
                         "dynamic/paper_partitioner.hpp", "common/multigranularity_lock.hpp")}}
-        if args.length_sweep:
-            header = "common/kdi_exclusive_lock.hpp"
-            manifest["source_sha256"][header] = digest(ROOT / header)
     for name, profile in new_profiles.items():
         profile_index = PROFILES.index(name)
         for case_index, case in enumerate(workload_rows(args.mixed_only, args.short_only, args.length_sweep)):
@@ -338,7 +367,7 @@ def main():
                 seconds = max(9 if args.baseline else 60, seconds)
             policies = POLICIES
             if args.mixed_only or args.length_sweep:
-                policies = MIXED_POLICIES if args.mixed_only else SWEEP_POLICIES
+                policies = COMPARISON_POLICIES
                 offset = (profile_index + case_index) % len(policies)
                 policies = policies[offset:] + policies[:offset]
             if args.baseline:
@@ -347,7 +376,8 @@ def main():
                 manifest["jobs"].append({"profile": name, "case": case[0], "implementation": impl,
                     **reused.get(impl, {"status": "pending", "method": "timed", "results": []}),
                     "seconds": seconds})
-    active = [j for j in manifest["jobs"] if not args.mixed_only or j["implementation"] in MIXED_POLICIES]
+    required_policies = table_policies(manifest)
+    active = [j for j in manifest["jobs"] if j["implementation"] in required_policies]
     pending = [j for j in active if j["status"] == "pending"]
     print(f"{len(active) - len(pending)} existing cells, {len(pending)} new cells; "
           f"{sum(j['seconds'] for j in pending) / 60:.1f} minutes of timed work plus allocation/verification.",
