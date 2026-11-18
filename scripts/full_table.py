@@ -129,8 +129,11 @@ def rate(job):
 
 def report(out, manifest):
     jobs = {(j["profile"], j["case"], j["implementation"]): j for j in manifest["jobs"]}
+    cases = [case for case in CASES if not manifest.get("short_only") or case[-1]]
+    scope = (f"Three short workload profiles, each measured for {manifest['jobs'][0]['seconds']:g} s per implementation. "
+             if manifest.get("short_only") else "All 18 workload rows from the submitted PDF. ")
     lines = ["# Table 1 on xeon5", "",
-             "Throughput relative to fixed. All 18 workload rows from the submitted PDF. "
+             "Throughput relative to fixed. " + scope +
              "Q ref. is the original request count. New cells use fixed-duration runs and actual completed query counts. "
              "Reused cells retain the complete measured runs. Raw CSV and summary.csv record the method and counts.",
              "", "One NUMA node for 16t and 32t-smt. Two nodes for 32t-physical, four for 64t-physical. "
@@ -138,7 +141,7 @@ def report(out, manifest):
     for profile in PROFILES:
         lines += [f"## {profile}", "", "| Workload | Q ref. (M) | Bal. | DP | Global | Element |",
                   "|---|---:|---:|---:|---:|---:|"]
-        for key, label, _, q, *_ in CASES:
+        for key, label, _, q, *_ in cases:
             base = jobs[profile, key, "fixed"]
             values = []
             for p in POLICIES[1:]:
@@ -164,7 +167,7 @@ def report(out, manifest):
               "checks, short runs 100 ms. Reused counted runs retain their recorded intervals.", ""]
     (out / "TABLE.md").write_text("\n".join(lines) + "\n")
     fields = ["profile", "case", "implementation", "status", "method", "operations", "wall_s",
-              "qps", "rebuilds", "first_publication_s", "last_publication_s", "source", "error"]
+              "qps", "rebuilds", "first_publication_s", "last_publication_s", "source", "error", "optimizations"]
     with (out / "summary.csv").open("w", newline="") as stream:
         writer = csv.DictWriter(stream, fieldnames=fields)
         writer.writeheader()
@@ -178,10 +181,11 @@ def report(out, manifest):
 
 def main():
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("--output", type=Path, default=ROOT / "BENCHMARK_RESULT/full-table-xeon5")
+    p.add_argument("--output", type=Path, help="new output directory, or existing directory for --resume")
     p.add_argument("--previous", type=Path, default=OLD)
     p.add_argument("--binary", type=Path, default=ROOT / "build/full-table/table1_benchmark")
-    p.add_argument("--seconds", type=float, default=20, help="ordinary workload duration per new implementation")
+    p.add_argument("--short-only", action="store_true", help="run only the three short profiles, each for --seconds")
+    p.add_argument("--seconds", type=float, default=20, help="duration per implementation in ordinary rows or in --short-only mode")
     p.add_argument("--execute", action="store_true", help="run the displayed plan")
     p.add_argument("--resume", action="store_true", help="continue pending/interrupted cells in the existing output")
     args = p.parse_args()
@@ -192,7 +196,8 @@ def main():
     numactl, lscpu = shutil.which("numactl"), shutil.which("lscpu")
     if not numactl or not lscpu:
         p.error("numactl and lscpu are required")
-    binary, out = args.binary.resolve(), args.output.resolve()
+    default_name = "short-table-xeon5" if args.short_only else "full-table-xeon5"
+    binary, out = args.binary.resolve(), (args.output or ROOT / "BENCHMARK_RESULT" / default_name).resolve()
     rows, affinity, memory_nodes, topology = discover(lscpu)
     profiles = placements(rows, affinity, memory_nodes)
     for name, profile in profiles.items():
@@ -204,6 +209,8 @@ def main():
               f"CPUs={profile['cpus']}, memory {profile['memory_policy']} {profile['nodes']}", flush=True)
     if args.resume:
         manifest = json.loads((out / "manifest.json").read_text())
+        if args.short_only and not manifest.get("short_only"):
+            p.error("this is a full-series manifest; use a separate directory for --short-only")
         if manifest["profiles"] != profiles or manifest["binary_sha256"] != digest(binary):
             raise ValueError("Resume requires the same CPU placement and binary")
         for job in manifest["jobs"]:
@@ -212,7 +219,7 @@ def main():
     else:
         if out.exists():
             p.error("output exists; choose --resume or a new directory")
-        manifest = {"status": "planned", "profiles": profiles, "topology": topology,
+        manifest = {"status": "planned", "profiles": profiles, "topology": topology, "short_only": args.short_only,
                     "binary_sha256": digest(binary), "jobs": [],
                     "source_sha256": {str(f): digest(ROOT / f) for f in (
                         "scripts/full_table.py", "benchmarks/table1_benchmark.cpp",
@@ -220,11 +227,16 @@ def main():
                         "dynamic/paper_partitioner.hpp")}}
         for name, profile in profiles.items():
             for case in CASES:
+                if args.short_only and not case[-1]:
+                    continue
                 reused = old_rows(case, profile, args.previous.resolve())
+                seconds = 2 if case[-1] and not args.short_only else args.seconds
+                if case[5] == 9:
+                    seconds = max(60, seconds)
                 for impl in POLICIES:
                     manifest["jobs"].append({"profile": name, "case": case[0], "implementation": impl,
                         **reused.get(impl, {"status": "pending", "method": "timed", "results": []}),
-                        "seconds": 2 if case[-1] else max(60, args.seconds) if case[5] == 9 else args.seconds})
+                        "seconds": seconds})
     pending = [j for j in manifest["jobs"] if j["status"] == "pending"]
     print(f"{len(manifest['jobs']) - len(pending)} existing cells, {len(pending)} new cells; "
           f"{sum(j['seconds'] for j in pending) / 60:.1f} minutes of timed work plus allocation/verification.",
