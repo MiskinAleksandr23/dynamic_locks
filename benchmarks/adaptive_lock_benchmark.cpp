@@ -417,6 +417,7 @@ struct Result {
   uint64_t read_checksum = 0;
   std::vector<size_t> cuts;
   std::vector<double> phase_seconds;
+  std::vector<size_t> phase_operations;
   double work_start_s = 0, first_publication_s = -1, last_publication_s = -1;
 };
 
@@ -592,11 +593,19 @@ void WriteRow(std::ostream &csv, const Scenario &scenario, const Options &option
     csv << result.first_publication_s << ',' << result.last_publication_s;
   else
     csv << ',';
+  csv << ',';
+  PrintSequence(csv, result.phase_operations);
   csv << '\n';
   csv.flush();
   if (!csv) throw std::runtime_error("failed to write benchmark CSV");
 }
 } // namespace
+
+void WriteHeader(std::ostream &csv) {
+  csv << "scenario,repetition,implementation,threads,operations,trace_size,unique_queries,array_size,hot_width,range_length,seed,"
+             "sample_rate,rebuild_interval_ms,wall_s,cpu_s,rebuilds,rebuild_ms,"
+             "read_checksum,verified,phase_wall_s,partition_cuts,optimizations,lock_kind,read_percent,read_operations,write_operations,model,bins,lambda,min_samples,min_improvement,write_body,point_percent,point_operations,range_operations,optimize_ms,publication_wait_ms,publication_hold_ms,max_publication_pause_ms,last_window_samples,actual_bins,effective_lock_kind,mgl_leaves,hierarchy_leaves,hierarchy_nodes,hierarchy_bytes,srl_segment_kib,srl_segments,work_start_s,first_publication_s,last_publication_s,phase_operations\n";
+}
 
 int main(int argc, char **argv) {
   try {
@@ -605,9 +614,7 @@ int main(int argc, char **argv) {
     if (!options.csv.empty()) {
       csv.open(options.csv);
       if (!csv) throw std::runtime_error("cannot write " + options.csv);
-      csv << "scenario,repetition,implementation,threads,operations,trace_size,unique_queries,array_size,hot_width,range_length,seed,"
-             "sample_rate,rebuild_interval_ms,wall_s,cpu_s,rebuilds,rebuild_ms,"
-             "read_checksum,verified,phase_wall_s,partition_cuts,optimizations,lock_kind,read_percent,read_operations,write_operations,model,bins,lambda,min_samples,min_improvement,write_body,point_percent,point_operations,range_operations,optimize_ms,publication_wait_ms,publication_hold_ms,max_publication_pause_ms,last_window_samples,actual_bins,effective_lock_kind,mgl_leaves,hierarchy_leaves,hierarchy_nodes,hierarchy_bytes,srl_segment_kib,srl_segments,work_start_s,first_publication_s,last_publication_s\n";
+      WriteHeader(csv);
     }
     std::cout << "fixed/adaptive: 64 mutexes; global: 1; per_element: array_size mutexes.\n"
               << "sizeof(std::mutex)=" << sizeof(std::mutex) << " bytes\n"

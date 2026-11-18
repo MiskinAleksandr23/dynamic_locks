@@ -30,6 +30,8 @@ if(BUILD_LOCKTREE_BASELINE)
 endif()
 add_executable(example example/main.cpp)
 target_link_libraries(example PRIVATE dynamic_locks)
+add_executable(table1_benchmark benchmarks/table1_benchmark.cpp common/spinlock.cpp)
+target_link_libraries(table1_benchmark PRIVATE dynamic_locks)
 
 if(BUILD_TESTING)
   add_executable(srl_array_lock_tests tests/srl_array_lock_test.cpp)
